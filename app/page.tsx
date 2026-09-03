@@ -1,69 +1,405 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
 
 export default function Home() {
+  const [description, setDescription] = useState<string>('')
+  const [generatedCode, setGeneratedCode] = useState<string>('')
+  const [loadingPaste, setLoadingPaste] = useState<boolean>(false)
+
+  const [codeInput, setCodeInput] = useState<string>('')
+  const [resultText, setResultText] = useState<string>('')
+  const [loadingFetch, setLoadingFetch] = useState<boolean>(false)
+  const [errorMsg, setErrorMsg] = useState<string>('')
+
+  async function handlePaste() {
+    if (!description.trim()) return
+
+    setLoadingPaste(true)
+    setGeneratedCode('')
+
+    try {
+      const res = await fetch('/api/paste', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: description,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (data.code) {
+        setGeneratedCode(data.code)
+        setDescription('')
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingPaste(false)
+    }
+  }
+
+  async function handleFetchCode() {
+    if (!codeInput.trim()) return
+
+    setLoadingFetch(true)
+    setErrorMsg('')
+    setResultText('')
+
+    try {
+      const res = await fetch(`/api/paste/${codeInput.trim()}`)
+      const data = await res.json()
+
+      if (data.content) {
+        setResultText(data.content)
+      } else {
+        setErrorMsg(data.error || 'Kode tidak ditemukan')
+      }
+    } catch (err) {
+      console.error(err)
+      setErrorMsg('Terjadi kesalahan, coba lagi')
+    } finally {
+      setLoadingFetch(false)
+    }
+  }
+
+  const inputStyle = {
+    width: '100%',
+    border: '1px solid #dadce0',
+    borderRadius: 8,
+    padding: '12px 14px',
+    fontSize: 14,
+    fontFamily: 'inherit',
+    outline: 'none',
+    background: '#fff',
+    boxSizing: 'border-box' as const,
+  }
+
+  const primaryButtonStyle = {
+    border: 'none',
+    borderRadius: 20,
+    padding: '9px 20px',
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: 'pointer',
+    background: '#1a73e8',
+    color: '#fff',
+    fontFamily: 'inherit',
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <main
+      style={{
+        minHeight: '100vh',
+        background: '#f8f9fa',
+        padding: '32px 16px',
+        fontFamily:
+          'Google Sans, Roboto, Arial, sans-serif',
+        color: '#202124',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 640,
+          margin: '0 auto',
+        }}
+      >
+        {/* Header */}
+        <header
+          style={{
+            marginBottom: 24,
+          }}
+        >
+          <h1
+            style={{
+              fontSize: 24,
+              fontWeight: 500,
+              margin: 0,
+              letterSpacing: '-0.3px',
+            }}
+          >
+            Paste Text
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p
+            style={{
+              fontSize: 14,
+              color: '#5f6368',
+              margin: '6px 0 0',
+            }}
+          >
+            Bagikan teks dengan kode singkat.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        </header>
+
+        {/* Main Card */}
+        <div
+          style={{
+            background: '#fff',
+            border: '1px solid #dadce0',
+            borderRadius: 12,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Create Paste */}
+          <section
+            style={{
+              padding: 24,
+            }}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+            <div style={{ marginBottom: 16 }}>
+              <h2
+                style={{
+                  fontSize: 16,
+                  fontWeight: 500,
+                  margin: 0,
+                }}
+              >
+                Buat Paste
+              </h2>
+
+              <p
+                style={{
+                  fontSize: 13,
+                  color: '#5f6368',
+                  margin: '4px 0 0',
+                }}
+              >
+                Masukkan teks untuk mendapatkan kode akses.
+              </p>
+            </div>
+
+            <textarea
+              placeholder="Tulis atau paste teks di sini..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+              style={{
+                ...inputStyle,
+                resize: 'vertical',
+                lineHeight: 1.5,
+              }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginTop: 12,
+              }}
+            >
+              <button
+                onClick={handlePaste}
+                disabled={loadingPaste || !description.trim()}
+                style={{
+                  ...primaryButtonStyle,
+                  opacity:
+                    loadingPaste || !description.trim() ? 0.6 : 1,
+                  cursor:
+                    loadingPaste || !description.trim()
+                      ? 'not-allowed'
+                      : 'pointer',
+                }}
+              >
+                {loadingPaste ? 'Menyimpan...' : 'Buat Kode'}
+              </button>
+            </div>
+
+            {generatedCode && (
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: '14px 16px',
+                  background: '#f1f8e9',
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: '#5f6368',
+                      marginBottom: 3,
+                    }}
+                  >
+                    Kode berhasil dibuat
+                  </div>
+
+                  <strong
+                    style={{
+                      fontSize: 22,
+                      letterSpacing: 2,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {generatedCode}
+                  </strong>
+                </div>
+
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(generatedCode)
+                  }
+                  style={{
+                    border: '1px solid #dadce0',
+                    background: '#fff',
+                    borderRadius: 18,
+                    padding: '7px 14px',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    color: '#1a73e8',
+                  }}
+                >
+                  Salin
+                </button>
+              </div>
+            )}
+          </section>
+
+          {/* Divider */}
+          <div
+            style={{
+              height: 1,
+              background: '#e8eaed',
+            }}
+          />
+
+          {/* Get Paste */}
+          <section
+            style={{
+              padding: 24,
+            }}
           >
-            Documentation
-          </a>
+            <div style={{ marginBottom: 16 }}>
+              <h2
+                style={{
+                  fontSize: 16,
+                  fontWeight: 500,
+                  margin: 0,
+                }}
+              >
+                Ambil Paste
+              </h2>
+
+              <p
+                style={{
+                  fontSize: 13,
+                  color: '#5f6368',
+                  margin: '4px 0 0',
+                }}
+              >
+                Masukkan kode untuk melihat teks yang dibagikan.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Kode"
+                value={codeInput}
+                onChange={(e) =>
+                  setCodeInput(e.target.value.toUpperCase())
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleFetchCode()
+                  }
+                }}
+                maxLength={5}
+                style={{
+                  ...inputStyle,
+                  flex: 1,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1,
+                }}
+              />
+
+              <button
+                onClick={handleFetchCode}
+                disabled={loadingFetch || !codeInput.trim()}
+                style={{
+                  ...primaryButtonStyle,
+                  whiteSpace: 'nowrap',
+                  opacity:
+                    loadingFetch || !codeInput.trim() ? 0.6 : 1,
+                  cursor:
+                    loadingFetch || !codeInput.trim()
+                      ? 'not-allowed'
+                      : 'pointer',
+                }}
+              >
+                {loadingFetch ? 'Mencari...' : 'Ambil'}
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div
+                style={{
+                  marginTop: 12,
+                  fontSize: 13,
+                  color: '#d93025',
+                }}
+              >
+                {errorMsg}
+              </div>
+            )}
+
+            {resultText && (
+              <div
+                style={{
+                  marginTop: 16,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: '#5f6368',
+                    marginBottom: 6,
+                  }}
+                >
+                  Hasil
+                </div>
+
+                <textarea
+                  readOnly
+                  value={resultText}
+                  rows={6}
+                  style={{
+                    ...inputStyle,
+                    background: '#f8f9fa',
+                    resize: 'vertical',
+                    lineHeight: 1.5,
+                  }}
+                />
+              </div>
+            )}
+          </section>
         </div>
-      </main>
-    </div>
-  );
+
+        {/* Footer */}
+        <p
+          style={{
+            textAlign: 'center',
+            fontSize: 12,
+            color: '#80868b',
+            marginTop: 18,
+          }}
+        >
+          Simple, cepat, dan mudah dibagikan.
+        </p>
+      </div>
+    </main>
+  )
 }
