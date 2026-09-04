@@ -7,6 +7,12 @@ const features = [
     desc: 'Bagikan teks dengan kode singkat.',
     icon: '📋',
   },
+  {
+    href: '/documents/perjadin_2026',
+    title: 'Template Surat Perjadin',
+    desc: 'Buat template surat dengan mudah.',
+    icon: '📝',
+  },
 ]
 
 export default function Home() {
