@@ -2,6 +2,12 @@ import Link from 'next/link'
 
 const features = [
   {
+    href: '/fintrack',
+    title: 'Fintrack',
+    desc: 'Kelola dompet & transaksi. Login PIN 6 digit.',
+    icon: '💰',
+  },
+  {
     href: '/paste',
     title: 'Paste Text',
     desc: 'Bagikan teks dengan kode singkat.',
