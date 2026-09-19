@@ -1,7 +1,8 @@
 'use client'
 
+import { useRef } from 'react'
 import Link from 'next/link'
-import { ArrowDown, ArrowUp, ArrowsLeftRight, EyeSlash, PencilSimple, Receipt, Trash } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, ArrowsLeftRight, CaretLeft, CaretRight, EyeSlash, PencilSimple, Receipt, Trash } from '@phosphor-icons/react'
 import { Header } from './components/header'
 import { BottomNav } from './components/bottom-nav'
 import { AccountCard, formatRupiah } from './components/account-card'
@@ -11,6 +12,13 @@ import type { Transaction } from '@/types/fintrack'
 
 export default function FintrackHome() {
   const { data, user, accounts, categories, transactions, loading, error, beginTask, endTask, openComposer, applyTransactionChange } = useFintrack()
+  const accountsRef = useRef<HTMLDivElement>(null)
+
+  function scrollAccounts(direction: -1 | 1) {
+    const container = accountsRef.current
+    if (!container) return
+    container.scrollBy({ left: direction * Math.max(180, container.clientWidth * .72), behavior: 'smooth' })
+  }
 
   async function voidTransaction(id: string) {
     if (!window.confirm('Batalkan transaksi ini dan kembalikan perubahan saldonya?')) return
@@ -42,8 +50,8 @@ export default function FintrackHome() {
       </section>
 
       <section className="ft-section">
-        <div className="ft-section-heading"><div><h2>Dompet</h2><p>Ringkasan saldo aktif</p></div><Link href="/fintrack/manage" className="ft-text-link">Kelola</Link></div>
-        <div className="ft-accounts" data-scrollable={accounts.length > 2}>{accounts.map((account) => <div className="ft-account-wrap" key={account.id}><AccountCard account={account} />{account.include_in_net_worth === false && <span className="ft-account-excluded" title="Tidak dihitung dalam total aset"><EyeSlash size={14} /></span>}</div>)}</div>
+        <div className="ft-section-heading"><div><h2>Dompet</h2><p>Ringkasan saldo aktif</p></div><div className="ft-wallet-heading-actions">{accounts.length > 2 && <div className="ft-wallet-arrows" aria-label="Geser daftar dompet"><button type="button" onClick={() => scrollAccounts(-1)} aria-label="Dompet sebelumnya"><CaretLeft size={16} /></button><button type="button" onClick={() => scrollAccounts(1)} aria-label="Dompet berikutnya"><CaretRight size={16} /></button></div>}<Link href="/fintrack/manage" className="ft-text-link">Kelola</Link></div></div>
+        <div ref={accountsRef} className="ft-accounts" data-scrollable={accounts.length > 2}>{accounts.map((account) => <div className="ft-account-wrap" key={account.id}><AccountCard account={account} />{account.include_in_net_worth === false && <span className="ft-account-excluded" title="Tidak dihitung dalam total aset"><EyeSlash size={14} /></span>}</div>)}</div>
       </section>
 
       <section className="ft-section ft-workspace" id="transactions">

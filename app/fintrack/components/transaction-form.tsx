@@ -50,28 +50,29 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
     setMessage(null)
     beginTask('transaction-write', editing ? 'Memperbarui transaksi' : 'Menyimpan transaksi')
     try {
-      const res = await fintrackRequest(editing ? `/api/fintrack/transactions/${editing.id}` : '/api/fintrack/transactions', {
-        method: editing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type,
-          amount: Number(amount),
-          from_account_id: from || null,
-          to_account_id: to || null,
-          category_id: category || null,
-          note: note || null,
-          transaction_date: date,
-        }),
-      })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setMessage({ kind: 'error', text: body.error || 'Transaksi gagal disimpan' })
+      const writeTransaction = async (allowNegative: boolean) => {
+        const res = await fintrackRequest(editing ? `/api/fintrack/transactions/${editing.id}` : '/api/fintrack/transactions', {
+          method: editing ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, amount: Number(amount), from_account_id: from || null, to_account_id: to || null, category_id: category || null, note: note || null, transaction_date: date, allow_negative: allowNegative }),
+        })
+        const body = await res.json().catch(() => ({}))
+        return { res, body }
+      }
+      let result = await writeTransaction(false)
+      if (result.res.status === 409 && result.body.code === 'NEGATIVE_BALANCE') {
+        const confirmed = window.confirm('Transaksi ini membuat saldo dompet menjadi negatif. Tetap lanjutkan?')
+        if (!confirmed) return
+        result = await writeTransaction(true)
+      }
+      if (!result.res.ok) {
+        setMessage({ kind: 'error', text: result.body.error || 'Transaksi gagal disimpan' })
         return
       }
       setAmount('')
       setNote('')
       setCategory('')
-      await onSaved(body.data as Transaction)
+      await onSaved(result.body.data as Transaction)
     } catch (error) {
       setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Transaksi gagal disimpan' })
     } finally {

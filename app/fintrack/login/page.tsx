@@ -20,9 +20,10 @@ export default function LoginPage() {
     setGoogleLoading(true)
     setError('')
     const supabase = getSupabaseBrowser()
+    const configuredSite = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '')
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${configuredSite || window.location.origin}/auth/callback` },
     })
     if (oauthError) {
       setError('Tidak dapat membuka login Google. Coba lagi.')
@@ -94,6 +95,7 @@ export default function LoginPage() {
             {googleLoading ? 'Membuka Google...' : 'Lanjutkan dengan Google'}
           </button>
           <div className="ft-security-note"><LockKey size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />Belum punya atau lupa PIN? Masuk dengan Google lalu aktifkan PIN baru melalui Pengaturan.</div>
+          <div className="ft-register-link">Belum punya akun? <a href="/fintrack/register">Daftar dengan email dan PIN</a></div>
         </div>
       </section>
     </main>

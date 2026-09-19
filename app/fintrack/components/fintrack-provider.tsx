@@ -74,8 +74,8 @@ function subscribeTheme(callback: () => void) {
 function accountDelta(transaction: Transaction, account: Account) {
   const amount = Number(transaction.amount)
   let delta = 0
-  if (transaction.from_account_id === account.id) delta += transaction.type === 'expense' && account.classification === 'liability' ? amount : -amount
-  if (transaction.to_account_id === account.id) delta += transaction.type === 'income' && account.classification === 'liability' ? -amount : amount
+  if (transaction.from_account_id === account.id) delta += account.classification === 'liability' && (transaction.type === 'expense' || transaction.type === 'transfer') ? amount : -amount
+  if (transaction.to_account_id === account.id) delta += account.classification === 'liability' && (transaction.type === 'income' || transaction.type === 'transfer') ? -amount : amount
   return delta
 }
 
@@ -156,7 +156,8 @@ function FintrackState({ children }: { children: React.ReactNode }) {
   }, [queryClient, updateData])
   const setAccounts = useCallback((updater: React.SetStateAction<Account[]>) => updateData((current) => {
     const accounts = typeof updater === 'function' ? updater(current.accounts) : updater
-    return rebuildDerived(current, accounts, current.transactions)
+    const collaboration = { ...current.collaboration, owned_accounts: accounts.filter((account) => account.access_role === 'owner').map(({ id, name, kind, current_balance }) => ({ id, name, kind, current_balance })) }
+    return rebuildDerived({ ...current, collaboration }, accounts, current.transactions)
   }), [updateData])
   const setCategories = useCallback((updater: React.SetStateAction<Category[]>) => updateData((current) => {
     const categories = typeof updater === 'function' ? updater(current.categories) : updater

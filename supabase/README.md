@@ -50,7 +50,7 @@ login_attempts
 3. Buka Supabase SQL Editor.
 4. Salin seluruh isi `migrations/202609180001_fintrack_reset.sql`.
 5. Jalankan script satu kali.
-6. Jalankan `202609190001_fintrack_pin_login.sql` dan `202609190002_fintrack_cache_categories_reports.sql` agar urutan migration lokal dan remote tetap sama. Keduanya aman dijalankan setelah reset.
+6. Jalankan `202609190001_fintrack_pin_login.sql`, `202609190002_fintrack_cache_categories_reports.sql`, dan `202609200001_fintrack_negative_balance.sql` agar urutan migration lokal dan remote tetap sama.
 7. Periksa daftar tabel menggunakan query verifikasi.
 8. Aktifkan Google OAuth dan callback URL.
 9. Deploy aplikasi setelah migration berhasil.
@@ -92,11 +92,14 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
 FINTRACK_SESSION_SECRET
+NEXT_PUBLIC_SITE_URL
 ```
 
 `FINTRACK_SESSION_SECRET` dipakai untuk menandatangani cookie login email + PIN dan wajib berisi minimal 32 karakter acak. Buat nilai baru dengan `openssl rand -base64 32`, lalu pasang nilai yang sama di `.env.local` dan Vercel. Jangan memakai prefix `NEXT_PUBLIC_`.
 
 `JWT_SECRET` lama tidak lagi digunakan oleh FinTrack.
+
+`NEXT_PUBLIC_SITE_URL` harus berisi origin aplikasi production tanpa path, misalnya `https://personal-tools-fdly.vercel.app`. Nilai ini dipakai untuk callback OAuth yang konsisten. Untuk lokal, variabel ini boleh tidak diisi agar aplikasi memakai `window.location.origin`.
 
 ## Mengaktifkan login email + PIN pada database lama
 
@@ -116,6 +119,12 @@ migrations/202609190002_fintrack_cache_categories_reports.sql
 
 Migration kedua tidak menghapus data. Dompet lama otomatis memiliki `include_in_net_worth = true`, sedangkan kategori lama tetap aktif.
 
+Jalankan juga migration berikut untuk konfirmasi saldo negatif dan arah transfer dompet utang yang benar:
+
+```text
+migrations/202609200001_fintrack_negative_balance.sql
+```
+
 Setelah migration dan environment variable diterapkan:
 
 1. Login satu kali dengan Google.
@@ -123,7 +132,9 @@ Setelah migration dan environment variable diterapkan:
 3. Logout.
 4. Login berikutnya dapat memakai email dan PIN.
 
-Lima percobaan PIN yang gagal akan mengunci login PIN selama 15 menit. Mengganti PIN menaikkan versi PIN sehingga cookie sesi PIN lama otomatis tidak berlaku. Google tetap menjadi jalur pemulihan bila PIN terlupa.
+Pengguna baru juga dapat memilih **Daftar dengan email dan PIN**. Alur ini membuat user Supabase melalui server menggunakan service role, menyiapkan profil serta personal plan, lalu membuat sesi FinTrack 30 hari. Tidak ada email OTP atau SMTP pada alur registrasi manual ini. Karena endpoint registrasi bersifat publik, gunakan hanya untuk deployment pribadi/keluarga atau tambahkan pembatasan undangan sebelum membuka aplikasi untuk publik.
+
+Lima percobaan PIN yang gagal akan mengunci login PIN selama 15 menit. Sesi login PIN, registrasi manual, dan callback Google berlaku maksimal 30 hari, atau berakhir lebih cepat ketika pengguna menekan logout. Mengganti PIN menaikkan versi PIN sehingga cookie sesi lama otomatis tidak berlaku. Google tetap menjadi jalur pemulihan bila PIN terlupa.
 
 ## Catatan pemulihan
 

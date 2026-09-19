@@ -82,6 +82,11 @@
 .ft-section-heading h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
 .ft-section-heading p { margin: 4px 0 0; color: var(--ft-muted); font-size: 12px; line-height: 1.45; }
 .ft-text-link { border: 0; background: transparent; color: var(--ft-primary); font-size: 12px; font-weight: 700; text-decoration: none; }
+.ft-wallet-heading-actions, .ft-wallet-arrows { display: flex; align-items: center; }
+.ft-wallet-heading-actions { gap: 10px; }
+.ft-wallet-arrows { gap: 5px; }
+.ft-wallet-arrows button { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--ft-border); border-radius: 10px; background: var(--ft-surface); color: var(--ft-primary); cursor: pointer; box-shadow: 0 5px 16px color-mix(in srgb, var(--ft-primary) 7%, transparent); }
+.ft-wallet-arrows button:active { transform: scale(.94); }
 .ft-accounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .ft-accounts[data-scrollable="true"] { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: calc((100% - 10px) / 2); overflow-x: auto; overscroll-behavior-inline: contain; padding: 1px 1px 7px; scroll-snap-type: inline mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .ft-accounts[data-scrollable="true"]::-webkit-scrollbar { display: none; }
@@ -228,8 +233,11 @@
 .ft-page-tabs button { min-height: 42px; border: 0; border-radius: 9px; background: transparent; color: var(--ft-muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: transform 150ms ease, background 150ms ease; }
 .ft-page-tabs button[data-active="true"] { background: var(--ft-surface); color: var(--ft-primary); box-shadow: 0 4px 14px color-mix(in srgb, var(--ft-primary) 9%, transparent); }
 .ft-page-tabs button:active { transform: scale(.98); }
-.ft-activity-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.ft-activity-tabs button { min-width: 0; padding-inline: 4px; font-size: 10px; }
+.ft-sub-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: -4px 0 12px; }
+.ft-sub-tabs button { min-height: 34px; border: 1px solid var(--ft-border); border-radius: 11px; background: transparent; color: var(--ft-muted); font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; }
+.ft-sub-tabs button[data-active="true"] { border-color: var(--ft-primary); background: var(--ft-primary-soft); color: var(--ft-primary); }
+.ft-register-link { margin-top: 18px; color: var(--ft-muted); font-size: 12px; text-align: center; }
+.ft-register-link a { color: var(--ft-primary); font-weight: 700; text-decoration: none; }
 .ft-tab-panel { animation: ft-page-in 220ms ease-out; }
 
 .ft-report-list { display: grid; gap: 14px; }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
 import { bootstrapFintrackUser } from '@/lib/fintrackUser'
-import { clearPinSession } from '@/lib/fintrackSession'
+import { clearPinSession, createPinSession } from '@/lib/fintrackSession'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
@@ -30,6 +31,9 @@ export async function GET(req: NextRequest) {
       ? user.user_metadata.full_name
       : user.email.split('@')[0]
     await bootstrapFintrackUser(user.id, user.email, displayName)
+    const { data: profile } = await supabaseAdmin.from('fintrack_users').select('pin_version').eq('id', user.id).single()
+    await createPinSession(user.id, Number(profile?.pin_version || 0))
+    await supabase.auth.signOut()
   } catch (bootstrapError) {
     console.error(bootstrapError)
     await supabase.auth.signOut()

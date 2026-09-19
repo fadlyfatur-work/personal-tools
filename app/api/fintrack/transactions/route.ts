@@ -11,6 +11,7 @@ const transactionSchema = z.object({
   category_id: z.string().uuid().nullable().optional(),
   note: z.string().trim().max(240).nullable().optional(),
   transaction_date: z.iso.date(),
+  allow_negative: z.boolean().default(false),
 })
 
 export async function GET(req: NextRequest) {
@@ -69,7 +70,11 @@ export async function POST(req: NextRequest) {
     p_category_id: parsed.data.category_id || null,
     p_note: parsed.data.note || null,
     p_transaction_date: parsed.data.transaction_date,
+    p_allow_negative: parsed.data.allow_negative,
   })
+  if (error?.message.includes('FINTRACK_NEGATIVE_BALANCE')) {
+    return NextResponse.json({ error: 'Saldo dompet akan menjadi negatif.', code: 'NEGATIVE_BALANCE' }, { status: 409 })
+  }
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ data }, { status: 201 })
 }
