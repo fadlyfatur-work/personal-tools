@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import './fintrack.css'
+import { FintrackProvider } from './components/fintrack-provider'
+import './fintrack-mobile.css'
 
 export const metadata = {
   title: 'FinTrack | Keuangan yang terasa ringan',
@@ -7,5 +8,5 @@ export const metadata = {
 }
 
 export default function FintrackLayout({ children }: { children: ReactNode }) {
-  return <div className="fintrack-shell">{children}</div>
+  return <div className="fintrack-shell"><FintrackProvider>{children}</FintrackProvider></div>
 }

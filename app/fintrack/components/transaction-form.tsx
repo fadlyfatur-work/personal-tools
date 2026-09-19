@@ -1,21 +1,33 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import type { Account, Transaction, TransactionType } from '@/types/fintrack'
+import { fintrackRequest } from '@/lib/fintrackRequest'
+import { useFintrack } from './fintrack-provider'
 
 interface Category { id: string; plan_id: string; name: string; type: 'income' | 'expense' }
 
 interface TransactionFormProps {
   accounts: Account[]
   categories: Category[]
-  onSaved: () => Promise<void> | void
+  onSaved: (transaction: Transaction) => Promise<void> | void
   editing?: Transaction | null
   onCancelEdit?: () => void
 }
 
+function onlyDigits(value: string) {
+  return value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '')
+}
+
+function formatNominal(value: string) {
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
 export default function TransactionForm({ accounts, categories, onSaved, editing, onCancelEdit }: TransactionFormProps) {
+  const { beginTask, endTask } = useFintrack()
   const [type, setType] = useState<TransactionType>(editing?.type || 'expense')
-  const [amount, setAmount] = useState(editing ? String(editing.amount) : '')
+  const [amount, setAmount] = useState(editing ? onlyDigits(String(Math.trunc(Number(editing.amount)))) : '')
   const [from, setFrom] = useState(editing?.from_account_id || '')
   const [to, setTo] = useState(editing?.to_account_id || '')
   const [category, setCategory] = useState(editing?.category_id || '')
@@ -36,31 +48,36 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
     event.preventDefault()
     setSaving(true)
     setMessage(null)
-    const res = await fetch(editing ? `/api/fintrack/transactions/${editing.id}` : '/api/fintrack/transactions', {
-      method: editing ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type,
-        amount: Number(amount),
-        from_account_id: from || null,
-        to_account_id: to || null,
-        category_id: category || null,
-        note: note || null,
-        transaction_date: date,
-      }),
-    })
-    const body = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      setMessage({ kind: 'error', text: body.error || 'Transaksi gagal disimpan' })
+    beginTask('transaction-write', editing ? 'Memperbarui transaksi' : 'Menyimpan transaksi')
+    try {
+      const res = await fintrackRequest(editing ? `/api/fintrack/transactions/${editing.id}` : '/api/fintrack/transactions', {
+        method: editing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          amount: Number(amount),
+          from_account_id: from || null,
+          to_account_id: to || null,
+          category_id: category || null,
+          note: note || null,
+          transaction_date: date,
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setMessage({ kind: 'error', text: body.error || 'Transaksi gagal disimpan' })
+        return
+      }
+      setAmount('')
+      setNote('')
+      setCategory('')
+      await onSaved(body.data as Transaction)
+    } catch (error) {
+      setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Transaksi gagal disimpan' })
+    } finally {
       setSaving(false)
-      return
+      endTask('transaction-write')
     }
-    setAmount('')
-    setNote('')
-    setCategory('')
-    setMessage({ kind: 'success', text: editing ? 'Perubahan transaksi dan saldo sudah diterapkan.' : 'Transaksi tersimpan dan saldo sudah diperbarui.' })
-    await onSaved()
-    setSaving(false)
   }
 
   const selectedAccountId = type === 'income' ? to : from
@@ -68,8 +85,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
   const filteredCategories = categories.filter((item) => item.type === type && (!selectedPlanId || item.plan_id === selectedPlanId))
 
   return (
-    <form className="ft-card ft-form" onSubmit={submit}>
-      <h2>{editing ? 'Edit transaksi' : 'Catat transaksi'}</h2>
+    <form className="ft-form" onSubmit={submit} data-updating={saving}>
       <div className="ft-segment" aria-label="Jenis transaksi">
         {(['expense', 'income', 'transfer'] as TransactionType[]).map((item) => (
           <button key={item} type="button" data-active={type === item} onClick={() => changeType(item)}>
@@ -80,7 +96,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
 
       <div className="ft-field">
         <label htmlFor="amount">Nominal</label>
-        <input id="amount" className="ft-input" inputMode="numeric" placeholder="Rp0" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))} required />
+        <input id="amount" className="ft-input ft-amount-input" inputMode="numeric" placeholder="0" value={formatNominal(amount)} onChange={(e) => setAmount(onlyDigits(e.target.value))} autoFocus required />
       </div>
       {(type === 'expense' || type === 'transfer') && (
         <div className="ft-field">
@@ -100,9 +116,9 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
           </select>
         </div>
       )}
-      {type !== 'transfer' && filteredCategories.length > 0 && (
+      {type !== 'transfer' && (
         <div className="ft-field">
-          <label htmlFor="category">Kategori</label>
+          <div className="ft-field-label-row"><label htmlFor="category">Kategori</label><Link href="/fintrack/manage" onClick={onCancelEdit}>Kelola kategori</Link></div>
           <select id="category" className="ft-input" value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="">Tanpa kategori</option>
             {filteredCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}

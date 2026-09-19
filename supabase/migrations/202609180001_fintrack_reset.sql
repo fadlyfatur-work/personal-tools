@@ -38,6 +38,10 @@ create table public.fintrack_users (
   name text not null,
   avatar_url text,
   pin_hash text,
+  pin_version integer not null default 0,
+  pin_failed_attempts integer not null default 0 check (pin_failed_attempts >= 0),
+  pin_locked_until timestamptz,
+  pin_last_login_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -74,6 +78,7 @@ create table public.fintrack_accounts (
   classification text not null check (classification in ('asset', 'liability')),
   initial_balance numeric(18, 2) not null default 0,
   current_balance numeric(18, 2) not null default 0,
+  include_in_net_worth boolean not null default true,
   color text,
   icon text,
   meta jsonb not null default '{}'::jsonb,
@@ -89,7 +94,8 @@ create table public.fintrack_categories (
   name text not null,
   type text not null check (type in ('income', 'expense')),
   created_at timestamptz not null default now(),
-  unique (plan_id, name, type)
+  updated_at timestamptz not null default now(),
+  archived_at timestamptz
 );
 
 create table public.fintrack_transactions (
@@ -168,6 +174,8 @@ create table public.fintrack_account_activity_logs (
 );
 
 create index fintrack_accounts_plan_active_idx on public.fintrack_accounts(plan_id, archived);
+create index fintrack_categories_plan_active_idx on public.fintrack_categories(plan_id, archived_at, type);
+create unique index fintrack_categories_active_name_unique on public.fintrack_categories(plan_id, lower(name), type) where archived_at is null;
 create index fintrack_transactions_plan_date_idx on public.fintrack_transactions(plan_id, transaction_date desc, created_at desc);
 create index fintrack_transaction_entries_account_idx on public.fintrack_transaction_entries(account_id, created_at desc);
 create index fintrack_account_collaborators_user_idx on public.fintrack_account_collaborators(user_id) where revoked_at is null;
@@ -247,6 +255,32 @@ begin
   end if;
 
   return p_auth_user_id;
+end;
+$$;
+
+create or replace function public.fintrack_record_pin_failure(p_user_id uuid)
+returns timestamptz
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_locked_until timestamptz;
+begin
+  update public.fintrack_users
+  set pin_locked_until = case
+        when pin_failed_attempts + 1 >= 5 then now() + interval '15 minutes'
+        else null
+      end,
+      pin_failed_attempts = case
+        when pin_failed_attempts + 1 >= 5 then 0
+        else pin_failed_attempts + 1
+      end,
+      updated_at = now()
+  where id = p_user_id
+  returning pin_locked_until into v_locked_until;
+
+  return v_locked_until;
 end;
 $$;
 
@@ -463,6 +497,7 @@ $$;
 
 revoke all on function public.fintrack_can_manage_account(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.fintrack_bootstrap_user(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.fintrack_record_pin_failure(uuid) from public, anon, authenticated;
 revoke all on function public.fintrack_create_transaction(uuid, text, numeric, uuid, uuid, uuid, text, date) from public, anon, authenticated;
 revoke all on function public.fintrack_void_transaction(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.fintrack_replace_transaction(uuid, uuid, text, numeric, uuid, uuid, uuid, text, date) from public, anon, authenticated;
@@ -471,6 +506,7 @@ revoke all on function public.fintrack_review_join_request(uuid, uuid, text) fro
 
 grant execute on function public.fintrack_can_manage_account(uuid, uuid) to service_role;
 grant execute on function public.fintrack_bootstrap_user(uuid, text, text) to service_role;
+grant execute on function public.fintrack_record_pin_failure(uuid) to service_role;
 grant execute on function public.fintrack_create_transaction(uuid, text, numeric, uuid, uuid, uuid, text, date) to service_role;
 grant execute on function public.fintrack_void_transaction(uuid, uuid) to service_role;
 grant execute on function public.fintrack_replace_transaction(uuid, uuid, text, numeric, uuid, uuid, uuid, text, date) to service_role;

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServer } from './supabaseServer'
 import { supabaseAdmin } from './supabaseAdmin'
+import { readPinSession } from './fintrackSession'
 
 export interface FintrackIdentity {
   id: string
@@ -20,6 +21,19 @@ export async function bootstrapFintrackUser(authUserId: string, email: string, n
 }
 
 export async function getFintrackIdentity(): Promise<FintrackIdentity | null> {
+  const pinSession = await readPinSession()
+  if (pinSession) {
+    const { data: profile } = await supabaseAdmin
+      .from('fintrack_users')
+      .select('id, name, email, pin_version')
+      .eq('id', pinSession.userId)
+      .maybeSingle()
+
+    if (profile && profile.pin_version === pinSession.pinVersion) {
+      return { id: profile.id, authUserId: profile.id, email: profile.email, name: profile.name }
+    }
+  }
+
   const auth = await getSupabaseServer()
   const { data: { user }, error } = await auth.auth.getUser()
   if (error || !user?.email) return null

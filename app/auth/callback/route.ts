@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
 import { bootstrapFintrackUser } from '@/lib/fintrackUser'
+import { clearPinSession } from '@/lib/fintrackSession'
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
@@ -16,6 +17,8 @@ export async function GET(req: NextRequest) {
   if (error) {
     return NextResponse.redirect(new URL('/fintrack/login?error=oauth', req.url))
   }
+
+  await clearPinSession()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) {

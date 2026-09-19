@@ -3,7 +3,10 @@ import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getAccountAccess, requireFintrackIdentity } from '@/lib/fintrackUser'
 
-const updateSchema = z.object({ name: z.string().trim().min(1).max(60) })
+const updateSchema = z.object({
+  name: z.string().trim().min(1).max(60).optional(),
+  include_in_net_worth: z.boolean().optional(),
+}).refine((value) => Object.keys(value).length > 0, 'Tidak ada perubahan')
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireFintrackIdentity()
@@ -14,6 +17,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const parsed = updateSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
 
+  if (parsed.data.include_in_net_worth !== undefined && access.role !== 'owner') {
+    return NextResponse.json({ error: 'Hanya owner yang dapat mengubah perhitungan kekayaan' }, { status: 403 })
+  }
   const { data, error } = await supabaseAdmin.from('fintrack_accounts').update({ ...parsed.data, updated_at: new Date().toISOString() }).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: 'Gagal mengubah dompet' }, { status: 500 })
   return NextResponse.json({ data })

@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
     classification,
     initial_balance: parsed.data.initial_balance,
     current_balance: parsed.data.initial_balance,
+    include_in_net_worth: true,
     created_by: auth.identity.id,
   }).select().single()
 

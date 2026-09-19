@@ -50,10 +50,11 @@ login_attempts
 3. Buka Supabase SQL Editor.
 4. Salin seluruh isi `migrations/202609180001_fintrack_reset.sql`.
 5. Jalankan script satu kali.
-6. Periksa daftar tabel menggunakan query verifikasi.
-7. Aktifkan Google OAuth dan callback URL.
-8. Deploy aplikasi setelah migration berhasil.
-9. Login Google. Sistem otomatis membuat profil, personal plan, tiga dompet awal, dan kategori awal.
+6. Jalankan `202609190001_fintrack_pin_login.sql` dan `202609190002_fintrack_cache_categories_reports.sql` agar urutan migration lokal dan remote tetap sama. Keduanya aman dijalankan setelah reset.
+7. Periksa daftar tabel menggunakan query verifikasi.
+8. Aktifkan Google OAuth dan callback URL.
+9. Deploy aplikasi setelah migration berhasil.
+10. Login Google. Sistem otomatis membuat profil, personal plan, tiga dompet awal, dan kategori awal.
 
 Jangan deploy aplikasi baru sebelum migration dijalankan. Query aplikasi sudah menggunakan tabel `fintrack_*` dan akan gagal bila schema baru belum tersedia.
 
@@ -90,9 +91,39 @@ Environment aplikasi:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
+FINTRACK_SESSION_SECRET
 ```
 
+`FINTRACK_SESSION_SECRET` dipakai untuk menandatangani cookie login email + PIN dan wajib berisi minimal 32 karakter acak. Buat nilai baru dengan `openssl rand -base64 32`, lalu pasang nilai yang sama di `.env.local` dan Vercel. Jangan memakai prefix `NEXT_PUBLIC_`.
+
 `JWT_SECRET` lama tidak lagi digunakan oleh FinTrack.
+
+## Mengaktifkan login email + PIN pada database lama
+
+Jika migration reset sudah pernah dijalankan, jangan drop database lagi. Jalankan migration tambahan berikut melalui Supabase SQL Editor:
+
+```text
+migrations/202609190001_fintrack_pin_login.sql
+```
+
+Migration ini tidak menghapus data. Migration hanya menambahkan versi PIN, penghitung percobaan gagal, waktu lockout, dan waktu login PIN terakhir pada `fintrack_users`.
+
+Untuk mengaktifkan cache bootstrap, CRUD kategori, dan opsi mengeluarkan dompet dari kekayaan bersih pada database prefixed yang sudah ada, jalankan juga:
+
+```text
+migrations/202609190002_fintrack_cache_categories_reports.sql
+```
+
+Migration kedua tidak menghapus data. Dompet lama otomatis memiliki `include_in_net_worth = true`, sedangkan kategori lama tetap aktif.
+
+Setelah migration dan environment variable diterapkan:
+
+1. Login satu kali dengan Google.
+2. Buka Pengaturan dan aktifkan atau ganti PIN.
+3. Logout.
+4. Login berikutnya dapat memakai email dan PIN.
+
+Lima percobaan PIN yang gagal akan mengunci login PIN selama 15 menit. Mengganti PIN menaikkan versi PIN sehingga cookie sesi PIN lama otomatis tidak berlaku. Google tetap menjadi jalur pemulihan bila PIN terlupa.
 
 ## Catatan pemulihan
 

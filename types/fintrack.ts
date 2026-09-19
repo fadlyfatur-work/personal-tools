@@ -16,9 +16,18 @@ export interface Account {
   classification: AccountClassification
   initial_balance: number
   current_balance: number
+  include_in_net_worth: boolean
   archived: boolean
   access_role: 'owner' | 'member' | 'viewer'
   can_manage: boolean
+}
+
+export interface Category {
+  id: string
+  plan_id: string
+  name: string
+  type: 'income' | 'expense'
+  archived_at?: string | null
 }
 
 export type TransactionType = 'income' | 'expense' | 'transfer'
@@ -35,4 +44,37 @@ export interface Transaction {
   transaction_date: string
   created_at?: string
   status?: 'posted' | 'voided'
+}
+
+export interface FintrackSummary {
+  assets: number
+  liabilities: number
+  net_worth: number
+  income: number
+  expense: number
+}
+
+export interface ReportSlice {
+  category_id: string | null
+  name: string
+  amount: number
+}
+
+export interface FintrackCollaboration {
+  owned_accounts: Array<{ id: string; name: string; kind: string; current_balance: number }>
+  pending_requests: Array<{ id: string; account_id: string; requester_id: string; requester: { name: string; email: string } | null; account: { name: string } | null }>
+  shared_with_me: unknown[]
+  collaborators: Array<{ account_id: string; user_id: string; user: { name: string; email: string } | null; account: { name: string } | null }>
+}
+
+export interface FintrackBootstrap {
+  user: FintrackUser
+  has_pin: boolean
+  personal_plan_id: string | null
+  accounts: Account[]
+  categories: Category[]
+  transactions: Transaction[]
+  summary: FintrackSummary
+  report: { month: string; income: ReportSlice[]; expense: ReportSlice[] }
+  collaboration: FintrackCollaboration
 }
