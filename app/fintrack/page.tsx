@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
-import { ArrowDown, ArrowUp, ArrowsLeftRight, CaretLeft, CaretRight, EyeSlash, PencilSimple, Receipt, Trash } from '@phosphor-icons/react'
+import { ArrowClockwise, ArrowDown, ArrowUp, ArrowsLeftRight, CaretLeft, CaretRight, EyeSlash, PencilSimple, Receipt, Trash } from '@phosphor-icons/react'
 import { Header } from './components/header'
 import { BottomNav } from './components/bottom-nav'
 import { AccountCard, formatRupiah } from './components/account-card'
@@ -11,7 +11,7 @@ import { fintrackRequest } from '@/lib/fintrackRequest'
 import type { Transaction } from '@/types/fintrack'
 
 export default function FintrackHome() {
-  const { data, user, accounts, categories, transactions, loading, error, beginTask, endTask, openComposer, applyTransactionChange } = useFintrack()
+  const { data, user, accounts, categories, transactions, loading, error, beginTask, endTask, isBusy, refreshData, openComposer, applyTransactionChange } = useFintrack()
   const accountsRef = useRef<HTMLDivElement>(null)
 
   function scrollAccounts(direction: -1 | 1) {
@@ -37,6 +37,11 @@ export default function FintrackHome() {
     }
   }
 
+  async function refreshLatest() {
+    beginTask('transactions-refresh', 'Memuat transaksi terbaru')
+    try { await refreshData() } finally { endTask('transactions-refresh') }
+  }
+
   if (loading) return <div className="ft-skeleton" aria-hidden="true"><div className="ft-skeleton-line" style={{ width: 142 }} /><div className="ft-skeleton-line" style={{ height: 210, marginTop: 28 }} /><div className="ft-skeleton-line" style={{ height: 112, marginTop: 16 }} /></div>
   if (!user || !data) return null
   const accountMap = new Map(accounts.map((account) => [account.id, account]))
@@ -55,8 +60,8 @@ export default function FintrackHome() {
       </section>
 
       <section className="ft-section ft-workspace" id="transactions">
-        <div className="ft-section-heading"><div><h2>Transaksi terbaru</h2></div><Link href="/fintrack/activity" className="ft-text-link">Lihat semua</Link></div>
-        <div className="ft-card ft-transactions">
+        <div className="ft-section-heading"><div><h2>Transaksi terbaru</h2></div><div className="ft-latest-actions"><button className="ft-icon-button" type="button" title="Muat transaksi terbaru" aria-label="Muat transaksi terbaru" disabled={isBusy('transactions-refresh')} onClick={refreshLatest}><ArrowClockwise size={16} /></button><Link href="/fintrack/activity" className="ft-text-link">Lihat semua</Link></div></div>
+        <div className="ft-card ft-transactions" data-updating={isBusy('transactions-refresh')}>
           <div className="ft-transaction-list">
             {transactions.length === 0 ? <div className="ft-empty"><div><Receipt size={34} /><div>Belum ada transaksi.<br />Catat transaksi pertama Anda.</div></div></div> : transactions.slice(0, 5).map((transaction) => {
               const Icon = transaction.type === 'income' ? ArrowDown : transaction.type === 'expense' ? ArrowUp : ArrowsLeftRight

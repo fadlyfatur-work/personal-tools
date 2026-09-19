@@ -15,7 +15,7 @@ export async function GET() {
 
   const planId = await getOwnedPlanId(auth.identity.id)
   const ownedQuery = planId
-    ? supabaseAdmin.from('fintrack_accounts').select('*').eq('plan_id', planId).eq('archived', false).order('created_at')
+    ? supabaseAdmin.from('fintrack_accounts').select('*').eq('plan_id', planId).eq('archived', false).order('sort_order').order('created_at')
     : Promise.resolve({ data: [], error: null })
   const sharedQuery = supabaseAdmin
     .from('fintrack_account_collaborators')
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
   const planId = await getOwnedPlanId(auth.identity.id)
   if (!planId) return NextResponse.json({ error: 'Rencana pribadi belum tersedia' }, { status: 409 })
   const classification = parsed.data.kind === 'debt' ? 'liability' : 'asset'
+  const { data: lastAccount } = await supabaseAdmin.from('fintrack_accounts').select('sort_order').eq('plan_id', planId).eq('archived', false).order('sort_order', { ascending: false }).limit(1).maybeSingle()
   const { data, error } = await supabaseAdmin.from('fintrack_accounts').insert({
     plan_id: planId,
     name: parsed.data.name,
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
     initial_balance: parsed.data.initial_balance,
     current_balance: parsed.data.initial_balance,
     include_in_net_worth: true,
+    sort_order: Number(lastAccount?.sort_order ?? -1) + 1,
     created_by: auth.identity.id,
   }).select().single()
 

@@ -81,6 +81,9 @@
 .ft-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 13px; }
 .ft-section-heading h2 { margin: 0; font-size: 17px; letter-spacing: -.025em; }
 .ft-section-heading p { margin: 4px 0 0; color: var(--ft-muted); font-size: 12px; line-height: 1.45; }
+.ft-latest-actions { display: flex; align-items: center; gap: 9px; }
+.ft-latest-actions .ft-icon-button { width: 32px; height: 32px; }
+.ft-latest-actions .ft-icon-button:disabled svg { animation: ft-spin .75s linear infinite; }
 .ft-text-link { border: 0; background: transparent; color: var(--ft-primary); font-size: 12px; font-weight: 700; text-decoration: none; }
 .ft-wallet-heading-actions, .ft-wallet-arrows { display: flex; align-items: center; }
 .ft-wallet-heading-actions { gap: 10px; }
@@ -253,13 +256,49 @@
 .ft-donut strong { font-size: 16px; }
 .ft-donut span { color: var(--ft-muted); font-size: 9px; }
 .ft-report-ranking { display: grid; gap: 11px; }
-.ft-rank > div { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 6px; font-size: 10px; }
-.ft-rank > div i { width: 7px; height: 7px; border-radius: 50%; }
-.ft-rank > div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ft-rank > span:first-child { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 6px; font-size: 10px; }
+.ft-rank > span:first-child i { width: 7px; height: 7px; border-radius: 50%; }
+.ft-rank > span:first-child span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ft-rank small { display: block; margin: 3px 0 4px 14px; color: var(--ft-muted); font-size: 9px; }
 .ft-rank-track { display: block; height: 3px; margin-left: 14px; overflow: hidden; border-radius: 99px; background: var(--ft-surface-soft); }
 .ft-rank-track i { display: block; height: 100%; border-radius: inherit; }
 .ft-report-empty { min-height: 150px; }
+.ft-rank-button { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.ft-rank-button:active { transform: scale(.985); }
+.ft-month-switcher { min-height: 68px; display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--ft-border); border-radius: 17px; background: var(--ft-surface); touch-action: pan-y; }
+.ft-month-switcher button { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--ft-border); border-radius: 12px; background: var(--ft-surface-soft); color: var(--ft-foreground); cursor: pointer; }
+.ft-month-switcher button:disabled { opacity: .3; cursor: default; }
+.ft-month-switcher div { text-align: center; }
+.ft-month-switcher span, .ft-month-switcher strong { display: block; }
+.ft-month-switcher span { color: var(--ft-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.ft-month-switcher strong { margin-top: 3px; font-size: 14px; text-transform: capitalize; }
+.ft-month-switcher small { display: block; margin-top: 2px; color: var(--ft-muted); font-size: 9px; }
+.ft-report-filter { padding: 13px; border-radius: 15px; background: var(--ft-surface-soft); }
+.ft-report-filter label { display: block; margin-bottom: 7px; color: var(--ft-muted); font-size: 10px; font-weight: 700; }
+.ft-comparison-chart { display: grid; gap: 17px; }
+.ft-comparison-row { display: grid; gap: 7px; }
+.ft-comparison-row > strong { font-size: 11px; }
+.ft-comparison-row > div { display: grid; grid-template-columns: 62px minmax(70px, 1fr) auto; align-items: center; gap: 7px; }
+.ft-comparison-row span, .ft-comparison-row small { color: var(--ft-muted); font-size: 9px; }
+.ft-comparison-row small { color: var(--ft-foreground); font-variant-numeric: tabular-nums; }
+.ft-comparison-row div > i { height: 7px; overflow: hidden; border-radius: 99px; background: var(--ft-surface-soft); }
+.ft-comparison-row b { display: block; min-width: 2px; height: 100%; border-radius: inherit; }
+.ft-comparison-row b.income { background: var(--ft-income); }
+.ft-comparison-row b.expense { background: var(--ft-expense); }
+.ft-comparison-row b.previous { background: color-mix(in srgb, var(--ft-muted) 48%, transparent); }
+.ft-line-legend { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 8px; }
+.ft-line-legend span { display: flex; align-items: center; gap: 5px; color: var(--ft-muted); font-size: 9px; }
+.ft-line-legend i { width: 7px; height: 7px; border-radius: 50%; }
+.ft-line-legend i.income { background: var(--ft-income); }
+.ft-line-legend i.expense { background: var(--ft-expense); }
+.ft-line-chart { width: 100%; height: 135px; overflow: visible; }
+.ft-line-chart line { stroke: var(--ft-border); stroke-width: .6; vector-effect: non-scaling-stroke; }
+.ft-line-chart polyline { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.ft-line-chart polyline.income { stroke: var(--ft-income); }
+.ft-line-chart polyline.expense { stroke: var(--ft-expense); }
+.ft-line-axis { display: flex; justify-content: space-between; color: var(--ft-muted); font-size: 9px; }
+.ft-report-transactions { margin: 0 -18px -18px; border-radius: 0 0 var(--ft-radius-card) var(--ft-radius-card); }
+.ft-report-transactions .ft-transaction-list { min-height: 100px; }
 .fintrack-app { --ft-report-1: #39745d; --ft-report-2: #d08a4b; --ft-report-3: #668eb0; --ft-report-4: #9a6e91; --ft-report-5: #82905c; --ft-report-6: #b65f58; }
 
 .ft-manage-list { overflow: hidden; border: 0; border-radius: 18px; background: var(--ft-surface); box-shadow: 0 10px 30px color-mix(in srgb, var(--ft-primary) 6%, transparent); }
@@ -268,8 +307,9 @@
 .ft-manage-row strong, .ft-manage-row span { display: block; }
 .ft-manage-row strong { font-size: 13px; }
 .ft-manage-row > div > span { margin-top: 3px; color: var(--ft-muted); font-size: 10px; }
-.ft-manage-actions { gap: 5px; }
-.ft-manage-actions .ft-icon-button { width: 34px; height: 34px; }
+.ft-manage-actions { gap: 3px; }
+.ft-manage-actions .ft-icon-button { width: 31px; height: 31px; }
+.ft-manage-actions .ft-icon-button:disabled { opacity: .25; }
 .ft-manage-form { margin-top: 16px; }
 .ft-manage-add { width: 100%; min-height: 48px; margin-top: 14px; }
 .ft-hint { margin: 12px 0 0; padding: 11px 12px; border-radius: 13px; background: var(--ft-surface-soft); color: var(--ft-muted); font-size: 11px; line-height: 1.55; }

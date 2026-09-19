@@ -17,6 +17,7 @@ export interface Account {
   initial_balance: number
   current_balance: number
   include_in_net_worth: boolean
+  sort_order: number
   archived: boolean
   access_role: 'owner' | 'member' | 'viewer'
   can_manage: boolean
@@ -56,8 +57,20 @@ export interface FintrackSummary {
 
 export interface ReportSlice {
   category_id: string | null
+  category_ids: string[]
   name: string
   amount: number
+}
+
+export interface FintrackReport {
+  month: string
+  period_start: string
+  period_end: string
+  income: ReportSlice[]
+  expense: ReportSlice[]
+  transactions: Transaction[]
+  previous: { month: string; income: number; expense: number }
+  daily: Array<{ day: string; income: number; expense: number }>
 }
 
 export interface FintrackCollaboration {
@@ -70,11 +83,12 @@ export interface FintrackCollaboration {
 export interface FintrackBootstrap {
   user: FintrackUser
   has_pin: boolean
+  month_cutoff_day: number
   personal_plan_id: string | null
   accounts: Account[]
   categories: Category[]
   transactions: Transaction[]
   summary: FintrackSummary
-  report: { month: string; income: ReportSlice[]; expense: ReportSlice[] }
+  report: FintrackReport
   collaboration: FintrackCollaboration
 }

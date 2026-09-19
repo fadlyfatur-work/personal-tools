@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getOwnedPlanId, requireFintrackIdentity } from '@/lib/fintrackUser'
+import { currentReportMonth, getFintrackReport, reportRange } from '@/lib/fintrackReport'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,19 +11,19 @@ export async function GET() {
 
   const userId = auth.identity.id
   const planId = await getOwnedPlanId(userId)
-  const month = new Date().toISOString().slice(0, 7)
-  const monthStart = `${month}-01`
-  const nextMonthDate = new Date(`${monthStart}T00:00:00Z`)
-  nextMonthDate.setUTCMonth(nextMonthDate.getUTCMonth() + 1)
-  const monthEnd = new Date(nextMonthDate.getTime() - 86400000).toISOString().slice(0, 10)
-
   const [ownedResult, membershipsResult, securityResult] = await Promise.all([
     planId
-      ? supabaseAdmin.from('fintrack_accounts').select('*').eq('plan_id', planId).eq('archived', false).order('created_at')
+      ? supabaseAdmin.from('fintrack_accounts').select('*').eq('plan_id', planId).eq('archived', false).order('sort_order').order('created_at')
       : Promise.resolve({ data: [], error: null }),
     supabaseAdmin.from('fintrack_account_collaborators').select('account_id, role, can_manage, accepted_at, fintrack_accounts!inner(*)').eq('user_id', userId).is('revoked_at', null),
-    supabaseAdmin.from('fintrack_users').select('pin_hash').eq('id', userId).maybeSingle(),
+    supabaseAdmin.from('fintrack_users').select('pin_hash, month_cutoff_day').eq('id', userId).maybeSingle(),
   ])
+
+  const cutoffDay = Number(securityResult.data?.month_cutoff_day || 1)
+  const month = currentReportMonth(cutoffDay)
+  const monthRange = reportRange(month, cutoffDay)
+  const monthStart = monthRange.start
+  const monthEnd = monthRange.end
 
   if (ownedResult.error || membershipsResult.error) {
     return NextResponse.json({ error: 'Gagal memuat dompet FinTrack' }, { status: 500 })
@@ -61,6 +62,7 @@ export async function GET() {
   if (categoriesResult.error || ownedLatestResult.error || ownedMonthResult.error || sharedTransactionsResult.error) {
     return NextResponse.json({ error: 'Gagal memuat data keuangan' }, { status: 500 })
   }
+  const categories = [...new Map((categoriesResult.data || []).map((category) => [category.id, category])).values()]
 
   const sharedTransactions = sharedTransactionsResult.data || []
   const transactions = [...(ownedLatestResult.data || []), ...sharedTransactions]
@@ -75,18 +77,6 @@ export async function GET() {
   const liabilities = includedOwned.filter((account) => account.classification === 'liability').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const income = monthlyTransactions.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0)
   const expense = monthlyTransactions.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0)
-  const categoryMap = new Map((categoriesResult.data || []).map((category) => [category.id, category.name]))
-  const reportFor = (type: 'income' | 'expense') => {
-    const grouped = new Map<string, { category_id: string | null; name: string; amount: number }>()
-    monthlyTransactions.filter((item) => item.type === type).forEach((item) => {
-      const key = item.category_id || 'uncategorized'
-      const current = grouped.get(key) || { category_id: item.category_id, name: categoryMap.get(item.category_id) || 'Tanpa kategori', amount: 0 }
-      current.amount += Number(item.amount)
-      grouped.set(key, current)
-    })
-    return [...grouped.values()].sort((a, b) => b.amount - a.amount)
-  }
-
   const ownedAccountIds = ownedAccounts.map((account) => account.id)
   const [requestsResult, ownedCollaborationsResult] = await Promise.all([
     ownedAccountIds.length
@@ -100,16 +90,18 @@ export async function GET() {
   const peopleResult = personIds.length ? await supabaseAdmin.from('fintrack_users').select('id, name, email').in('id', personIds) : { data: [] }
   const peopleMap = new Map((peopleResult.data || []).map((person) => [person.id, person]))
   const accountMap = new Map(ownedAccounts.map((account) => [account.id, account]))
+  const report = await getFintrackReport(userId, month, cutoffDay)
 
   return NextResponse.json({
     user: { id: userId, name: auth.identity.name, email: auth.identity.email },
     has_pin: Boolean(securityResult.data?.pin_hash),
+    month_cutoff_day: cutoffDay,
     personal_plan_id: planId || null,
     accounts,
-    categories: categoriesResult.data || [],
+    categories,
     transactions,
     summary: { assets, liabilities, net_worth: assets - liabilities, income, expense },
-    report: { month, income: reportFor('income'), expense: reportFor('expense') },
+    report,
     collaboration: {
       owned_accounts: ownedAccounts,
       pending_requests: (requestsResult.data || []).map((request) => ({ ...request, requester: peopleMap.get(request.requester_id) || null, account: accountMap.get(request.account_id) || null })),

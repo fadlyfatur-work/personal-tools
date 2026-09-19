@@ -42,6 +42,7 @@ create table public.fintrack_users (
   pin_failed_attempts integer not null default 0 check (pin_failed_attempts >= 0),
   pin_locked_until timestamptz,
   pin_last_login_at timestamptz,
+  month_cutoff_day integer not null default 1 check (month_cutoff_day between 1 and 28),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -79,6 +80,7 @@ create table public.fintrack_accounts (
   initial_balance numeric(18, 2) not null default 0,
   current_balance numeric(18, 2) not null default 0,
   include_in_net_worth boolean not null default true,
+  sort_order integer not null default 0,
   color text,
   icon text,
   meta jsonb not null default '{}'::jsonb,
@@ -239,11 +241,11 @@ begin
     insert into public.fintrack_plan_members (plan_id, user_id, role)
     values (v_plan_id, p_auth_user_id, 'owner');
 
-    insert into public.fintrack_accounts (plan_id, name, kind, classification, created_by)
+    insert into public.fintrack_accounts (plan_id, name, kind, classification, sort_order, created_by)
     values
-      (v_plan_id, 'Tunai', 'cash', 'asset', p_auth_user_id),
-      (v_plan_id, 'Bank', 'bank', 'asset', p_auth_user_id),
-      (v_plan_id, 'E-Wallet', 'ewallet', 'asset', p_auth_user_id);
+      (v_plan_id, 'Tunai', 'cash', 'asset', 0, p_auth_user_id),
+      (v_plan_id, 'Bank', 'bank', 'asset', 1, p_auth_user_id),
+      (v_plan_id, 'E-Wallet', 'ewallet', 'asset', 2, p_auth_user_id);
 
     insert into public.fintrack_categories (plan_id, name, type)
     values

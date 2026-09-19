@@ -83,21 +83,30 @@ function rebuildDerived(data: FintrackBootstrap, accounts: Account[], transactio
   const included = accounts.filter((account) => account.access_role === 'owner' && account.include_in_net_worth !== false)
   const assets = included.filter((account) => account.classification === 'asset').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const liabilities = included.filter((account) => account.classification === 'liability').reduce((sum, account) => sum + Number(account.current_balance), 0)
-  const monthly = transactions.filter((transaction) => transaction.transaction_date.startsWith(data.report.month))
+  const monthly = transactions.filter((transaction) => transaction.transaction_date >= data.report.period_start && transaction.transaction_date <= data.report.period_end)
   const income = monthly.filter((transaction) => transaction.type === 'income').reduce((sum, transaction) => sum + Number(transaction.amount), 0)
   const expense = monthly.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + Number(transaction.amount), 0)
   const categoryMap = new Map(data.categories.map((category) => [category.id, category.name]))
   const reportFor = (type: 'income' | 'expense') => {
-    const grouped = new Map<string, { category_id: string | null; name: string; amount: number }>()
+    const grouped = new Map<string, { category_id: string | null; category_ids: string[]; name: string; amount: number }>()
     monthly.filter((transaction) => transaction.type === type).forEach((transaction) => {
-      const key = transaction.category_id || 'uncategorized'
-      const current = grouped.get(key) || { category_id: transaction.category_id || null, name: transaction.category_id ? categoryMap.get(transaction.category_id) || 'Tanpa kategori' : 'Tanpa kategori', amount: 0 }
+      const name = transaction.category_id ? categoryMap.get(transaction.category_id) || 'Tanpa kategori' : 'Tanpa kategori'
+      const key = `${type}:${name.trim().toLocaleLowerCase('id-ID')}`
+      const current: { category_id: string | null; category_ids: string[]; name: string; amount: number } = grouped.get(key) || { category_id: transaction.category_id || null, category_ids: [], name, amount: 0 }
+      if (transaction.category_id && !current.category_ids.includes(transaction.category_id)) current.category_ids.push(transaction.category_id)
       current.amount += Number(transaction.amount)
       grouped.set(key, current)
     })
     return [...grouped.values()].sort((a, b) => b.amount - a.amount)
   }
-  return { ...data, accounts, transactions, summary: { assets, liabilities, net_worth: assets - liabilities, income, expense }, report: { ...data.report, income: reportFor('income'), expense: reportFor('expense') } }
+  const dailyMap = new Map<string, { day: string; income: number; expense: number }>()
+  monthly.forEach((transaction) => {
+    if (transaction.type === 'transfer') return
+    const point = dailyMap.get(transaction.transaction_date) || { day: transaction.transaction_date, income: 0, expense: 0 }
+    point[transaction.type] += Number(transaction.amount)
+    dailyMap.set(transaction.transaction_date, point)
+  })
+  return { ...data, accounts, transactions, summary: { assets, liabilities, net_worth: assets - liabilities, income, expense }, report: { ...data.report, income: reportFor('income'), expense: reportFor('expense'), transactions: monthly, daily: [...dailyMap.values()].sort((a, b) => a.day.localeCompare(b.day)) } }
 }
 
 export function FintrackProvider({ children }: { children: React.ReactNode }) {
@@ -160,7 +169,8 @@ function FintrackState({ children }: { children: React.ReactNode }) {
     return rebuildDerived({ ...current, collaboration }, accounts, current.transactions)
   }), [updateData])
   const setCategories = useCallback((updater: React.SetStateAction<Category[]>) => updateData((current) => {
-    const categories = typeof updater === 'function' ? updater(current.categories) : updater
+    const rawCategories = typeof updater === 'function' ? updater(current.categories) : updater
+    const categories = [...new Map(rawCategories.map((category) => [category.id, category])).values()]
     const next = { ...current, categories }
     return rebuildDerived(next, next.accounts, next.transactions)
   }), [updateData])
