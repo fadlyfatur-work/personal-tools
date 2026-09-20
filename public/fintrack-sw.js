@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fintrack-shell-v3'
+const CACHE_NAME = 'fintrack-shell-v4'
 const SHELL_ASSETS = ['/fintrack-offline.html', '/fintrack-icon-192.png', '/fintrack-icon-512.png', '/fintrack-maskable-512.png', '/apple-touch-icon.png']
 
 self.addEventListener('install', (event) => {
@@ -16,6 +16,6 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return
   if (request.mode === 'navigate' && url.pathname.startsWith('/fintrack')) {
-    event.respondWith(fetch(request).then((response) => response.ok ? response : caches.match('/fintrack-offline.html')).catch(() => caches.match('/fintrack-offline.html')))
+    event.respondWith(fetch(request).then((response) => response.status >= 500 ? caches.match('/fintrack-offline.html') : response).catch(() => caches.match('/fintrack-offline.html')))
   }
 })
