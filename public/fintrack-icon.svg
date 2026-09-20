@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">FinTrack by fdlydev</title>
+  <rect width="1024" height="1024" rx="224" fill="#0f5944"/>
+  <path d="M301 278h422a58 58 0 0 1 58 58v49H301c-32 0-58-24-58-54s26-53 58-53Z" fill="#9cddb9"/>
+  <path d="M244 345h510a72 72 0 0 1 72 72v277a72 72 0 0 1-72 72H316a72 72 0 0 1-72-72V345Z" fill="#f8f5ea"/>
+  <path d="M665 482h161v151H665a75 75 0 0 1 0-151Z" fill="#084d3a"/>
+  <circle cx="685" cy="558" r="25" fill="#9cddb9"/>
+  <circle cx="330" cy="697" r="83" fill="#9cddb9" stroke="#0f5944" stroke-width="25"/>
+  <text x="512" y="894" text-anchor="middle" fill="#f8f5ea" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="700" letter-spacing="-3">fdlydev</text>
+</svg>

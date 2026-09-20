@@ -1,12 +1,20 @@
 export async function fintrackRequest(input: RequestInfo | URL, init?: RequestInit, timeoutMs = 5000) {
+  if (!navigator.onLine) {
+    window.dispatchEvent(new CustomEvent('fintrack:connection', { detail: 'offline' }))
+    throw new Error('Tidak ada koneksi internet. Sambungkan perangkat lalu coba lagi.')
+  }
   const controller = new AbortController()
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
   try {
-    return await fetch(input, { ...init, signal: controller.signal })
+    const response = await fetch(input, { ...init, signal: controller.signal, cache: init?.cache || 'no-store' })
+    window.dispatchEvent(new CustomEvent('fintrack:connection', { detail: 'online' }))
+    return response
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
+      window.dispatchEvent(new CustomEvent('fintrack:connection', { detail: navigator.onLine ? 'unavailable' : 'offline' }))
       throw new Error('Permintaan melewati batas 5 detik. Data akan diperiksa ulang.')
     }
+    window.dispatchEvent(new CustomEvent('fintrack:connection', { detail: navigator.onLine ? 'unavailable' : 'offline' }))
     throw error
   } finally {
     window.clearTimeout(timeout)

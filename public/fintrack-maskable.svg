@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FinTrack">
+  <rect width="512" height="512" fill="#0f5944"/>
+  <path d="M155 132h202a29 29 0 0 1 29 29v25H155c-16 0-29-12-29-27s13-27 29-27Z" fill="#9cddb9"/>
+  <path d="M126 167h252a36 36 0 0 1 36 36v140a36 36 0 0 1-36 36H162a36 36 0 0 1-36-36V167Z" fill="#f8f5ea"/>
+  <path d="M333 235h81v77h-81a39 39 0 0 1 0-77Z" fill="#084d3a"/>
+  <circle cx="343" cy="274" r="13" fill="#9cddb9"/>
+  <circle cx="169" cy="343" r="43" fill="#9cddb9" stroke="#0f5944" stroke-width="13"/>
+</svg>

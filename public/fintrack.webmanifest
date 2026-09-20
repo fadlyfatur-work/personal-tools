@@ -1,0 +1,18 @@
+{
+  "name": "FinTrack by fdlydev",
+  "short_name": "FinTrack",
+  "description": "Pencatatan keuangan pribadi dan dompet kolaborasi.",
+  "id": "/fintrack",
+  "start_url": "/fintrack",
+  "scope": "/fintrack",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#edf3ef",
+  "theme_color": "#0f5944",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "/fintrack-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/fintrack-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/fintrack-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
