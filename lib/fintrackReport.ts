@@ -45,6 +45,9 @@ export async function getFintrackReport(userId: string, month: string, requested
   if (memberships.error) throw memberships.error
 
   const sharedAccountIds = (memberships.data || []).map((row) => row.account_id)
+  const ownedAccounts = planId ? await supabaseAdmin.from('fintrack_accounts').select('id').eq('plan_id', planId).eq('archived', false) : { data: [], error: null }
+  if (ownedAccounts.error) throw ownedAccounts.error
+  const accessibleAccountIds = [...new Set([...(ownedAccounts.data || []).map((account) => account.id), ...sharedAccountIds])]
   const planIds = [...new Set([
     ...(planId ? [planId] : []),
     ...(memberships.data || []).map((row) => (row.fintrack_accounts as unknown as { plan_id: string }).plan_id),
@@ -54,8 +57,8 @@ export async function getFintrackReport(userId: string, month: string, requested
     planId
       ? supabaseAdmin.from('fintrack_transactions').select('*').eq('plan_id', planId).eq('status', 'posted').gte('transaction_date', previousRange.start).lte('transaction_date', currentRange.end)
       : Promise.resolve({ data: [], error: null }),
-    sharedAccountIds.length
-      ? supabaseAdmin.from('fintrack_transaction_entries').select('transaction_id').in('account_id', sharedAccountIds)
+    accessibleAccountIds.length
+      ? supabaseAdmin.from('fintrack_transaction_entries').select('transaction_id').in('account_id', accessibleAccountIds)
       : Promise.resolve({ data: [], error: null }),
     planIds.length
       ? supabaseAdmin.from('fintrack_categories').select('id, name').in('plan_id', planIds)

@@ -36,7 +36,7 @@ export async function GET() {
     can_manage: row.can_manage,
   })) as unknown as Array<Record<string, unknown> & { id: string; plan_id: string }>
   const accounts = [...ownedAccounts, ...sharedAccounts]
-  const sharedIds = sharedAccounts.map((account) => String(account.id))
+  const accessibleAccountIds = accounts.map((account) => String(account.id))
   const planIds = [...new Set(accounts.map((account) => String(account.plan_id)))]
 
   const [categoriesResult, ownedLatestResult, ownedMonthResult, sharedEntriesResult] = await Promise.all([
@@ -49,8 +49,8 @@ export async function GET() {
     planId
       ? supabaseAdmin.from('fintrack_transactions').select('*').eq('plan_id', planId).eq('status', 'posted').gte('transaction_date', monthStart).lte('transaction_date', monthEnd)
       : Promise.resolve({ data: [], error: null }),
-    sharedIds.length
-      ? supabaseAdmin.from('fintrack_transaction_entries').select('transaction_id').in('account_id', sharedIds).order('created_at', { ascending: false }).limit(300)
+    accessibleAccountIds.length
+      ? supabaseAdmin.from('fintrack_transaction_entries').select('transaction_id').in('account_id', accessibleAccountIds).order('created_at', { ascending: false }).limit(300)
       : Promise.resolve({ data: [], error: null }),
   ])
 

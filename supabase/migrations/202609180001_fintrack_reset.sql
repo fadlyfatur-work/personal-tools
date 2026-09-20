@@ -305,6 +305,9 @@ as $$
 declare
   v_txn public.fintrack_transactions;
   v_plan_id uuid;
+  v_to_plan_id uuid;
+  v_from_owner_id uuid;
+  v_to_owner_id uuid;
   v_from_class text;
   v_to_class text;
   v_from_delta numeric(18, 2);
@@ -323,16 +326,18 @@ begin
 
   if p_from_account_id is not null then
     if not public.fintrack_can_manage_account(p_actor_id, p_from_account_id) then raise exception 'Tidak punya akses ke dompet asal'; end if;
-    select plan_id, classification into v_plan_id, v_from_class from public.fintrack_accounts where id = p_from_account_id;
+    select a.plan_id, a.classification, p.owner_id into v_plan_id, v_from_class, v_from_owner_id from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id where a.id = p_from_account_id;
   end if;
 
   if p_to_account_id is not null then
     if not public.fintrack_can_manage_account(p_actor_id, p_to_account_id) then raise exception 'Tidak punya akses ke dompet tujuan'; end if;
     if v_plan_id is null then
-      select plan_id, classification into v_plan_id, v_to_class from public.fintrack_accounts where id = p_to_account_id;
+      select a.plan_id, a.classification, p.owner_id into v_plan_id, v_to_class, v_to_owner_id from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id where a.id = p_to_account_id;
     else
-      select classification into v_to_class from public.fintrack_accounts where id = p_to_account_id and plan_id = v_plan_id;
-      if not found then raise exception 'Kedua dompet harus berada di rencana yang sama'; end if;
+      select a.plan_id, a.classification, p.owner_id into v_to_plan_id, v_to_class, v_to_owner_id from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id where a.id = p_to_account_id;
+      if p_type = 'transfer' and v_to_plan_id <> v_plan_id and not (v_from_owner_id <> p_actor_id and v_to_owner_id = p_actor_id) then
+        raise exception 'Transfer lintas rencana hanya diizinkan dari dompet kolaborasi ke dompet pribadi';
+      end if;
     end if;
   end if;
 

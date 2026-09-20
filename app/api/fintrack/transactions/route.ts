@@ -37,10 +37,11 @@ export async function GET(req: NextRequest) {
     ? await supabaseAdmin.from('fintrack_transactions').select('*').eq('plan_id', planId).eq('status', 'posted').order('transaction_date', { ascending: false }).order('created_at', { ascending: false }).limit(limit)
     : { data: [] }
   const { data: collaborations } = await supabaseAdmin.from('fintrack_account_collaborators').select('account_id').eq('user_id', auth.identity.id).is('revoked_at', null)
-  const sharedIds = (collaborations || []).map((row) => row.account_id)
+  const { data: ownAccounts } = planId ? await supabaseAdmin.from('fintrack_accounts').select('id').eq('plan_id', planId).eq('archived', false) : { data: [] }
+  const accessibleIds = [...new Set([...(ownAccounts || []).map((row) => row.id), ...(collaborations || []).map((row) => row.account_id)])]
   let sharedTransactions: Record<string, unknown>[] = []
-  if (sharedIds.length) {
-    const { data: entries } = await supabaseAdmin.from('fintrack_transaction_entries').select('transaction_id').in('account_id', sharedIds).order('created_at', { ascending: false }).limit(limit)
+  if (accessibleIds.length) {
+    const { data: entries } = await supabaseAdmin.from('fintrack_transaction_entries').select('transaction_id').in('account_id', accessibleIds).order('created_at', { ascending: false }).limit(limit)
     const transactionIds = [...new Set((entries || []).map((entry) => entry.transaction_id))]
     if (transactionIds.length) {
       const { data } = await supabaseAdmin.from('fintrack_transactions').select('*').in('id', transactionIds).eq('status', 'posted').limit(limit)

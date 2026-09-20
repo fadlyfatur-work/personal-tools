@@ -1,15 +1,6 @@
 alter table public.fintrack_accounts
   add column if not exists sort_order integer not null default 0;
 
-with ranked as (
-  select id, row_number() over (partition by plan_id order by created_at, id) - 1 as position
-  from public.fintrack_accounts
-)
-update public.fintrack_accounts a
-set sort_order = ranked.position
-from ranked
-where ranked.id = a.id;
-
 create or replace function public.fintrack_reorder_accounts(
   p_actor_id uuid,
   p_account_ids uuid[]

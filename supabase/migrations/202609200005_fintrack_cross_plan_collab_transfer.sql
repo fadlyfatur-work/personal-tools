@@ -1,12 +1,6 @@
--- Adds atomic negative-balance confirmation and correct liability transfer direction.
 begin;
 
-drop function if exists public.fintrack_replace_transaction(uuid, uuid, text, numeric, uuid, uuid, uuid, text, date, boolean);
-drop function if exists public.fintrack_replace_transaction(uuid, uuid, text, numeric, uuid, uuid, uuid, text, date);
-drop function if exists public.fintrack_create_transaction(uuid, text, numeric, uuid, uuid, uuid, text, date, boolean);
-drop function if exists public.fintrack_create_transaction(uuid, text, numeric, uuid, uuid, uuid, text, date);
-
-create function public.fintrack_create_transaction(
+create or replace function public.fintrack_create_transaction(
   p_actor_id uuid,
   p_type text,
   p_amount numeric,
@@ -46,16 +40,27 @@ begin
 
   if p_from_account_id is not null then
     if not public.fintrack_can_manage_account(p_actor_id, p_from_account_id) then raise exception 'Tidak punya akses ke dompet asal'; end if;
-    select a.plan_id, a.classification, p.owner_id into v_plan_id, v_from_class, v_from_owner_id from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id where a.id = p_from_account_id;
+    select a.plan_id, a.classification, p.owner_id
+    into v_plan_id, v_from_class, v_from_owner_id
+    from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id
+    where a.id = p_from_account_id;
   end if;
 
   if p_to_account_id is not null then
     if not public.fintrack_can_manage_account(p_actor_id, p_to_account_id) then raise exception 'Tidak punya akses ke dompet tujuan'; end if;
     if v_plan_id is null then
-      select a.plan_id, a.classification, p.owner_id into v_plan_id, v_to_class, v_to_owner_id from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id where a.id = p_to_account_id;
+      select a.plan_id, a.classification, p.owner_id
+      into v_plan_id, v_to_class, v_to_owner_id
+      from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id
+      where a.id = p_to_account_id;
     else
-      select a.plan_id, a.classification, p.owner_id into v_to_plan_id, v_to_class, v_to_owner_id from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id where a.id = p_to_account_id;
-      if p_type = 'transfer' and v_to_plan_id <> v_plan_id and not (v_from_owner_id <> p_actor_id and v_to_owner_id = p_actor_id) then
+      select a.plan_id, a.classification, p.owner_id
+      into v_to_plan_id, v_to_class, v_to_owner_id
+      from public.fintrack_accounts a join public.fintrack_plans p on p.id = a.plan_id
+      where a.id = p_to_account_id;
+
+      if p_type = 'transfer' and v_to_plan_id <> v_plan_id
+        and not (v_from_owner_id <> p_actor_id and v_to_owner_id = p_actor_id) then
         raise exception 'Transfer lintas rencana hanya diizinkan dari dompet kolaborasi ke dompet pribadi';
       end if;
     end if;
@@ -104,43 +109,7 @@ begin
 end;
 $$;
 
-create function public.fintrack_replace_transaction(
-  p_actor_id uuid,
-  p_transaction_id uuid,
-  p_type text,
-  p_amount numeric,
-  p_from_account_id uuid default null,
-  p_to_account_id uuid default null,
-  p_category_id uuid default null,
-  p_note text default null,
-  p_transaction_date date default current_date,
-  p_allow_negative boolean default false
-)
-returns public.fintrack_transactions
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_old public.fintrack_transactions;
-  v_new public.fintrack_transactions;
-begin
-  v_old := public.fintrack_void_transaction(p_actor_id, p_transaction_id);
-  v_new := public.fintrack_create_transaction(
-    p_actor_id, p_type, p_amount, p_from_account_id, p_to_account_id,
-    p_category_id, p_note, p_transaction_date, p_allow_negative
-  );
-  insert into public.fintrack_account_activity_logs (account_id, actor_id, action, entity_type, entity_id, metadata)
-  select account_id, p_actor_id, 'transaction.replaced', 'transaction', v_new.id,
-    jsonb_build_object('replaced_transaction_id', v_old.id)
-  from public.fintrack_transaction_entries where transaction_id = v_new.id;
-  return v_new;
-end;
-$$;
-
 revoke all on function public.fintrack_create_transaction(uuid, text, numeric, uuid, uuid, uuid, text, date, boolean) from public, anon, authenticated;
-revoke all on function public.fintrack_replace_transaction(uuid, uuid, text, numeric, uuid, uuid, uuid, text, date, boolean) from public, anon, authenticated;
 grant execute on function public.fintrack_create_transaction(uuid, text, numeric, uuid, uuid, uuid, text, date, boolean) to service_role;
-grant execute on function public.fintrack_replace_transaction(uuid, uuid, text, numeric, uuid, uuid, uuid, text, date, boolean) to service_role;
 
 commit;
