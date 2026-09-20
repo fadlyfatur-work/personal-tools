@@ -11,8 +11,14 @@
 .ft-connection-gate p { margin: 0; color: #69766f; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .ft-connection-gate h1 { margin: 9px 0 8px; font-size: 23px; letter-spacing: -.035em; }
 .ft-connection-gate small { display: block; color: #69766f; font-size: 13px; line-height: 1.6; }
-.ft-connection-gate button { min-height: 44px; margin-top: 21px; padding: 0 19px; border: 0; border-radius: 13px; background: #32745a; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ft-connection-gate button { min-height: 44px; margin-top: 21px; padding: 0 19px; border: 0; border-radius: 13px; background: #32745a; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 150ms ease, background-color 150ms ease; }
+.ft-connection-gate button:hover { background: #286149; }
+.ft-connection-gate button:active { transform: scale(.98); }
+.ft-connection-progress { width: 170px; height: 3px; display: block; margin: 23px auto 0; overflow: hidden; border-radius: 999px; background: rgba(50, 116, 90, .13); }
+.ft-connection-progress span { width: 45%; height: 100%; display: block; border-radius: inherit; background: #32745a; animation: ft-connection-progress 1.15s ease-in-out infinite alternate; }
+.ft-retry-meta { display: block; margin-top: 11px; color: #7c8982; font-size: 11px; font-weight: 650; }
 .ft-connection-gate em { display: block; margin-top: 30px; color: #8a9690; font-size: 11px; font-style: normal; font-weight: 700; }
+@keyframes ft-connection-progress { to { transform: translateX(120%); } }
 .fintrack-app {
   --ft-bg: #edf3ef; --ft-surface: #ffffff; --ft-surface-soft: #f4f7f5;
   --ft-primary: #32745a; --ft-primary-strong: #286149; --ft-primary-soft: #dcebe3;

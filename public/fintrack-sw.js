@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fintrack-shell-v4'
+const CACHE_NAME = 'fintrack-shell-v5'
 const SHELL_ASSETS = ['/fintrack-offline.html', '/fintrack-icon-192.png', '/fintrack-icon-512.png', '/fintrack-maskable-512.png', '/apple-touch-icon.png']
 
 self.addEventListener('install', (event) => {

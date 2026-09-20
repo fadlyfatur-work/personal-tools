@@ -1,1 +1,52 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f5944"><title>FinTrack — Tidak terhubung</title><style>*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:24px;background:#e5ece8;color:#142019;font-family:Arial,sans-serif}.card{width:min(100%,430px);min-height:100dvh;display:grid;place-items:center;padding:32px;background:#edf3ef;text-align:center}.logo{width:92px;height:92px;border-radius:24px}.lamp{width:14px;height:14px;margin:26px auto 12px;border-radius:50%;background:#c15345;box-shadow:0 0 0 7px rgba(193,83,69,.12)}h1{margin:0;font-size:23px}p{max-width:310px;margin:10px auto 22px;color:#69766f;font-size:14px;line-height:1.6}button{min-height:46px;padding:0 20px;border:0;border-radius:14px;background:#32745a;color:#fff;font:inherit;font-weight:700;cursor:pointer}.brand{margin-top:28px;color:#69766f;font-size:11px}</style></head><body><main class="card"><div><img class="logo" src="/fintrack-icon-192.png" alt="FinTrack"><div class="lamp"></div><h1>FinTrack belum terhubung</h1><p>Periksa koneksi internet Anda. Data keuangan hanya dapat diakses saat server tersedia.</p><button type="button" onclick="location.reload()">Coba lagi</button><div class="brand">fdlydev</div></div></main><script>addEventListener('online',()=>location.reload())</script></body></html>
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f5944">
+  <title>FinTrack - Tidak terhubung</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:24px;background:#e5ece8;color:#142019;font-family:Arial,sans-serif}.card{width:min(100%,430px);min-height:100dvh;display:grid;place-items:center;padding:32px;background:#edf3ef;text-align:center}.content{width:min(100%,340px)}.logo{width:92px;height:92px;border-radius:24px;box-shadow:0 18px 42px rgba(15,89,68,.18)}.lamp{width:11px;height:11px;margin:28px auto 12px;border-radius:50%;background:#d3a13d;box-shadow:0 0 0 6px rgba(211,161,61,.13)}.lamp.error{background:#c15345;box-shadow:0 0 0 6px rgba(193,83,69,.13)}.status{margin:0;color:#69766f;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}h1{margin:9px 0 8px;font-size:23px;letter-spacing:-.035em}p{margin:0;color:#69766f;font-size:13px;line-height:1.6}.progress{width:170px;height:3px;margin:23px auto 0;overflow:hidden;border-radius:999px;background:rgba(50,116,90,.13)}.progress span{width:45%;height:100%;display:block;border-radius:inherit;background:#32745a;animation:progress 1.15s ease-in-out infinite alternate}button{min-height:44px;margin-top:21px;padding:0 19px;border:0;border-radius:13px;background:#32745a;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.retry{display:block;margin-top:11px;color:#7c8982;font-size:11px;font-weight:650}.brand{margin-top:30px;color:#8a9690;font-size:11px;font-weight:700}.hidden{display:none}@keyframes progress{to{transform:translateX(120%)}}@media(prefers-reduced-motion:reduce){.progress span{animation:none;width:100%}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="content">
+      <img class="logo" src="/fintrack-icon-192.png" width="92" height="92" loading="eager" fetchpriority="high" alt="FinTrack">
+      <div id="lamp" class="lamp"></div>
+      <p id="status" class="status">Memeriksa</p>
+      <section id="checking">
+        <h1>Menyiapkan FinTrack</h1>
+        <p>Memeriksa koneksi internet dan layanan data. Proses ini memerlukan sekitar 5 detik.</p>
+        <div class="progress" aria-hidden="true"><span></span></div>
+      </section>
+      <section id="failure" class="hidden">
+        <h1>FinTrack belum terhubung</h1>
+        <p id="message">Pastikan koneksi internet stabil.</p>
+        <button type="button" onclick="reloadPage()">Muat ulang sekarang</button>
+        <span id="retry" class="retry"></span>
+      </section>
+      <div class="brand">fdlydev</div>
+    </div>
+  </main>
+  <script>
+    const key='fintrack-connectivity-retries',max=3
+    let attempts=Math.min(max,Number(sessionStorage.getItem(key))||0),timer
+    function reloadPage(){sessionStorage.setItem(key,String(Math.min(max,attempts+1)));location.reload()}
+    function showFailure(){
+      document.getElementById('checking').classList.add('hidden')
+      document.getElementById('failure').classList.remove('hidden')
+      document.getElementById('lamp').classList.add('error')
+      document.getElementById('status').textContent=navigator.onLine?'Server tidak tersedia':'Tidak ada internet'
+      const retry=document.getElementById('retry'),message=document.getElementById('message')
+      if(attempts>=max){message.textContent='Percobaan otomatis dihentikan. Pastikan koneksi internet stabil, lalu muat ulang halaman.';retry.textContent=max+' percobaan otomatis telah selesai';return}
+      let seconds=(attempts+1)*5
+      retry.textContent='Percobaan otomatis '+(attempts+1)+' dari '+max
+      const render=()=>message.textContent='Pastikan koneksi internet stabil. Halaman akan dimuat ulang dalam '+seconds+' detik.'
+      render()
+      timer=setInterval(()=>{seconds-=1;render();if(seconds<=0){clearInterval(timer);reloadPage()}},1000)
+    }
+    setTimeout(showFailure,5000)
+  </script>
+</body>
+</html>
