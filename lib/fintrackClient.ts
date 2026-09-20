@@ -6,7 +6,7 @@ export const fintrackKeys = {
 }
 
 export async function fetchFintrackBootstrap(): Promise<FintrackBootstrap> {
-  const response = await fintrackRequest('/api/fintrack/bootstrap', { cache: 'no-store' })
+  const response = await fintrackRequest('/api/fintrack/bootstrap', { cache: 'no-store' }, 20000)
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))
     const error = new Error(body.error || 'FinTrack belum dapat dimuat') as Error & { status?: number }

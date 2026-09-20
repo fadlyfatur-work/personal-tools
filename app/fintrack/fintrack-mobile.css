@@ -19,6 +19,11 @@
 .ft-retry-meta { display: block; margin-top: 11px; color: #7c8982; font-size: 11px; font-weight: 650; }
 .ft-connection-gate em { display: block; margin-top: 30px; color: #8a9690; font-size: 11px; font-style: normal; font-weight: 700; }
 @keyframes ft-connection-progress { to { transform: translateX(120%); } }
+.ft-bootstrap-error { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
+.ft-bootstrap-error > svg { color: var(--ft-expense); }
+.ft-bootstrap-error h1 { margin: 16px 0 8px; font-size: 21px; letter-spacing: -.035em; }
+.ft-bootstrap-error p { max-width: 310px; margin: 0; color: var(--ft-muted); font-size: 13px; line-height: 1.6; }
+.ft-bootstrap-error .ft-button { margin-top: 21px; }
 .fintrack-app {
   --ft-bg: #edf3ef; --ft-surface: #ffffff; --ft-surface-soft: #f4f7f5;
   --ft-primary: #32745a; --ft-primary-strong: #286149; --ft-primary-soft: #dcebe3;
@@ -257,7 +262,7 @@
 .ft-page-heading h1 { margin: 0; font-size: 26px; letter-spacing: -.045em; }
 .ft-page-heading > strong { color: var(--ft-muted); font-size: 12px; }
 .ft-page-tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-bottom: 16px; padding: 4px; border-radius: var(--ft-radius-control); background: var(--ft-surface-soft); }
-.ft-page-tabs button { min-height: 42px; border: 0; border-radius: 9px; background: transparent; color: var(--ft-muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: transform 150ms ease, background 150ms ease; }
+.ft-page-tabs button { position: relative; min-height: 42px; border: 0; border-radius: 9px; background: transparent; color: var(--ft-muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: transform 150ms ease, background 150ms ease; }
 .ft-page-tabs button[data-active="true"] { background: var(--ft-surface); color: var(--ft-primary); box-shadow: 0 4px 14px color-mix(in srgb, var(--ft-primary) 9%, transparent); }
 .ft-page-tabs button:active { transform: scale(.98); }
 .ft-sub-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: -4px 0 12px; }
@@ -273,6 +278,12 @@
 .ft-report-heading h2 { margin: 0; font-size: 16px; }
 .ft-report-heading p { margin: 4px 0 0; color: var(--ft-muted); font-size: 10px; }
 .ft-report-heading > strong { font-size: 13px; }
+.ft-inline-spinner { width: 16px; height: 16px; flex: 0 0 16px; display: grid; place-items: center; color: var(--ft-primary); opacity: 0; visibility: hidden; }
+.ft-inline-spinner[data-active="true"] { opacity: 1; visibility: visible; }
+.ft-inline-spinner[data-active="true"] svg { animation: ft-spinner-turn 700ms linear infinite; }
+.ft-tab-spinner { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); }
+.ft-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@keyframes ft-spinner-turn { to { transform: rotate(360deg); } }
 .ft-report-content { display: grid; grid-template-columns: 116px minmax(0, 1fr); align-items: center; gap: 18px; }
 .ft-donut { width: 112px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; }
 .ft-donut > div { width: 68px; aspect-ratio: 1; display: grid; place-items: center; align-content: center; border-radius: 50%; background: var(--ft-surface); text-align: center; }
@@ -298,7 +309,9 @@
 .ft-month-switcher strong { margin-top: 3px; font-size: 14px; text-transform: capitalize; }
 .ft-month-switcher small { display: block; margin-top: 2px; color: var(--ft-muted); font-size: 9px; }
 .ft-report-filter { padding: 13px; border-radius: 15px; background: var(--ft-surface-soft); }
-.ft-report-filter label { display: block; margin-bottom: 7px; color: var(--ft-muted); font-size: 10px; font-weight: 700; }
+.ft-report-filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 7px; }
+.ft-report-filter label { display: block; color: var(--ft-muted); font-size: 10px; font-weight: 700; }
+.ft-report-filter[data-pending="true"], .ft-month-switcher[data-pending="true"] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ft-warning) 42%, transparent); }
 .ft-comparison-chart { display: grid; gap: 17px; }
 .ft-comparison-row { display: grid; gap: 7px; }
 .ft-comparison-row > strong { font-size: 11px; }
@@ -311,6 +324,11 @@
 .ft-comparison-row b.expense { background: var(--ft-expense); }
 .ft-comparison-row b.previous { background: color-mix(in srgb, var(--ft-muted) 48%, transparent); }
 .ft-line-legend { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 8px; }
+.ft-trend-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; }
+.ft-trend-tabs button { min-height: 32px; border: 1px solid var(--ft-border); border-radius: 10px; background: transparent; color: var(--ft-muted); font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease; }
+.ft-trend-tabs button[data-active="true"] { border-color: var(--ft-primary); background: var(--ft-primary-soft); color: var(--ft-primary); }
+.ft-trend-tabs button[data-pending="true"] { border-style: dashed; }
+.ft-trend-tabs button:active { transform: scale(.98); }
 .ft-line-legend span { display: flex; align-items: center; gap: 5px; color: var(--ft-muted); font-size: 9px; }
 .ft-line-legend i { width: 7px; height: 7px; border-radius: 50%; }
 .ft-line-legend i.income { background: var(--ft-income); }
@@ -324,6 +342,10 @@
 .ft-report-transactions { margin: 0 -18px -18px; border-radius: 0 0 var(--ft-radius-card) var(--ft-radius-card); }
 .ft-report-transactions .ft-transaction-list { min-height: 100px; }
 .fintrack-app { --ft-report-1: #39745d; --ft-report-2: #d08a4b; --ft-report-3: #668eb0; --ft-report-4: #9a6e91; --ft-report-5: #82905c; --ft-report-6: #b65f58; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ft-inline-spinner[data-active="true"] svg { animation: none; }
+}
 
 .ft-manage-list { overflow: hidden; border: 0; border-radius: 18px; background: var(--ft-surface); box-shadow: 0 10px 30px color-mix(in srgb, var(--ft-primary) 6%, transparent); }
 .ft-manage-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 13px; }

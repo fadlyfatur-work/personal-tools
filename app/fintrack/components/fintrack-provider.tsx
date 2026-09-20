@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, u
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query'
-import { X } from '@phosphor-icons/react'
+import { ArrowClockwise, WarningCircle, X } from '@phosphor-icons/react'
 import TransactionForm from './transaction-form'
 import { fetchFintrackBootstrap, fintrackKeys } from '@/lib/fintrackClient'
 import type { Account, Category, FintrackBootstrap, FintrackUser, Transaction } from '@/types/fintrack'
@@ -126,7 +126,13 @@ function FintrackState({ children }: { children: React.ReactNode }) {
   const palette = useSyncExternalStore<Palette>(subscribePalette, getPaletteSnapshot, () => 'forest')
   const theme = useSyncExternalStore<Theme>(subscribeTheme, getThemeSnapshot, () => 'light')
   const shouldBootstrap = !pathname.includes('/login') && !pathname.includes('/register') && !pathname.includes('/reset-pin')
-  const query = useQuery({ queryKey: fintrackKeys.bootstrap, queryFn: fetchFintrackBootstrap, enabled: shouldBootstrap })
+  const query = useQuery({
+    queryKey: fintrackKeys.bootstrap,
+    queryFn: fetchFintrackBootstrap,
+    enabled: shouldBootstrap,
+    retry: (failureCount, error) => (error as Error & { status?: number }).status !== 401 && failureCount < 1,
+    retryDelay: 800,
+  })
   const [tasks, setTasks] = useState<Record<string, string>>({})
   const [loaderVisible, setLoaderVisible] = useState(false)
   const [composer, setComposer] = useState<{ open: boolean; editing: Transaction | null }>({ open: false, editing: null })
@@ -188,6 +194,23 @@ function FintrackState({ children }: { children: React.ReactNode }) {
     palette, setPalette, theme, setTheme, data: query.data, user: query.data?.user || null, accounts: query.data?.accounts || [], categories: query.data?.categories || [], transactions: query.data?.transactions || [], loading: shouldBootstrap && query.isPending, error: query.error instanceof Error ? query.error.message : '', setUser, setAccounts, setCategories, updateData, refreshData, clearCache, beginTask, endTask, isBusy, openComposer, applyTransactionChange,
   }), [palette, setPalette, theme, setTheme, query.data, query.isPending, query.error, shouldBootstrap, setUser, setAccounts, setCategories, updateData, refreshData, clearCache, beginTask, endTask, isBusy, openComposer, applyTransactionChange])
   const labels = Object.values(tasks)
+  const bootstrapError = query.error as (Error & { status?: number }) | null
+
+  if (shouldBootstrap && bootstrapError && bootstrapError.status !== 401 && !query.data) {
+    return (
+      <div className="fintrack-app" data-palette={palette} data-theme={theme}>
+        <main className="ft-bootstrap-error" role="alert">
+          <WarningCircle size={34} weight="duotone" />
+          <h1>Data FinTrack belum termuat</h1>
+          <p>{bootstrapError.message}</p>
+          <button className="ft-button ft-button-primary" type="button" disabled={query.isFetching} onClick={() => void query.refetch()}>
+            <ArrowClockwise size={17} weight="bold" />
+            {query.isFetching ? 'Memuat data...' : 'Coba muat kembali'}
+          </button>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <FintrackContext.Provider value={value}>

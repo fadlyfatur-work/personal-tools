@@ -11,10 +11,10 @@ export async function fintrackRequest(input: RequestInfo | URL, init?: RequestIn
     return response
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      window.dispatchEvent(new CustomEvent('fintrack:connection', { detail: navigator.onLine ? 'unavailable' : 'offline' }))
-      throw new Error('Permintaan melewati batas 5 detik. Data akan diperiksa ulang.')
+      window.dispatchEvent(navigator.onLine ? new Event('fintrack:verify-connection') : new CustomEvent('fintrack:connection', { detail: 'offline' }))
+      throw new Error(`Permintaan melewati batas ${Math.ceil(timeoutMs / 1000)} detik. Silakan coba kembali.`)
     }
-    window.dispatchEvent(new CustomEvent('fintrack:connection', { detail: navigator.onLine ? 'unavailable' : 'offline' }))
+    window.dispatchEvent(navigator.onLine ? new Event('fintrack:verify-connection') : new CustomEvent('fintrack:connection', { detail: 'offline' }))
     throw error
   } finally {
     window.clearTimeout(timeout)

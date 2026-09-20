@@ -23,17 +23,63 @@ export function currentReportMonth(cutoffDay: number, now = new Date()) {
   return date.toISOString().slice(0, 7)
 }
 
-function previousMonth(month: string) {
+export function previousReportMonth(month: string) {
   const date = new Date(`${month}-01T00:00:00Z`)
   date.setUTCMonth(date.getUTCMonth() - 1)
   return date.toISOString().slice(0, 7)
+}
+
+export function buildFintrackReport(month: string, cutoffDay: number, transactions: Transaction[], categories: Array<{ id: string; name: string }>): FintrackReport {
+  const previous = previousReportMonth(month)
+  const currentRange = reportRange(month, cutoffDay)
+  const previousRange = reportRange(previous, cutoffDay)
+  const all = transactions.filter((value, index, array) => array.findIndex((item) => item.id === value.id) === index)
+  const current = all
+    .filter((item) => item.transaction_date >= currentRange.start && item.transaction_date <= currentRange.end)
+    .sort((a, b) => `${b.transaction_date}${b.created_at || ''}`.localeCompare(`${a.transaction_date}${a.created_at || ''}`))
+  const before = all.filter((item) => item.transaction_date >= previousRange.start && item.transaction_date <= previousRange.end)
+  const categoryMap = new Map(categories.map((category) => [category.id, category.name]))
+  const reportFor = (type: 'income' | 'expense') => {
+    const grouped = new Map<string, { category_id: string | null; category_ids: string[]; name: string; amount: number }>()
+    current.filter((item) => item.type === type).forEach((item) => {
+      const name = item.category_id ? categoryMap.get(item.category_id) || 'Tanpa kategori' : 'Tanpa kategori'
+      const key = `${type}:${name.trim().toLocaleLowerCase('id-ID')}`
+      const entry = grouped.get(key) || { category_id: item.category_id || null, category_ids: [], name, amount: 0 }
+      if (item.category_id && !entry.category_ids.includes(item.category_id)) entry.category_ids.push(item.category_id)
+      entry.amount += Number(item.amount)
+      grouped.set(key, entry)
+    })
+    return [...grouped.values()].sort((a, b) => b.amount - a.amount)
+  }
+  const dailyMap = new Map<string, { day: string; income: number; expense: number }>()
+  for (const transaction of current) {
+    if (transaction.type === 'transfer') continue
+    const point = dailyMap.get(transaction.transaction_date) || { day: transaction.transaction_date, income: 0, expense: 0 }
+    point[transaction.type] += Number(transaction.amount)
+    dailyMap.set(transaction.transaction_date, point)
+  }
+  return {
+    month,
+    period_start: currentRange.start,
+    period_end: currentRange.end,
+    income: reportFor('income'),
+    expense: reportFor('expense'),
+    transactions: current,
+    previous: {
+      month: previous,
+      income: before.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0),
+      expense: before.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0),
+    },
+    daily: [...dailyMap.values()].sort((a, b) => a.day.localeCompare(b.day)),
+    trend_detail_loaded: true,
+  }
 }
 
 export async function getFintrackReport(userId: string, month: string, requestedCutoffDay?: number): Promise<FintrackReport> {
   const planId = await getOwnedPlanId(userId)
   const profile = requestedCutoffDay ? null : await supabaseAdmin.from('fintrack_users').select('month_cutoff_day').eq('id', userId).single()
   const cutoffDay = requestedCutoffDay || Number(profile?.data?.month_cutoff_day || 1)
-  const previous = previousMonth(month)
+  const previous = previousReportMonth(month)
   const currentRange = reportRange(month, cutoffDay)
   const previousRange = reportRange(previous, cutoffDay)
 
@@ -72,46 +118,6 @@ export async function getFintrackReport(userId: string, month: string, requested
     : { data: [], error: null }
   if (sharedTransactions.error) throw sharedTransactions.error
 
-  const all = [...(ownedTransactions.data || []), ...(sharedTransactions.data || [])]
-    .filter((value, index, array) => array.findIndex((item) => item.id === value.id) === index) as Transaction[]
-  const current = all
-    .filter((item) => item.transaction_date >= currentRange.start && item.transaction_date <= currentRange.end)
-    .sort((a, b) => `${b.transaction_date}${b.created_at || ''}`.localeCompare(`${a.transaction_date}${a.created_at || ''}`))
-  const before = all.filter((item) => item.transaction_date >= previousRange.start && item.transaction_date <= previousRange.end)
-  const categoryMap = new Map((categoriesResult.data || []).map((category) => [category.id, category.name]))
-  const reportFor = (type: 'income' | 'expense') => {
-    const grouped = new Map<string, { category_id: string | null; category_ids: string[]; name: string; amount: number }>()
-    current.filter((item) => item.type === type).forEach((item) => {
-      const name = item.category_id ? categoryMap.get(item.category_id) || 'Tanpa kategori' : 'Tanpa kategori'
-      const key = `${type}:${name.trim().toLocaleLowerCase('id-ID')}`
-      const entry: { category_id: string | null; category_ids: string[]; name: string; amount: number } = grouped.get(key) || { category_id: item.category_id || null, category_ids: [], name, amount: 0 }
-      if (item.category_id && !entry.category_ids.includes(item.category_id)) entry.category_ids.push(item.category_id)
-      entry.amount += Number(item.amount)
-      grouped.set(key, entry)
-    })
-    return [...grouped.values()].sort((a, b) => b.amount - a.amount)
-  }
-
-  const dailyMap = new Map<string, { day: string; income: number; expense: number }>()
-  for (const transaction of current) {
-    if (transaction.type === 'transfer') continue
-    const point = dailyMap.get(transaction.transaction_date) || { day: transaction.transaction_date, income: 0, expense: 0 }
-    point[transaction.type] += Number(transaction.amount)
-    dailyMap.set(transaction.transaction_date, point)
-  }
-
-  return {
-    month,
-    period_start: currentRange.start,
-    period_end: currentRange.end,
-    income: reportFor('income'),
-    expense: reportFor('expense'),
-    transactions: current,
-    previous: {
-      month: previous,
-      income: before.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0),
-      expense: before.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0),
-    },
-    daily: [...dailyMap.values()].sort((a, b) => a.day.localeCompare(b.day)),
-  }
+  const all = [...(ownedTransactions.data || []), ...(sharedTransactions.data || [])] as Transaction[]
+  return buildFintrackReport(month, cutoffDay, all, categoriesResult.data || [])
 }

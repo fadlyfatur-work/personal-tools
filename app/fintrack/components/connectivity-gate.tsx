@@ -66,7 +66,7 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
       }
     }
     window.clearTimeout(timeout)
-    const minimumDelay = hasConnectedRef.current ? 0 : INITIAL_CHECK_DELAY_MS
+    const minimumDelay = nextStatus === 'online' || hasConnectedRef.current ? 0 : INITIAL_CHECK_DELAY_MS
     const remainingDelay = minimumDelay - (Date.now() - startedAt)
     if (remainingDelay > 0) await new Promise((resolve) => window.setTimeout(resolve, remainingDelay))
     if (healthControllerRef.current !== controller) return
@@ -97,6 +97,7 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
       if (next === 'online') { updateStatus('online'); hasConnectedRef.current = true; setHasConnected(true) }
       if (next === 'offline' || next === 'unavailable') updateStatus(next)
     }
+    const verifyConnection = () => { void checkHealth() }
     const beforeInstall = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPromptEvent) }
     const appInstalled = () => { setInstalled(true); setInstallPrompt(null) }
     const detectInstallState = window.setTimeout(() => {
@@ -106,6 +107,7 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
     window.addEventListener('online', online)
     window.addEventListener('offline', offline)
     window.addEventListener('fintrack:connection', requestState)
+    window.addEventListener('fintrack:verify-connection', verifyConnection)
     document.addEventListener('visibilitychange', visible)
     window.addEventListener('beforeinstallprompt', beforeInstall)
     window.addEventListener('appinstalled', appInstalled)
@@ -115,6 +117,7 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
       window.removeEventListener('online', online)
       window.removeEventListener('offline', offline)
       window.removeEventListener('fintrack:connection', requestState)
+      window.removeEventListener('fintrack:verify-connection', verifyConnection)
       document.removeEventListener('visibilitychange', visible)
       window.removeEventListener('beforeinstallprompt', beforeInstall)
       window.removeEventListener('appinstalled', appInstalled)

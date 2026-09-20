@@ -71,6 +71,7 @@ export interface FintrackReport {
   transactions: Transaction[]
   previous: { month: string; income: number; expense: number }
   daily: Array<{ day: string; income: number; expense: number }>
+  trend_detail_loaded: boolean
 }
 
 export interface FintrackCollaboration {
