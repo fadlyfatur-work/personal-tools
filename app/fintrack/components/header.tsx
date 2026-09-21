@@ -17,7 +17,7 @@ function greeting() {
 export function Header({ user, eyebrow, title }: { user: { name: string; email: string }; eyebrow?: string; title?: string; settings?: boolean }) {
   const router = useRouter()
   const { beginTask, endTask, clearCache, isBusy } = useFintrack()
-  const connectionStatus = useConnectivity()
+  const { status: connectionStatus, countdown } = useConnectivity()
   const dateLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Jakarta' }).format(new Date())
   const firstName = user.name.trim().split(/\s+/)[0] || 'Anda'
 
@@ -39,7 +39,7 @@ export function Header({ user, eyebrow, title }: { user: { name: string; email: 
         <span>{eyebrow || dateLabel}</span>
         <h1>{title || `${greeting()}, ${firstName}`}</h1>
       </div>
-      <div className="ft-header-actions"><span className="ft-header-connection" role="status" aria-live="polite" aria-label={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'} title={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'}><span className="ft-connection-lamp" data-status={connectionStatus} /></span><button type="button" className="ft-icon-button" aria-label="Keluar dari akun" title="Keluar" onClick={logout} disabled={isBusy('logout')}><SignOut size={19} /></button></div>
+      <div className="ft-header-actions"><span className="ft-header-connectivity" role="status" aria-live="polite"><span className="ft-header-connection" data-status={connectionStatus} aria-label={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'} title={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'}><span className="ft-connection-lamp" data-status={connectionStatus} /></span>{countdown !== null && <small>{countdown} dtk</small>}</span><button type="button" className="ft-icon-button" aria-label="Keluar dari akun" title="Keluar" onClick={logout} disabled={isBusy('logout')}><SignOut size={19} /></button></div>
     </header>
   )
 }

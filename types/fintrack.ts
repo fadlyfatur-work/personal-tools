@@ -28,6 +28,8 @@ export interface Category {
   plan_id: string
   name: string
   type: 'income' | 'expense'
+  emoji?: string | null
+  budget_amount?: number | null
   archived_at?: string | null
 }
 
@@ -59,6 +61,7 @@ export interface ReportSlice {
   category_id: string | null
   category_ids: string[]
   name: string
+  emoji?: string | null
   amount: number
 }
 
@@ -69,8 +72,13 @@ export interface FintrackReport {
   income: ReportSlice[]
   expense: ReportSlice[]
   transactions: Transaction[]
+  transaction_total: number
+  transaction_page: number
+  transaction_page_size: number
   previous: { month: string; income: number; expense: number }
   daily: Array<{ day: string; income: number; expense: number }>
+  weekly: Array<{ key: string; label: string; income: number; expense: number }>
+  monthly: Array<{ key: string; label: string; income: number; expense: number }>
   trend_detail_loaded: boolean
 }
 
@@ -85,6 +93,7 @@ export interface FintrackBootstrap {
   user: FintrackUser
   has_pin: boolean
   month_cutoff_day: number
+  sort_accounts_by_balance: boolean
   personal_plan_id: string | null
   accounts: Account[]
   categories: Category[]

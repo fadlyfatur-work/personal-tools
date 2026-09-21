@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getOwnedPlanId, requireFintrackIdentity } from '@/lib/fintrackUser'
-import { buildFintrackReport, currentReportMonth, previousReportMonth, reportRange } from '@/lib/fintrackReport'
+import { buildFintrackReport, currentReportMonth, moveReportMonth, reportRange } from '@/lib/fintrackReport'
 import type { Transaction } from '@/types/fintrack'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ export async function GET() {
   const [planId, membershipsResult, securityResult] = await Promise.all([
     getOwnedPlanId(userId),
     supabaseAdmin.from('fintrack_account_collaborators').select('account_id, role, can_manage, accepted_at, fintrack_accounts!inner(*)').eq('user_id', userId).is('revoked_at', null),
-    supabaseAdmin.from('fintrack_users').select('pin_hash, month_cutoff_day').eq('id', userId).maybeSingle(),
+    supabaseAdmin.from('fintrack_users').select('pin_hash, month_cutoff_day, sort_accounts_by_balance').eq('id', userId).maybeSingle(),
   ])
 
   if (membershipsResult.error || securityResult.error) {
@@ -29,7 +29,7 @@ export async function GET() {
   const month = currentReportMonth(cutoffDay)
   const monthRange = reportRange(month, cutoffDay)
   const monthEnd = monthRange.end
-  const previousRange = reportRange(previousReportMonth(month), cutoffDay)
+  const trendRange = reportRange(moveReportMonth(month, -5), cutoffDay)
 
   if (ownedResult.error || membershipsResult.error) {
     return NextResponse.json({ error: 'Gagal memuat dompet FinTrack' }, { status: 500 })
@@ -54,7 +54,7 @@ export async function GET() {
       ? supabaseAdmin.from('fintrack_transactions').select('*').eq('plan_id', planId).eq('status', 'posted').order('transaction_date', { ascending: false }).order('created_at', { ascending: false }).limit(60)
       : Promise.resolve({ data: [], error: null }),
     planId
-      ? supabaseAdmin.from('fintrack_transactions').select('*').eq('plan_id', planId).eq('status', 'posted').gte('transaction_date', previousRange.start).lte('transaction_date', monthEnd)
+      ? supabaseAdmin.from('fintrack_transactions').select('*').eq('plan_id', planId).eq('status', 'posted').gte('transaction_date', trendRange.start).lte('transaction_date', monthEnd)
       : Promise.resolve({ data: [], error: null }),
     accessibleAccountIds.length
       ? supabaseAdmin.from('fintrack_transaction_entries').select('transaction_id').in('account_id', accessibleAccountIds).order('created_at', { ascending: false }).limit(300)
@@ -103,12 +103,13 @@ export async function GET() {
     user: { id: userId, name: auth.identity.name, email: auth.identity.email },
     has_pin: Boolean(securityResult.data?.pin_hash),
     month_cutoff_day: cutoffDay,
+    sort_accounts_by_balance: Boolean(securityResult.data?.sort_accounts_by_balance),
     personal_plan_id: planId || null,
     accounts,
     categories,
     transactions,
     summary: { assets, liabilities, net_worth: assets - liabilities, income, expense },
-    report: { ...report, daily: [], trend_detail_loaded: false },
+    report: { ...report, transactions: report.transactions.slice(0, 10), transaction_page: 1, transaction_page_size: 10, daily: [], weekly: [], trend_detail_loaded: false },
     collaboration: {
       owned_accounts: ownedAccounts,
       pending_requests: (requestsResult.data || []).map((request) => ({ ...request, requester: peopleMap.get(request.requester_id) || null, account: accountMap.get(request.account_id) || null })),

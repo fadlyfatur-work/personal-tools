@@ -9,7 +9,7 @@ const transactionSchema = z.object({
   from_account_id: z.string().uuid().nullable().optional(),
   to_account_id: z.string().uuid().nullable().optional(),
   category_id: z.string().uuid().nullable().optional(),
-  note: z.string().trim().max(240).nullable().optional(),
+  note: z.string().trim().max(100, 'Catatan maksimal 100 karakter').nullable().optional(),
   transaction_date: z.iso.date(),
   allow_negative: z.boolean().default(false),
 })

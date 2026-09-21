@@ -2,11 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Account, Transaction, TransactionType } from '@/types/fintrack'
+import type { Account, Category, Transaction, TransactionType } from '@/types/fintrack'
 import { fintrackRequest } from '@/lib/fintrackRequest'
 import { useFintrack } from './fintrack-provider'
-
-interface Category { id: string; plan_id: string; name: string; type: 'income' | 'expense' }
 
 interface TransactionFormProps {
   accounts: Account[]
@@ -14,6 +12,7 @@ interface TransactionFormProps {
   onSaved: (transaction: Transaction) => Promise<void> | void
   editing?: Transaction | null
   onCancelEdit?: () => void
+  onDelete?: () => Promise<void> | void
 }
 
 function onlyDigits(value: string) {
@@ -24,7 +23,7 @@ function formatNominal(value: string) {
   return value.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
-export default function TransactionForm({ accounts, categories, onSaved, editing, onCancelEdit }: TransactionFormProps) {
+export default function TransactionForm({ accounts, categories, onSaved, editing, onCancelEdit, onDelete }: TransactionFormProps) {
   const { beginTask, endTask } = useFintrack()
   const [type, setType] = useState<TransactionType>(editing?.type || 'expense')
   const [amount, setAmount] = useState(editing ? onlyDigits(String(Math.trunc(Number(editing.amount)))) : '')
@@ -122,7 +121,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
           <div className="ft-field-label-row"><label htmlFor="category">Kategori</label><Link href="/fintrack/manage" onClick={onCancelEdit}>Kelola kategori</Link></div>
           <select id="category" className="ft-input" value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="">Tanpa kategori</option>
-            {filteredCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            {filteredCategories.map((item) => <option key={item.id} value={item.id}>{item.emoji ? `${item.emoji} ` : ''}{item.name}</option>)}
           </select>
         </div>
       )}
@@ -131,14 +130,14 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
         <input id="date" className="ft-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
       </div>
       <div className="ft-field">
-        <label htmlFor="note">Catatan</label>
-        <input id="note" className="ft-input" placeholder="Opsional" maxLength={240} value={note} onChange={(e) => setNote(e.target.value)} />
+        <div className="ft-field-label-row"><label htmlFor="note">Catatan</label><span>{note.length}/100</span></div>
+        <input id="note" className="ft-input" placeholder="Opsional" maxLength={100} value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
       {message && <p className={`ft-inline-message ft-${message.kind}`}>{message.text}</p>}
       <button className="ft-button ft-button-primary" style={{ width: '100%' }} disabled={saving}>
         {saving ? 'Menyimpan...' : editing ? 'Simpan perubahan' : 'Simpan transaksi'}
       </button>
-      {editing && <button type="button" className="ft-button ft-button-secondary" style={{ width: '100%', marginTop: 8 }} onClick={onCancelEdit}>Batal edit</button>}
+      {editing && onDelete && <button type="button" className="ft-button ft-button-danger" style={{ width: '100%', marginTop: 8 }} onClick={() => void onDelete()}>Hapus transaksi</button>}
     </form>
   )
 }
