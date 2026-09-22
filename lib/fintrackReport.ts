@@ -70,16 +70,20 @@ export function buildFintrackReport(month: string, cutoffDay: number, transactio
   const daily = [...dailyMap.values()]
     .filter((point) => point.day >= dailyStart.toISOString().slice(0, 10) && point.day <= currentRange.end && (point.income > 0 || point.expense > 0))
     .sort((a, b) => a.day.localeCompare(b.day))
-  const weeklyStart = new Date(trendEnd); weeklyStart.setUTCDate(weeklyStart.getUTCDate() - 83)
-  const weekly = Array.from({ length: 12 }, (_, index) => {
+  const weeklyStart = new Date(`${currentRange.start}T00:00:00Z`)
+  const weeklyEnd = new Date(`${currentRange.end}T00:00:00Z`)
+  const weekCount = Math.ceil((weeklyEnd.getTime() - weeklyStart.getTime() + 86400000) / (7 * 86400000))
+  const weekly = Array.from({ length: weekCount }, (_, index) => {
     const start = new Date(weeklyStart); start.setUTCDate(start.getUTCDate() + index * 7)
-    const end = new Date(start); end.setUTCDate(end.getUTCDate() + 6)
+    const end = new Date(Math.min(start.getTime() + 6 * 86400000, weeklyEnd.getTime()))
     const startKey = start.toISOString().slice(0, 10), endKey = end.toISOString().slice(0, 10)
     const values = all.filter((item) => item.type !== 'transfer' && item.transaction_date >= startKey && item.transaction_date <= endKey)
-    return { key: startKey, label: new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(start), income: values.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0), expense: values.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0) }
+    const startLabel = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: start.getUTCMonth() === end.getUTCMonth() ? undefined : 'short', timeZone: 'UTC' }).format(start)
+    const endLabel = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(end)
+    return { key: startKey, label: `${startLabel}-${endLabel}`, income: values.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0), expense: values.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0) }
   })
-  const monthly = Array.from({ length: 6 }, (_, index) => {
-    const key = moveReportMonth(month, index - 5), range = reportRange(key, cutoffDay)
+  const monthly = Array.from({ length: 5 }, (_, index) => {
+    const key = moveReportMonth(month, index - 4), range = reportRange(key, cutoffDay)
     const values = all.filter((item) => item.type !== 'transfer' && item.transaction_date >= range.start && item.transaction_date <= range.end)
     return { key, label: new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(new Date(`${key}-01T00:00:00Z`)), income: values.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0), expense: values.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0) }
   })
@@ -109,7 +113,7 @@ export async function getFintrackReport(userId: string, month: string, requested
   const planId = await getOwnedPlanId(userId)
   const profile = requestedCutoffDay ? null : await supabaseAdmin.from('fintrack_users').select('month_cutoff_day').eq('id', userId).single()
   const cutoffDay = requestedCutoffDay || Number(profile?.data?.month_cutoff_day || 1)
-  const oldestTrendMonth = moveReportMonth(month, -5)
+  const oldestTrendMonth = moveReportMonth(month, -4)
   const currentRange = reportRange(month, cutoffDay)
   const trendRange = reportRange(oldestTrendMonth, cutoffDay)
 

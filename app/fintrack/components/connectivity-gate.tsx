@@ -5,7 +5,7 @@ import { ArrowClockwise } from '@phosphor-icons/react'
 
 export type ConnectionState = 'checking' | 'online' | 'offline' | 'unavailable'
 type ConnectivityValue = { status: ConnectionState; countdown: number | null }
-const INITIAL_CHECK_DELAY_MS = 5000
+const INITIAL_GATE_TIMEOUT_MS = 5000
 const HEALTH_TIMEOUT_MS = 12000
 const IDLE_AFTER_MS = 60000
 const IDLE_CHECK_INTERVAL_MS = 3 * 60 * 1000
@@ -34,6 +34,7 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
   const lastCheckRef = useRef(0)
   const toastTimerRef = useRef<number | null>(null)
   const healthControllerRef = useRef<AbortController | null>(null)
+  const initialGateTimerRef = useRef<number | null>(null)
 
   const updateStatus = useCallback((next: ConnectionState) => {
     const previous = statusRef.current
@@ -53,7 +54,6 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
     if (checkingRef.current) return
     checkingRef.current = true
     updateStatus('checking')
-    const startedAt = Date.now()
     let nextStatus: ConnectionState = navigator.onLine ? 'unavailable' : 'offline'
     const controller = new AbortController()
     healthControllerRef.current = controller
@@ -68,15 +68,14 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
       }
     }
     window.clearTimeout(timeout)
-    const minimumDelay = hasConnectedRef.current ? 0 : INITIAL_CHECK_DELAY_MS
-    const remainingDelay = minimumDelay - (Date.now() - startedAt)
-    if (remainingDelay > 0) await new Promise((resolve) => window.setTimeout(resolve, remainingDelay))
     if (healthControllerRef.current !== controller) return
     healthControllerRef.current = null
     checkingRef.current = false
     lastCheckRef.current = Date.now()
     updateStatus(nextStatus)
     if (nextStatus === 'online') {
+      if (initialGateTimerRef.current) window.clearTimeout(initialGateTimerRef.current)
+      initialGateTimerRef.current = null
       hasConnectedRef.current = true
       setHasConnected(true)
     }
@@ -121,6 +120,11 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
     document.addEventListener('visibilitychange', visible)
     window.addEventListener('beforeinstallprompt', beforeInstall)
     window.addEventListener('appinstalled', appInstalled)
+    initialGateTimerRef.current = window.setTimeout(() => {
+      if (statusRef.current !== 'checking' || hasConnectedRef.current) return
+      hasConnectedRef.current = true
+      setHasConnected(true)
+    }, INITIAL_GATE_TIMEOUT_MS)
     const initialCheck = window.setTimeout(() => { void checkHealth() }, 0)
     return () => {
       activityEvents.forEach((event) => window.removeEventListener(event, recordActivity))
@@ -134,6 +138,8 @@ export function ConnectivityGate({ children }: { children: React.ReactNode }) {
       window.clearInterval(monitor)
       window.clearTimeout(initialCheck)
       window.clearTimeout(detectInstallState)
+      if (initialGateTimerRef.current) window.clearTimeout(initialGateTimerRef.current)
+      initialGateTimerRef.current = null
       healthControllerRef.current?.abort()
       healthControllerRef.current = null
       if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)

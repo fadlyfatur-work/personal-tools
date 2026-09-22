@@ -11,18 +11,19 @@ const icons = {
   receivable: HandCoins,
 }
 
-export function AccountCard({ account }: { account: Account }) {
+export function AccountCard({ account, selected = false, onClick }: { account: Account; selected?: boolean; onClick?: () => void }) {
   const Icon = icons[account.kind] || Wallet
-  return (
-    <article className="ft-account">
+  const content = <>
       <div className="ft-account-icon"><Icon size={18} weight="fill" /></div>
       <div>
         <p className="ft-account-name">{account.name}</p>
         <p className="ft-account-balance">{formatRupiah(account.current_balance)}</p>
         {account.access_role !== 'owner' && <div className="ft-shared-label">Dibagikan kepada Anda</div>}
       </div>
-    </article>
-  )
+    </>
+  return onClick
+    ? <button type="button" className="ft-account ft-account-button" data-selected={selected} aria-pressed={selected} onClick={onClick}>{content}</button>
+    : <article className="ft-account">{content}</article>
 }
 
 export function formatRupiah(value: number) {

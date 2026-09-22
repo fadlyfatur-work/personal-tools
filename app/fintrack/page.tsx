@@ -15,6 +15,7 @@ export default function FintrackHome() {
   const accountsRef = useRef<HTMLDivElement>(null)
   const [cashFlowExpanded, setCashFlowExpanded] = useState(false)
   const [homePanel, setHomePanel] = useState<'transactions' | 'budgets'>('transactions')
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
 
   function scrollAccounts(direction: -1 | 1) {
     const container = accountsRef.current
@@ -22,9 +23,15 @@ export default function FintrackHome() {
     container.scrollBy({ left: direction * Math.max(180, container.clientWidth * .72), behavior: 'smooth' })
   }
 
-  async function refreshLatest() {
+  async function resetAndRefreshLatest() {
     beginTask('transactions-refresh', 'Memuat transaksi terbaru')
-    try { await refreshData() } finally { endTask('transactions-refresh') }
+    try { setSelectedAccountId(null); await refreshData() } finally { endTask('transactions-refresh') }
+  }
+
+  function selectAccount(accountId: string) {
+    setSelectedAccountId(accountId)
+    setHomePanel('transactions')
+    window.setTimeout(() => document.getElementById('transactions')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
   }
 
   if (loading) return <div className="ft-skeleton" aria-hidden="true"><div className="ft-skeleton-line" style={{ width: 142 }} /><div className="ft-skeleton-line" style={{ height: 210, marginTop: 28 }} /><div className="ft-skeleton-line" style={{ height: 112, marginTop: 16 }} /></div>
@@ -33,11 +40,13 @@ export default function FintrackHome() {
   const categoryMap = new Map(categories.map((category) => [category.id, category]))
   const displayedAccounts = data.sort_accounts_by_balance ? [...accounts].sort((a, b) => Number(b.current_balance) - Number(a.current_balance) || a.name.localeCompare(b.name)) : accounts
   const maxFlow = Math.max(data.summary.income, data.summary.expense, 1)
+  const recentTransactions = selectedAccountId ? transactions.filter((transaction) => transaction.from_account_id === selectedAccountId || transaction.to_account_id === selectedAccountId) : transactions
+  const selectedAccount = selectedAccountId ? accountMap.get(selectedAccountId) : null
   const budgetWatchers = categories.filter((category) => category.plan_id === data.personal_plan_id && category.type === 'expense' && Number(category.budget_amount || 0) > 0).map((category) => {
     const used = data.report.expense.find((slice) => slice.category_ids.includes(category.id))?.amount || 0
     const budget = Number(category.budget_amount)
     return { category, used, budget, percentage: Math.round(used / budget * 100) }
-  }).sort((a, b) => b.percentage - a.percentage)
+  }).sort((a, b) => b.used - a.used || b.percentage - a.percentage)
   return (
     <main className="ft-container">
       <Header user={user} />
@@ -48,14 +57,14 @@ export default function FintrackHome() {
 
       <section className="ft-section">
         <div className="ft-section-heading"><div><h2>Dompet</h2><p>Ringkasan saldo aktif</p></div><div className="ft-wallet-heading-actions">{displayedAccounts.length > 2 && <div className="ft-wallet-arrows" aria-label="Geser daftar dompet"><button type="button" onClick={() => scrollAccounts(-1)} aria-label="Dompet sebelumnya"><CaretLeft size={16} /></button><button type="button" onClick={() => scrollAccounts(1)} aria-label="Dompet berikutnya"><CaretRight size={16} /></button></div>}<Link href="/fintrack/manage" className="ft-text-link">Kelola</Link></div></div>
-        <div ref={accountsRef} className="ft-accounts" data-scrollable={displayedAccounts.length > 2}>{displayedAccounts.map((account) => <div className="ft-account-wrap" key={account.id}><AccountCard account={account} />{account.include_in_net_worth === false && <span className="ft-account-excluded" title="Tidak dihitung dalam total aset"><EyeSlash size={14} /></span>}</div>)}</div>
+        <div ref={accountsRef} className="ft-accounts" data-scrollable={displayedAccounts.length > 2}>{displayedAccounts.map((account) => <div className="ft-account-wrap" key={account.id}><AccountCard account={account} selected={selectedAccountId === account.id} onClick={() => selectAccount(account.id)} />{account.include_in_net_worth === false && <span className="ft-account-excluded" title="Tidak dihitung dalam total aset"><EyeSlash size={14} /></span>}</div>)}</div>
       </section>
 
       <section className="ft-section ft-workspace" id="transactions">
         <div className="ft-home-tabs" role="tablist" aria-label="Ringkasan aktivitas"><button type="button" role="tab" aria-selected={homePanel === 'transactions'} data-active={homePanel === 'transactions'} onClick={() => setHomePanel('transactions')}>Transaksi terbaru</button><button type="button" role="tab" aria-selected={homePanel === 'budgets'} data-active={homePanel === 'budgets'} onClick={() => setHomePanel('budgets')}>Pantauan budget</button></div>
-        {homePanel === 'transactions' ? <><div className="ft-section-heading"><div><h2>Transaksi terbaru</h2></div><div className="ft-latest-actions"><button className="ft-icon-button" type="button" title="Muat transaksi terbaru" aria-label="Muat transaksi terbaru" disabled={isBusy('transactions-refresh')} onClick={refreshLatest}><ArrowClockwise size={16} /></button><Link href="/fintrack/activity" className="ft-text-link">Lihat semua</Link></div></div><div className="ft-card ft-transactions" data-updating={isBusy('transactions-refresh')}>
+        {homePanel === 'transactions' ? <><div className="ft-section-heading"><div><h2>Transaksi terbaru</h2>{selectedAccount && <p>Dompet {selectedAccount.name}</p>}</div><div className="ft-latest-actions"><button className="ft-reset-filter" type="button" title="Reset filter dan muat semua data" aria-label="Reset filter dan muat semua data" disabled={isBusy('transactions-refresh')} onClick={resetAndRefreshLatest}><ArrowClockwise size={14} /><span>Reset</span></button><Link href="/fintrack/activity" className="ft-text-link">Lihat semua</Link></div></div><div className="ft-card ft-transactions" data-updating={isBusy('transactions-refresh')}>
           <div className="ft-transaction-list">
-            {transactions.length === 0 ? <div className="ft-empty"><div><Receipt size={34} /><div>Belum ada transaksi.<br />Catat transaksi pertama Anda.</div></div></div> : transactions.slice(0, 5).map((transaction) => {
+            {recentTransactions.length === 0 ? <div className="ft-empty"><div><Receipt size={34} /><div>{selectedAccount ? `Belum ada transaksi di ${selectedAccount.name}.` : 'Belum ada transaksi.'}<br />{selectedAccount ? 'Pilih dompet lain atau reset filter.' : 'Catat transaksi pertama Anda.'}</div></div></div> : recentTransactions.slice(0, 5).map((transaction) => {
               const Icon = transaction.type === 'income' ? ArrowDown : transaction.type === 'expense' ? ArrowUp : ArrowsLeftRight
               const accountId = transaction.type === 'income' ? transaction.to_account_id : transaction.from_account_id
               const category = transaction.category_id ? categoryMap.get(transaction.category_id) : null

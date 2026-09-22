@@ -29,7 +29,7 @@ export async function GET() {
   const month = currentReportMonth(cutoffDay)
   const monthRange = reportRange(month, cutoffDay)
   const monthEnd = monthRange.end
-  const trendRange = reportRange(moveReportMonth(month, -5), cutoffDay)
+  const trendRange = reportRange(moveReportMonth(month, -4), cutoffDay)
 
   if (ownedResult.error || membershipsResult.error) {
     return NextResponse.json({ error: 'Gagal memuat dompet FinTrack' }, { status: 500 })
