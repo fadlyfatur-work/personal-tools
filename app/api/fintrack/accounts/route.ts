@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
 
   const planId = await getOwnedPlanId(auth.identity.id)
   if (!planId) return NextResponse.json({ error: 'Rencana pribadi belum tersedia' }, { status: 409 })
-  const classification = parsed.data.kind === 'debt' ? 'liability' : 'asset'
+    const classification = parsed.data.kind === 'debt' ? 'liability' : 'asset'
+  const netWorthIncludes = parsed.data.kind === 'debt' ? false : true
   const { data: lastAccount } = await supabaseAdmin.from('fintrack_accounts').select('sort_order').eq('plan_id', planId).eq('archived', false).order('sort_order', { ascending: false }).limit(1).maybeSingle()
   const { data, error } = await supabaseAdmin.from('fintrack_accounts').insert({
     plan_id: planId,
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     classification,
     initial_balance: parsed.data.initial_balance,
     current_balance: parsed.data.initial_balance,
-    include_in_net_worth: true,
+    include_in_net_worth: netWorthIncludes,
     sort_order: Number(lastAccount?.sort_order ?? -1) + 1,
     created_by: auth.identity.id,
   }).select().single()

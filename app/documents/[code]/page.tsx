@@ -422,7 +422,7 @@ export default function TemplateFormPage() {
     >
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         <Link
-          href="/"
+          href="/menu"
           style={{ fontSize: 13, color: '#1a73e8', textDecoration: 'none', display: 'inline-block', marginBottom: 16 }}
         >
           ← Semua tools
@@ -444,8 +444,8 @@ export default function TemplateFormPage() {
             <p style={{ fontSize: 13, color: '#5f6368', margin: '0 0 16px' }}>
               Kode “{params.code}” tidak ada di database.
             </p>
-            <Link href="/" style={{ fontSize: 13, color: '#1a73e8', textDecoration: 'none' }}>
-              ← Kembali ke beranda
+            <Link href="/menu" style={{ fontSize: 13, color: '#1a73e8', textDecoration: 'none' }}>
+              ← Kembali ke menu
             </Link>
           </div>
         ) : (

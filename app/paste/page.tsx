@@ -109,7 +109,7 @@ export default function PastePage() {
         }}
       >
         <Link
-          href="/"
+          href="/menu"
           style={{
             fontSize: 13,
             color: '#1a73e8',

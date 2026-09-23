@@ -52,7 +52,52 @@ export default function FintrackHome() {
       <Header user={user} />
       {error && <p className="ft-inline-message ft-error">{error}</p>}
       <section className="ft-hero" aria-label="Ringkasan keuangan">
-        <div className="ft-balance-panel"><div><p className="ft-eyebrow">Total aset</p><h1 className="ft-balance">{formatRupiah(data.summary.assets)}</h1></div><div className="ft-debt-summary"><span>Total utang/kredit</span><strong>{formatRupiah(data.summary.liabilities)}</strong></div><button className="ft-cashflow-toggle" type="button" aria-expanded={cashFlowExpanded} onClick={() => setCashFlowExpanded((expanded) => !expanded)}><span><strong>Arus kas bersih</strong><small className={data.summary.income - data.summary.expense >= 0 ? 'ft-positive' : 'ft-negative'}>{formatRupiah(data.summary.income - data.summary.expense)}</small></span>{cashFlowExpanded ? <CaretUp size={17} /> : <CaretDown size={17} />}</button>{cashFlowExpanded ? <div className="ft-cashflow-expanded"><div className="ft-cashflow-columns"><span><i className="income" style={{ height: `${Math.max(4, data.summary.income / maxFlow * 100)}%` }} /></span><span><i className="expense" style={{ height: `${Math.max(4, data.summary.expense / maxFlow * 100)}%` }} /></span></div><div className="ft-cashflow-labels"><span>Pemasukan<strong>{formatRupiah(data.summary.income)}</strong></span><span>Pengeluaran<strong>{formatRupiah(data.summary.expense)}</strong></span></div></div> : <div className="ft-cashflow-balance" aria-label="Perbandingan pemasukan dan pengeluaran"><span><b>Pemasukan</b><i className="income" tabIndex={0} data-tooltip={`${formatRupiah(data.summary.income)} · ${data.summary.assets > 0 ? Math.round(data.summary.income / data.summary.assets * 100) : 0}% dari total aset`} style={{ width: `${data.summary.income / maxFlow * 100}%` }} /></span><span><b>Pengeluaran</b><i className="expense" tabIndex={0} data-tooltip={`${formatRupiah(data.summary.expense)} · ${data.summary.assets > 0 ? Math.round(data.summary.expense / data.summary.assets * 100) : 0}% dari total aset`} style={{ width: `${data.summary.expense / maxFlow * 100}%` }} /></span></div>}</div>
+        <div className="ft-balance-panel">
+          <div>
+            <p className="ft-eyebrow">Total aset</p>
+            <h1 className="ft-balance">{formatRupiah(data.summary.assets)}</h1>
+          </div>
+          <div className="ft-debt-summary">
+            <span>Total utang/kredit</span>
+            <strong>{formatRupiah(data.summary.liabilities)}</strong>
+          </div>
+          <div className="ft-debt-summary">
+            <span>Total Aset Bersih</span>
+            <strong>{formatRupiah(data.summary.net_worth)}</strong>
+          </div>
+          <button className="ft-cashflow-toggle" type="button" aria-expanded={cashFlowExpanded} onClick={() => setCashFlowExpanded((expanded) => !expanded)}>
+            <span>
+              <strong>Arus kas bersih</strong>
+              <small className={data.summary.income - data.summary.expense >= 0 ? 'ft-positive' : 'ft-negative'}>{formatRupiah(data.summary.income - data.summary.expense)}</small>
+            </span>
+            {cashFlowExpanded ? <CaretUp size={17} /> : <CaretDown size={17} />}
+          </button>
+          {cashFlowExpanded ? 
+          <div className="ft-cashflow-expanded">
+            <div className="ft-cashflow-chart">
+              <div className="ft-cashflow-columns">
+                <span><i className="income" style={{ height: `${Math.max(4, data.summary.income / maxFlow * 100)}%` }} /></span>
+                <span><i className="expense" style={{ height: `${Math.max(4, data.summary.expense / maxFlow * 100)}%` }} /></span>
+              </div>
+              <div className="ft-cashflow-labels">
+                <span>Pemasukan
+                  <strong>{formatRupiah(data.summary.income)}</strong>
+                </span>
+                <span>Pengeluaran
+                  <strong>{formatRupiah(data.summary.expense)}</strong>
+                </span>
+              </div>
+            </div>
+          </div> : 
+          <div className="ft-cashflow-balance" aria-label="Perbandingan pemasukan dan pengeluaran">
+            <span><b>Pemasukan</b>
+              <i className="income" tabIndex={0} data-tooltip={`${formatRupiah(data.summary.income)} · ${data.summary.assets > 0 ? Math.round(data.summary.income / data.summary.assets * 100) : 0}% dari total aset`} style={{ width: `${data.summary.income / maxFlow * 100}%` }} />
+            </span>
+            <span><b>Pengeluaran</b>
+              <i className="expense" tabIndex={0} data-tooltip={`${formatRupiah(data.summary.expense)} · ${data.summary.assets > 0 ? Math.round(data.summary.expense / data.summary.assets * 100) : 0}% dari total aset`} style={{ width: `${data.summary.expense / maxFlow * 100}%` }} />
+            </span>
+          </div>}
+        </div>
       </section>
 
       <section className="ft-section">

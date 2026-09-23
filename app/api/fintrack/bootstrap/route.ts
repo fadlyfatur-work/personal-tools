@@ -93,6 +93,7 @@ export async function GET() {
 
   const includedOwned = ownedAccounts.filter((account) => account.include_in_net_worth !== false)
   const assets = includedOwned.filter((account) => account.classification === 'asset').reduce((sum, account) => sum + Number(account.current_balance), 0)
+  // const clean_assets = includedOwned.filter((account) => account.classification === 'asset' && account.kind !== 'debt').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const liabilities = includedOwned.filter((account) => account.classification === 'liability').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const income = monthlyTransactions.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0)
   const expense = monthlyTransactions.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0)
@@ -108,7 +109,7 @@ export async function GET() {
     accounts,
     categories,
     transactions,
-    summary: { assets, liabilities, net_worth: assets - liabilities, income, expense },
+    summary: { assets, liabilities, net_worth: assets - liabilities, income, expense},
     report: { ...report, transactions: report.transactions.slice(0, 10), transaction_page: 1, transaction_page_size: 10, daily: [], weekly: [], trend_detail_loaded: false },
     collaboration: {
       owned_accounts: ownedAccounts,
