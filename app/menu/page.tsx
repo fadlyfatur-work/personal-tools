@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { Wallet, ClipboardText, FileText } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRight, Wallet, ClipboardText, FileText } from '@phosphor-icons/react/dist/ssr'
 
 export const metadata: Metadata = {
   title: 'Menu aplikasi — Personal Tools',
-  description: 'Pilih Fintrack, Paste Text, atau Template Surat Perjadin.',
+  description: 'Pilih Fintrack, Paste Text, Nominatif, atau Template Surat Perjadin.',
 }
 
 const features = [
@@ -13,18 +13,28 @@ const features = [
     title: 'Fintrack',
     desc: 'Kelola dompet & transaksi. Login PIN 6 digit.',
     icon: <Wallet size={32} aria-hidden="true" />,
+    gradient: 'from-purple-100 to-purple-200',
   },
   {
     href: '/paste',
     title: 'Paste Text',
     desc: 'Bagikan teks dengan kode singkat.',
     icon: <ClipboardText size={32} aria-hidden="true" />,
+    gradient: 'from-green-100 to-green-200',
+  },
+  {
+    href: '/nominatif',
+    title: 'Nominatif Perjalanan Dinas',
+    desc: 'Hitung rincian biaya sesuai aturan dan ekspor Excel.',
+    icon: <FileText size={32} aria-hidden="true" />,
+    gradient: 'from-rose-100 to-rose-200',
   },
   {
     href: '/documents/perjadin_2026',
     title: 'Template Surat Perjadin',
     desc: 'Buat template surat dengan mudah.',
     icon: <FileText size={32} aria-hidden="true" />,
+    gradient: 'from-blue-100 to-blue-200',
   },
 ]
 
@@ -66,38 +76,28 @@ export default function Home() {
             gap: 16,
           }}
         >
-          {features.map((f) => (
+          {features.map((f, index) => (
             <Link
               key={f.href}
               href={f.href}
-              style={{
-                background: '#fff',
-                border: '1px solid #dadce0',
-                borderRadius: 12,
-                padding: 24,
-                textDecoration: 'none',
-                color: 'inherit',
-                display: 'block',
-              }}
+              className={`group relative flex min-h-[340px] flex-col justify-between overflow-hidden rounded-3xl bg-linear-to-br p-7 text-[#202124] no-underline outline-offset-4 focus-visible:outline-2 focus-visible:outline-[#1a73e8] motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-1 motion-safe:active:scale-[0.98] sm:min-h-[390px] sm:p-8 ${f.gradient}`}
             >
-              <div style={{ fontSize: 32, marginBottom: 12 }}>{f.icon}</div>
-              <h2 style={{ fontSize: 16, fontWeight: 500, margin: 0 }}>
-                {f.title}
-              </h2>
-              <p style={{ fontSize: 13, color: '#5f6368', margin: '4px 0 0' }}>
-                {f.desc}
-              </p>
-              <span
-                style={{
-                  display: 'inline-block',
-                  marginTop: 12,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: '#1a73e8',
-                }}
-              >
-                Buka 
-              </span>
+              <div>
+                <span aria-hidden="true" className="mb-8 block font-mono text-sm text-[#50545b]">
+                  ( {String(index + 1).padStart(3, '0')} )
+                </span>
+                <div className="[&>svg]:size-12">{f.icon}</div>
+              </div>
+              <div className="mt-12">
+                <h2 className="mb-3 text-lg leading-snug font-semibold tracking-wide uppercase">
+                  {f.title}
+                </h2>
+                <p className="text-sm leading-relaxed text-[#454950]">{f.desc}</p>
+                <span className="mt-6 flex items-center justify-between text-sm font-medium">
+                  Buka
+                  <ArrowRight size={20} aria-hidden="true" className="motion-safe:transition-transform motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1" />
+                </span>
+              </div>
             </Link>
           ))}
         </div>

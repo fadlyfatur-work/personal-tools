@@ -1,0 +1,2788 @@
+{
+  "provinces": [
+    {
+      "name": "Aceh",
+      "daily": [
+        360000,
+        140000,
+        110000
+      ],
+      "hotel": [
+        5109000,
+        3526000,
+        1578000,
+        770000
+      ],
+      "transfer": 123000
+    },
+    {
+      "name": "Sumatra Utara",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        4960000,
+        2195000,
+        1188000,
+        699000
+      ],
+      "transfer": 278000
+    },
+    {
+      "name": "Riau",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        3820000,
+        3119000,
+        1650000,
+        852000
+      ],
+      "transfer": 99000
+    },
+    {
+      "name": "Kepulauan Riau",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        6177000,
+        2481000,
+        1388000,
+        792000
+      ],
+      "transfer": 159000
+    },
+    {
+      "name": "Jambi",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        5004000,
+        4102000,
+        1252000,
+        580000
+      ],
+      "transfer": 133000
+    },
+    {
+      "name": "Sumatra Barat",
+      "daily": [
+        380000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        5603000,
+        3373000,
+        1353000,
+        701000
+      ],
+      "transfer": 171000
+    },
+    {
+      "name": "Sumatra Selatan",
+      "daily": [
+        380000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        6298000,
+        3134000,
+        1966000,
+        861000
+      ],
+      "transfer": 162000
+    },
+    {
+      "name": "Lampung",
+      "daily": [
+        380000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        4806000,
+        2663000,
+        1539000,
+        621000
+      ],
+      "transfer": 162000
+    },
+    {
+      "name": "Bengkulu",
+      "daily": [
+        380000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        2140000,
+        1628000,
+        1546000,
+        692000
+      ],
+      "transfer": 106000
+    },
+    {
+      "name": "Bangka Belitung",
+      "daily": [
+        410000,
+        160000,
+        120000
+      ],
+      "hotel": [
+        4424000,
+        2838000,
+        1957000,
+        724000
+      ],
+      "transfer": 94000
+    },
+    {
+      "name": "Banten",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        5725000,
+        2373000,
+        1301000,
+        775000
+      ],
+      "transfer": 300000
+    },
+    {
+      "name": "Jawa Barat",
+      "daily": [
+        430000,
+        170000,
+        130000
+      ],
+      "hotel": [
+        5812000,
+        2755000,
+        1366000,
+        735000
+      ],
+      "transfer": 180000
+    },
+    {
+      "name": "DKI Jakarta",
+      "daily": [
+        530000,
+        210000,
+        160000
+      ],
+      "hotel": [
+        9331000,
+        2084000,
+        1062000,
+        730000
+      ],
+      "transfer": 250000
+    },
+    {
+      "name": "Jawa Tengah",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        6129000,
+        2138000,
+        1286000,
+        810000
+      ],
+      "transfer": 105000
+    },
+    {
+      "name": "DI Yogyakarta",
+      "daily": [
+        420000,
+        170000,
+        130000
+      ],
+      "hotel": [
+        5100000,
+        2695000,
+        1600000,
+        845000
+      ],
+      "transfer": 258000
+    },
+    {
+      "name": "Jawa Timur",
+      "daily": [
+        410000,
+        160000,
+        120000
+      ],
+      "hotel": [
+        4449000,
+        2007000,
+        1234000,
+        814000
+      ],
+      "transfer": 225000
+    },
+    {
+      "name": "Bali",
+      "daily": [
+        480000,
+        190000,
+        140000
+      ],
+      "hotel": [
+        7328000,
+        2433000,
+        1754000,
+        1138000
+      ],
+      "transfer": 219000
+    },
+    {
+      "name": "Nusa Tenggara Barat",
+      "daily": [
+        440000,
+        180000,
+        130000
+      ],
+      "hotel": [
+        4682000,
+        2648000,
+        1418000,
+        907000
+      ],
+      "transfer": 224000
+    },
+    {
+      "name": "Nusa Tenggara Timur",
+      "daily": [
+        430000,
+        170000,
+        130000
+      ],
+      "hotel": [
+        4013000,
+        2283000,
+        1450000,
+        737000
+      ],
+      "transfer": 105000
+    },
+    {
+      "name": "Kalimantan Barat",
+      "daily": [
+        380000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        2654000,
+        1923000,
+        1125000,
+        576000
+      ],
+      "transfer": 165000
+    },
+    {
+      "name": "Kalimantan Tengah",
+      "daily": [
+        360000,
+        140000,
+        110000
+      ],
+      "hotel": [
+        4901000,
+        3391000,
+        1189000,
+        706000
+      ],
+      "transfer": 130000
+    },
+    {
+      "name": "Kalimantan Selatan",
+      "daily": [
+        380000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        4797000,
+        3316000,
+        1500000,
+        746000
+      ],
+      "transfer": 174000
+    },
+    {
+      "name": "Kalimantan Timur",
+      "daily": [
+        430000,
+        170000,
+        130000
+      ],
+      "hotel": [
+        4000000,
+        2342000,
+        1507000,
+        804000
+      ],
+      "transfer": 300000
+    },
+    {
+      "name": "Kalimantan Utara",
+      "daily": [
+        430000,
+        170000,
+        130000
+      ],
+      "hotel": [
+        4000000,
+        2854000,
+        1507000,
+        904000
+      ],
+      "transfer": 211000
+    },
+    {
+      "name": "Sulawesi Utara",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        5264000,
+        2290000,
+        1270000,
+        978000
+      ],
+      "transfer": 134000
+    },
+    {
+      "name": "Gorontalo",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        4168000,
+        3107000,
+        1606000,
+        955000
+      ],
+      "transfer": 256000
+    },
+    {
+      "name": "Sulawesi Barat",
+      "daily": [
+        410000,
+        160000,
+        120000
+      ],
+      "hotel": [
+        4076000,
+        3098000,
+        1344000,
+        704000
+      ],
+      "transfer": 283000
+    },
+    {
+      "name": "Sulawesi Selatan",
+      "daily": [
+        430000,
+        170000,
+        130000
+      ],
+      "hotel": [
+        4820000,
+        1938000,
+        1423000,
+        745000
+      ],
+      "transfer": 181000
+    },
+    {
+      "name": "Sulawesi Tengah",
+      "daily": [
+        370000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        2309000,
+        2166000,
+        1679000,
+        951000
+      ],
+      "transfer": 149000
+    },
+    {
+      "name": "Sulawesi Tenggara",
+      "daily": [
+        380000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        3089000,
+        2755000,
+        1297000,
+        786000
+      ],
+      "transfer": 154000
+    },
+    {
+      "name": "Maluku",
+      "daily": [
+        380000,
+        150000,
+        110000
+      ],
+      "hotel": [
+        3467000,
+        3240000,
+        1059000,
+        667000
+      ],
+      "transfer": 279000
+    },
+    {
+      "name": "Maluku Utara",
+      "daily": [
+        430000,
+        170000,
+        130000
+      ],
+      "hotel": [
+        4612000,
+        3843000,
+        1160000,
+        654000
+      ],
+      "transfer": 208000
+    },
+    {
+      "name": "Papua",
+      "daily": [
+        580000,
+        230000,
+        170000
+      ],
+      "hotel": [
+        3859000,
+        3318000,
+        2521000,
+        1038000
+      ],
+      "transfer": 462000
+    },
+    {
+      "name": "Papua Barat",
+      "daily": [
+        480000,
+        190000,
+        140000
+      ],
+      "hotel": [
+        3872000,
+        3575000,
+        2056000,
+        967000
+      ],
+      "transfer": 228000
+    },
+    {
+      "name": "Papua Barat Daya",
+      "daily": [
+        480000,
+        190000,
+        140000
+      ],
+      "hotel": [
+        3872000,
+        3575000,
+        2056000,
+        967000
+      ],
+      "transfer": null
+    },
+    {
+      "name": "Papua Tengah",
+      "daily": [
+        580000,
+        230000,
+        170000
+      ],
+      "hotel": [
+        3859000,
+        3318000,
+        2521000,
+        1038000
+      ],
+      "transfer": null
+    },
+    {
+      "name": "Papua Selatan",
+      "daily": [
+        580000,
+        230000,
+        170000
+      ],
+      "hotel": [
+        5673000,
+        4877000,
+        3706000,
+        1526000
+      ],
+      "transfer": null
+    },
+    {
+      "name": "Papua Pegunungan",
+      "daily": [
+        580000,
+        230000,
+        170000
+      ],
+      "hotel": [
+        5711000,
+        4911000,
+        3731000,
+        1536000
+      ],
+      "transfer": null
+    }
+  ],
+  "flights": [
+    {
+      "from": "Jakarta",
+      "to": "Ambon",
+      "business": 13285000,
+      "economy": 7081000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Balikpapan",
+      "business": 7412000,
+      "economy": 3797000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Banda Aceh",
+      "business": 7519000,
+      "economy": 4807000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Bandar Lampung",
+      "business": 2407000,
+      "economy": 1583000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Banjarmasin",
+      "business": 5252000,
+      "economy": 3205000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Batam",
+      "business": 4867000,
+      "economy": 3091000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Bengkulu",
+      "business": 4364000,
+      "economy": 2770000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Biak",
+      "business": 14065000,
+      "economy": 8046000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Denpasar",
+      "business": 5305000,
+      "economy": 3262000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Gorontalo",
+      "business": 7231000,
+      "economy": 5162000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Jambi",
+      "business": 4065000,
+      "economy": 2584000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Jayapura",
+      "business": 14568000,
+      "economy": 8767000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Yogyakarta",
+      "business": 4107000,
+      "economy": 2268000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Kendari",
+      "business": 7658000,
+      "economy": 4265000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Kupang",
+      "business": 9413000,
+      "economy": 5081000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Makassar",
+      "business": 7444000,
+      "economy": 3829000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Malang",
+      "business": 4599000,
+      "economy": 2695000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Mamuju",
+      "business": 7295000,
+      "economy": 5208000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Manado",
+      "business": 10824000,
+      "economy": 5460000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Manokwari",
+      "business": 16226000,
+      "economy": 10824000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Mataram",
+      "business": 5316000,
+      "economy": 3230000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Medan",
+      "business": 7252000,
+      "economy": 4054000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Padang",
+      "business": 5530000,
+      "economy": 3159000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Palangkaraya",
+      "business": 4984000,
+      "economy": 2984000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Palembang",
+      "business": 3861000,
+      "economy": 2268000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Palu",
+      "business": 9348000,
+      "economy": 5113000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Pangkal Pinang",
+      "business": 3412000,
+      "economy": 2139000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Pekanbaru",
+      "business": 5583000,
+      "economy": 3016000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Pontianak",
+      "business": 4353000,
+      "economy": 2781000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Semarang",
+      "business": 3861000,
+      "economy": 2182000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Solo",
+      "business": 3861000,
+      "economy": 2342000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Surabaya",
+      "business": 5466000,
+      "economy": 2674000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Ternate",
+      "business": 10001000,
+      "economy": 6664000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Timika",
+      "business": 13830000,
+      "economy": 7902000,
+      "page": 86
+    },
+    {
+      "from": "Jakarta",
+      "to": "Tanjung Selor",
+      "business": 7424000,
+      "economy": 4341000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Denpasar",
+      "business": 8054000,
+      "economy": 4784000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Jayapura",
+      "business": 7434000,
+      "economy": 4453000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Kendari",
+      "business": 4824000,
+      "economy": 3056000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Makassar",
+      "business": 6022000,
+      "economy": 3697000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Manokwari",
+      "business": 5177000,
+      "economy": 3239000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Palu",
+      "business": 6140000,
+      "economy": 3754000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Sorong",
+      "business": 3637000,
+      "economy": 2415000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Surabaya",
+      "business": 8803000,
+      "economy": 5185000,
+      "page": 86
+    },
+    {
+      "from": "Ambon",
+      "to": "Ternate",
+      "business": 4022000,
+      "economy": 2621000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Banda Aceh",
+      "business": 12739000,
+      "economy": 7222000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Batam",
+      "business": 10354000,
+      "economy": 5677000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Denpasar",
+      "business": 10739000,
+      "economy": 6044000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Jayapura",
+      "business": 19071000,
+      "economy": 10793000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Yogyakarta",
+      "business": 9669000,
+      "economy": 5082000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Makassar",
+      "business": 12664000,
+      "economy": 6581000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Manado",
+      "business": 15702000,
+      "economy": 7806000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Medan",
+      "business": 12493000,
+      "economy": 6570000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Padang",
+      "business": 10942000,
+      "economy": 5745000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Palembang",
+      "business": 9445000,
+      "economy": 5082000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Pekanbaru",
+      "business": 10996000,
+      "economy": 5803000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Semarang",
+      "business": 9445000,
+      "economy": 5002000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Solo",
+      "business": 9445000,
+      "economy": 5150000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Surabaya",
+      "business": 10889000,
+      "economy": 5471000,
+      "page": 86
+    },
+    {
+      "from": "Balikpapan",
+      "to": "Timika",
+      "business": 18408000,
+      "economy": 10107000,
+      "page": 86
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Denpasar",
+      "business": 10835000,
+      "economy": 6719000,
+      "page": 86
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Jayapura",
+      "business": 19167000,
+      "economy": 11468000,
+      "page": 86
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Yogyakarta",
+      "business": 9765000,
+      "economy": 5757000,
+      "page": 86
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Makassar",
+      "business": 12760000,
+      "economy": 7256000,
+      "page": 86
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Manado",
+      "business": 15798000,
+      "economy": 8481000,
+      "page": 87
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Pontianak",
+      "business": 9990000,
+      "economy": 6249000,
+      "page": 87
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Semarang",
+      "business": 9530000,
+      "economy": 5677000,
+      "page": 87
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Solo",
+      "business": 9530000,
+      "economy": 5826000,
+      "page": 87
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Surabaya",
+      "business": 10985000,
+      "economy": 6147000,
+      "page": 87
+    },
+    {
+      "from": "Banda Aceh",
+      "to": "Timika",
+      "business": 18504000,
+      "economy": 10782000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Balikpapan",
+      "business": 8129000,
+      "economy": 4419000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Banda Aceh",
+      "business": 8225000,
+      "economy": 5094000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Banjarmasin",
+      "business": 6193000,
+      "economy": 3651000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Batam",
+      "business": 5840000,
+      "economy": 3549000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Biak",
+      "business": 14119000,
+      "economy": 8012000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Denpasar",
+      "business": 6236000,
+      "economy": 3903000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Jayapura",
+      "business": 14568000,
+      "economy": 8664000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Yogyakarta",
+      "business": 5155000,
+      "economy": 2954000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Kendari",
+      "business": 8354000,
+      "economy": 4796000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Makassar",
+      "business": 8161000,
+      "economy": 4453000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Malang",
+      "business": 5594000,
+      "economy": 3354000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Manado",
+      "business": 11199000,
+      "economy": 5677000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Mataram",
+      "business": 6246000,
+      "economy": 3880000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Medan",
+      "business": 7979000,
+      "economy": 4441000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Padang",
+      "business": 6439000,
+      "economy": 3617000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Palangkaraya",
+      "business": 5947000,
+      "economy": 3640000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Palembang",
+      "business": 4931000,
+      "economy": 2954000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Pekanbaru",
+      "business": 6482000,
+      "economy": 3674000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Pontianak",
+      "business": 5380000,
+      "economy": 3446000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Semarang",
+      "business": 4931000,
+      "economy": 2873000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Solo",
+      "business": 4931000,
+      "economy": 3022000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Surabaya",
+      "business": 6386000,
+      "economy": 3342000,
+      "page": 87
+    },
+    {
+      "from": "Bandar Lampung",
+      "to": "Timika",
+      "business": 13905000,
+      "economy": 7977000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Batam",
+      "business": 6289000,
+      "economy": 3583000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Denpasar",
+      "business": 5626000,
+      "economy": 3252000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Jambi",
+      "business": 5006000,
+      "economy": 2941000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Yogyakarta",
+      "business": 3369000,
+      "economy": 2279000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Padang",
+      "business": 6129000,
+      "economy": 3508000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Palembang",
+      "business": 4385000,
+      "economy": 2631000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Pangkal Pinang",
+      "business": 4599000,
+      "economy": 2738000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Pekanbaru",
+      "business": 6525000,
+      "economy": 3701000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Semarang",
+      "business": 3027000,
+      "economy": 1957000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Solo",
+      "business": 3647000,
+      "economy": 2268000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Surabaya",
+      "business": 4824000,
+      "economy": 3056000,
+      "page": 87
+    },
+    {
+      "from": "Bandung",
+      "to": "Tanjung Pandan",
+      "business": 4439000,
+      "economy": 2850000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Banda Aceh",
+      "business": 10792000,
+      "economy": 6022000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Batam",
+      "business": 8407000,
+      "economy": 4578000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Biak",
+      "business": 16686000,
+      "economy": 8749000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Denpasar",
+      "business": 8792000,
+      "economy": 4920000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Jayapura",
+      "business": 17135000,
+      "economy": 9359000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Yogyakarta",
+      "business": 7723000,
+      "economy": 4304000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Medan",
+      "business": 10546000,
+      "economy": 5412000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Padang",
+      "business": 9006000,
+      "economy": 4642000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Palembang",
+      "business": 7498000,
+      "economy": 4022000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Pekanbaru",
+      "business": 9049000,
+      "economy": 4696000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Semarang",
+      "business": 7498000,
+      "economy": 3958000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Solo",
+      "business": 7498000,
+      "economy": 4097000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Surabaya",
+      "business": 8942000,
+      "economy": 4592000,
+      "page": 87
+    },
+    {
+      "from": "Banjarmasin",
+      "to": "Timika",
+      "business": 16472000,
+      "economy": 8897000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Banda Aceh",
+      "business": 10439000,
+      "economy": 5936000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Denpasar",
+      "business": 8450000,
+      "economy": 4824000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Jayapura",
+      "business": 16782000,
+      "economy": 9263000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Yogyakarta",
+      "business": 7370000,
+      "economy": 3936000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Makassar",
+      "business": 10375000,
+      "economy": 5711000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Manado",
+      "business": 13413000,
+      "economy": 6482000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Medan",
+      "business": 10193000,
+      "economy": 5316000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Padang",
+      "business": 8653000,
+      "economy": 4546000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Palembang",
+      "business": 7145000,
+      "economy": 3936000,
+      "page": 87
+    },
+    {
+      "from": "Batam",
+      "to": "Pekanbaru",
+      "business": 8707000,
+      "economy": 4599000,
+      "page": 88
+    },
+    {
+      "from": "Batam",
+      "to": "Pontianak",
+      "business": 7594000,
+      "economy": 4396000,
+      "page": 88
+    },
+    {
+      "from": "Batam",
+      "to": "Semarang",
+      "business": 7145000,
+      "economy": 3861000,
+      "page": 88
+    },
+    {
+      "from": "Batam",
+      "to": "Solo",
+      "business": 7145000,
+      "economy": 4000000,
+      "page": 88
+    },
+    {
+      "from": "Batam",
+      "to": "Surabaya",
+      "business": 8600000,
+      "economy": 4300000,
+      "page": 88
+    },
+    {
+      "from": "Batam",
+      "to": "Timika",
+      "business": 16119000,
+      "economy": 8621000,
+      "page": 88
+    },
+    {
+      "from": "Bengkulu",
+      "to": "Palembang",
+      "business": 2899000,
+      "economy": 2026000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Balikpapan",
+      "business": 18622000,
+      "economy": 9477000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Banda Aceh",
+      "business": 18718000,
+      "economy": 10108000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Batam",
+      "business": 16333000,
+      "economy": 8664000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Denpasar",
+      "business": 16729000,
+      "economy": 8995000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Jayapura",
+      "business": 3615000,
+      "economy": 2321000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Yogyakarta",
+      "business": 15648000,
+      "economy": 8108000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Manado",
+      "business": 11734000,
+      "economy": 6353000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Medan",
+      "business": 18472000,
+      "economy": 9498000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Padang",
+      "business": 16932000,
+      "economy": 8728000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Palembang",
+      "business": 15424000,
+      "economy": 8108000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Pekanbaru",
+      "business": 16985000,
+      "economy": 8781000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Pontianak",
+      "business": 15873000,
+      "economy": 8568000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Surabaya",
+      "business": 12782000,
+      "economy": 7081000,
+      "page": 88
+    },
+    {
+      "from": "Biak",
+      "to": "Timika",
+      "business": 5808000,
+      "economy": 3444000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Jayapura",
+      "business": 11680000,
+      "economy": 7325000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Kupang",
+      "business": 5091000,
+      "economy": 3159000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Makassar",
+      "business": 4182000,
+      "economy": 2816000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Manado",
+      "business": 7851000,
+      "economy": 4578000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Mataram",
+      "business": 1840000,
+      "economy": 1488000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Medan",
+      "business": 10589000,
+      "economy": 5658000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Padang",
+      "business": 9049000,
+      "economy": 4888000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Palangkaraya",
+      "business": 8557000,
+      "economy": 4909000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Palembang",
+      "business": 7541000,
+      "economy": 4278000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Pekanbaru",
+      "business": 9092000,
+      "economy": 4942000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Pontianak",
+      "business": 7990000,
+      "economy": 4738000,
+      "page": 88
+    },
+    {
+      "from": "Denpasar",
+      "to": "Timika",
+      "business": 10140000,
+      "economy": 6559000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Balikpapan",
+      "business": 7733000,
+      "economy": 4407000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Banjarmasin",
+      "business": 7690000,
+      "economy": 4193000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Denpasar",
+      "business": 7733000,
+      "economy": 4439000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Yogyakarta",
+      "business": 6653000,
+      "economy": 3551000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Kupang",
+      "business": 11434000,
+      "economy": 6075000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Makassar",
+      "business": 9659000,
+      "economy": 4952000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Malang",
+      "business": 7091000,
+      "economy": 3925000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Manado",
+      "business": 12707000,
+      "economy": 6097000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Palangkaraya",
+      "business": 7444000,
+      "economy": 4193000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Pontianak",
+      "business": 6878000,
+      "economy": 4011000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Semarang",
+      "business": 6428000,
+      "economy": 3476000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Solo",
+      "business": 6428000,
+      "economy": 3615000,
+      "page": 88
+    },
+    {
+      "from": "Jambi",
+      "to": "Surabaya",
+      "business": 7883000,
+      "economy": 3915000,
+      "page": 88
+    },
+    {
+      "from": "Jayapura",
+      "to": "Yogyakarta",
+      "business": 13274000,
+      "economy": 7690000,
+      "page": 88
+    },
+    {
+      "from": "Jayapura",
+      "to": "Manado",
+      "business": 22109000,
+      "economy": 11263000,
+      "page": 88
+    },
+    {
+      "from": "Jayapura",
+      "to": "Medan",
+      "business": 18932000,
+      "economy": 10097000,
+      "page": 88
+    },
+    {
+      "from": "Jayapura",
+      "to": "Padang",
+      "business": 17381000,
+      "economy": 9327000,
+      "page": 88
+    },
+    {
+      "from": "Jayapura",
+      "to": "Palembang",
+      "business": 15873000,
+      "economy": 8717000,
+      "page": 88
+    },
+    {
+      "from": "Jayapura",
+      "to": "Pekanbaru",
+      "business": 17435000,
+      "economy": 9380000,
+      "page": 88
+    },
+    {
+      "from": "Jayapura",
+      "to": "Pontianak",
+      "business": 16322000,
+      "economy": 9177000,
+      "page": 88
+    },
+    {
+      "from": "Jayapura",
+      "to": "Timika",
+      "business": 3615000,
+      "economy": 2289000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Denpasar",
+      "business": 3861000,
+      "economy": 2655000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Makassar",
+      "business": 6525000,
+      "economy": 3893000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Manado",
+      "business": 10536000,
+      "economy": 5722000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Medan",
+      "business": 9519000,
+      "economy": 4770000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Padang",
+      "business": 7969000,
+      "economy": 4280000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Palembang",
+      "business": 6460000,
+      "economy": 3617000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Pekanbaru",
+      "business": 8022000,
+      "economy": 4054000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Pontianak",
+      "business": 6910000,
+      "economy": 3840000,
+      "page": 88
+    },
+    {
+      "from": "Yogyakarta",
+      "to": "Timika",
+      "business": 11894000,
+      "economy": 7114000,
+      "page": 88
+    },
+    {
+      "from": "Kendari",
+      "to": "Banda Aceh",
+      "business": 12953000,
+      "economy": 7102000,
+      "page": 88
+    },
+    {
+      "from": "Kendari",
+      "to": "Batam",
+      "business": 10568000,
+      "economy": 5658000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Denpasar",
+      "business": 5455000,
+      "economy": 3503000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Yogyakarta",
+      "business": 8129000,
+      "economy": 4706000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Padang",
+      "business": 11167000,
+      "economy": 5722000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Palembang",
+      "business": 9659000,
+      "economy": 5102000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Pekanbaru",
+      "business": 11220000,
+      "economy": 5776000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Semarang",
+      "business": 9659000,
+      "economy": 5027000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Solo",
+      "business": 9659000,
+      "economy": 5166000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Surabaya",
+      "business": 11103000,
+      "economy": 5466000,
+      "page": 89
+    },
+    {
+      "from": "Kendari",
+      "to": "Timika",
+      "business": 18633000,
+      "economy": 9798000,
+      "page": 89
+    },
+    {
+      "from": "Kupang",
+      "to": "Jayapura",
+      "business": 14386000,
+      "economy": 8676000,
+      "page": 89
+    },
+    {
+      "from": "Kupang",
+      "to": "Yogyakarta",
+      "business": 7348000,
+      "economy": 4182000,
+      "page": 89
+    },
+    {
+      "from": "Kupang",
+      "to": "Makassar",
+      "business": 7637000,
+      "economy": 4311000,
+      "page": 89
+    },
+    {
+      "from": "Kupang",
+      "to": "Manado",
+      "business": 11648000,
+      "economy": 6140000,
+      "page": 89
+    },
+    {
+      "from": "Kupang",
+      "to": "Surabaya",
+      "business": 6749000,
+      "economy": 3983000,
+      "page": 89
+    },
+    {
+      "from": "Makassar",
+      "to": "Biak",
+      "business": 8493000,
+      "economy": 4931000,
+      "page": 89
+    },
+    {
+      "from": "Makassar",
+      "to": "Jayapura",
+      "business": 10193000,
+      "economy": 6193000,
+      "page": 89
+    },
+    {
+      "from": "Makassar",
+      "to": "Kendari",
+      "business": 2663000,
+      "economy": 1912000,
+      "page": 89
+    },
+    {
+      "from": "Makassar",
+      "to": "Manado",
+      "business": 5327000,
+      "economy": 2909000,
+      "page": 89
+    },
+    {
+      "from": "Makassar",
+      "to": "Timika",
+      "business": 11723000,
+      "economy": 7027000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Balikpapan",
+      "business": 10108000,
+      "economy": 5134000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Banda Aceh",
+      "business": 10204000,
+      "economy": 5765000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Banjarmasin",
+      "business": 8161000,
+      "economy": 4407000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Batam",
+      "business": 7819000,
+      "economy": 4311000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Biak",
+      "business": 16087000,
+      "economy": 8482000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Jayapura",
+      "business": 16536000,
+      "economy": 9092000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Kendari",
+      "business": 10322000,
+      "economy": 5487000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Makassar",
+      "business": 10129000,
+      "economy": 5166000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Manado",
+      "business": 13167000,
+      "economy": 6311000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Medan",
+      "business": 9958000,
+      "economy": 5145000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Padang",
+      "business": 8418000,
+      "economy": 4385000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Palangkaraya",
+      "business": 7915000,
+      "economy": 4407000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Palembang",
+      "business": 6899000,
+      "economy": 3765000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Pekanbaru",
+      "business": 8461000,
+      "economy": 4439000,
+      "page": 89
+    },
+    {
+      "from": "Malang",
+      "to": "Timika",
+      "business": 15873000,
+      "economy": 8461000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Medan",
+      "business": 15552000,
+      "economy": 7316000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Padang",
+      "business": 14012000,
+      "economy": 6546000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Palembang",
+      "business": 12504000,
+      "economy": 5926000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Pekanbaru",
+      "business": 14055000,
+      "economy": 6599000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Pontianak",
+      "business": 12953000,
+      "economy": 6396000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Semarang",
+      "business": 12504000,
+      "economy": 5851000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Solo",
+      "business": 12504000,
+      "economy": 5990000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Surabaya",
+      "business": 9937000,
+      "economy": 5262000,
+      "page": 89
+    },
+    {
+      "from": "Manado",
+      "to": "Timika",
+      "business": 16183000,
+      "economy": 8995000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Balikpapan",
+      "business": 10750000,
+      "economy": 5615000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Banda Aceh",
+      "business": 10846000,
+      "economy": 6246000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Banjarmasin",
+      "business": 8803000,
+      "economy": 4888000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Batam",
+      "business": 8461000,
+      "economy": 4803000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Biak",
+      "business": 11552000,
+      "economy": 6546000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Jayapura",
+      "business": 13092000,
+      "economy": 7575000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Yogyakarta",
+      "business": 4417000,
+      "economy": 2968000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Makassar",
+      "business": 4717000,
+      "economy": 3113000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Manado",
+      "business": 8717000,
+      "economy": 5070000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Medan",
+      "business": 10600000,
+      "economy": 5637000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Padang",
+      "business": 9060000,
+      "economy": 4867000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Palembang",
+      "business": 7551000,
+      "economy": 4246000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Pekanbaru",
+      "business": 9102000,
+      "economy": 4909000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Pontianak",
+      "business": 8001000,
+      "economy": 4706000,
+      "page": 89
+    },
+    {
+      "from": "Mataram",
+      "to": "Surabaya",
+      "business": 3829000,
+      "economy": 2484000,
+      "page": 89
+    },
+    {
+      "from": "Medan",
+      "to": "Banda Aceh",
+      "business": 3466000,
+      "economy": 2347000,
+      "page": 89
+    },
+    {
+      "from": "Medan",
+      "to": "Makassar",
+      "business": 12514000,
+      "economy": 6172000,
+      "page": 89
+    },
+    {
+      "from": "Medan",
+      "to": "Pontianak",
+      "business": 9733000,
+      "economy": 5230000,
+      "page": 89
+    },
+    {
+      "from": "Medan",
+      "to": "Semarang",
+      "business": 9284000,
+      "economy": 4696000,
+      "page": 89
+    },
+    {
+      "from": "Medan",
+      "to": "Solo",
+      "business": 9284000,
+      "economy": 4835000,
+      "page": 89
+    },
+    {
+      "from": "Medan",
+      "to": "Surabaya",
+      "business": 10739000,
+      "economy": 5134000,
+      "page": 90
+    },
+    {
+      "from": "Medan",
+      "to": "Timika",
+      "business": 18258000,
+      "economy": 9455000,
+      "page": 90
+    },
+    {
+      "from": "Padang",
+      "to": "Makassar",
+      "business": 10974000,
+      "economy": 5402000,
+      "page": 90
+    },
+    {
+      "from": "Padang",
+      "to": "Pontianak",
+      "business": 8193000,
+      "economy": 4460000,
+      "page": 90
+    },
+    {
+      "from": "Padang",
+      "to": "Semarang",
+      "business": 7744000,
+      "economy": 3925000,
+      "page": 90
+    },
+    {
+      "from": "Padang",
+      "to": "Solo",
+      "business": 7744000,
+      "economy": 4065000,
+      "page": 90
+    },
+    {
+      "from": "Padang",
+      "to": "Surabaya",
+      "business": 9199000,
+      "economy": 4364000,
+      "page": 90
+    },
+    {
+      "from": "Padang",
+      "to": "Timika",
+      "business": 16718000,
+      "economy": 8685000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Banda Aceh",
+      "business": 10546000,
+      "economy": 6022000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Batam",
+      "business": 8161000,
+      "economy": 4578000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Yogyakarta",
+      "business": 7477000,
+      "economy": 4304000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Mataram",
+      "business": 8557000,
+      "economy": 4888000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Medan",
+      "business": 10300000,
+      "economy": 5412000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Padang",
+      "business": 8760000,
+      "economy": 4642000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Palembang",
+      "business": 7252000,
+      "economy": 4022000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Pekanbaru",
+      "business": 8803000,
+      "economy": 4696000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Semarang",
+      "business": 7252000,
+      "economy": 3947000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Solo",
+      "business": 7252000,
+      "economy": 4086000,
+      "page": 90
+    },
+    {
+      "from": "Palangkaraya",
+      "to": "Surabaya",
+      "business": 8696000,
+      "economy": 4385000,
+      "page": 90
+    },
+    {
+      "from": "Palembang",
+      "to": "Balikpapan",
+      "business": 9894000,
+      "economy": 5220000,
+      "page": 90
+    },
+    {
+      "from": "Palembang",
+      "to": "Makassar",
+      "business": 9466000,
+      "economy": 4781000,
+      "page": 90
+    },
+    {
+      "from": "Palembang",
+      "to": "Pontianak",
+      "business": 6685000,
+      "economy": 3840000,
+      "page": 90
+    },
+    {
+      "from": "Palembang",
+      "to": "Semarang",
+      "business": 6236000,
+      "economy": 3305000,
+      "page": 90
+    },
+    {
+      "from": "Palembang",
+      "to": "Solo",
+      "business": 6236000,
+      "economy": 3444000,
+      "page": 90
+    },
+    {
+      "from": "Palembang",
+      "to": "Surabaya",
+      "business": 7690000,
+      "economy": 3744000,
+      "page": 90
+    },
+    {
+      "from": "Palembang",
+      "to": "Timika",
+      "business": 15210000,
+      "economy": 8076000,
+      "page": 90
+    },
+    {
+      "from": "Palu",
+      "to": "Makassar",
+      "business": 4268000,
+      "economy": 2578000,
+      "page": 90
+    },
+    {
+      "from": "Palu",
+      "to": "Poso",
+      "business": 1957000,
+      "economy": 1423000,
+      "page": 90
+    },
+    {
+      "from": "Palu",
+      "to": "Sorong",
+      "business": 6878000,
+      "economy": 4155000,
+      "page": 90
+    },
+    {
+      "from": "Palu",
+      "to": "Surabaya",
+      "business": 6878000,
+      "economy": 3883000,
+      "page": 90
+    },
+    {
+      "from": "Palu",
+      "to": "Toli-Toli",
+      "business": 2941000,
+      "economy": 1915000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Balikpapan",
+      "business": 9038000,
+      "economy": 4631000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Banjarmasin",
+      "business": 7091000,
+      "economy": 3915000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Batam",
+      "business": 6739000,
+      "economy": 3818000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Yogyakarta",
+      "business": 6065000,
+      "economy": 3262000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Makassar",
+      "business": 9060000,
+      "economy": 4663000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Manado",
+      "business": 12097000,
+      "economy": 5808000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Medan",
+      "business": 8888000,
+      "economy": 4653000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Padang",
+      "business": 7337000,
+      "economy": 3883000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Palembang",
+      "business": 5829000,
+      "economy": 3262000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Pekanbaru",
+      "business": 7391000,
+      "economy": 3936000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Pontianak",
+      "business": 6279000,
+      "economy": 3733000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Semarang",
+      "business": 5829000,
+      "economy": 3187000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Solo",
+      "business": 5829000,
+      "economy": 3326000,
+      "page": 90
+    },
+    {
+      "from": "Pangkal Pinang",
+      "to": "Surabaya",
+      "business": 7284000,
+      "economy": 3626000,
+      "page": 90
+    },
+    {
+      "from": "Pekanbaru",
+      "to": "Pontianak",
+      "business": 8247000,
+      "economy": 4514000,
+      "page": 90
+    },
+    {
+      "from": "Pekanbaru",
+      "to": "Semarang",
+      "business": 7797000,
+      "economy": 3979000,
+      "page": 90
+    },
+    {
+      "from": "Pekanbaru",
+      "to": "Solo",
+      "business": 7797000,
+      "economy": 4118000,
+      "page": 90
+    },
+    {
+      "from": "Pekanbaru",
+      "to": "Surabaya",
+      "business": 9241000,
+      "economy": 4407000,
+      "page": 90
+    },
+    {
+      "from": "Pekanbaru",
+      "to": "Timika",
+      "business": 16771000,
+      "economy": 8739000,
+      "page": 90
+    },
+    {
+      "from": "Pontianak",
+      "to": "Makassar",
+      "business": 9915000,
+      "economy": 5241000,
+      "page": 90
+    },
+    {
+      "from": "Pontianak",
+      "to": "Semarang",
+      "business": 6685000,
+      "economy": 3765000,
+      "page": 90
+    },
+    {
+      "from": "Pontianak",
+      "to": "Solo",
+      "business": 6685000,
+      "economy": 3904000,
+      "page": 90
+    },
+    {
+      "from": "Pontianak",
+      "to": "Surabaya",
+      "business": 8140000,
+      "economy": 4204000,
+      "page": 90
+    },
+    {
+      "from": "Pontianak",
+      "to": "Timika",
+      "business": 15659000,
+      "economy": 8535000,
+      "page": 90
+    },
+    {
+      "from": "Semarang",
+      "to": "Makassar",
+      "business": 9466000,
+      "economy": 4706000,
+      "page": 90
+    },
+    {
+      "from": "Solo",
+      "to": "Makassar",
+      "business": 9466000,
+      "economy": 4845000,
+      "page": 90
+    },
+    {
+      "from": "Surabaya",
+      "to": "Denpasar",
+      "business": 3198000,
+      "economy": 2118000,
+      "page": 90
+    },
+    {
+      "from": "Surabaya",
+      "to": "Jayapura",
+      "business": 12675000,
+      "economy": 7250000,
+      "page": 90
+    },
+    {
+      "from": "Surabaya",
+      "to": "Makassar",
+      "business": 5936000,
+      "economy": 3674000,
+      "page": 90
+    },
+    {
+      "from": "Surabaya",
+      "to": "Timika",
+      "business": 11295000,
+      "economy": 6589000,
+      "page": 90
+    }
+  ]
+}
