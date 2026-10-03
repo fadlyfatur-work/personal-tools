@@ -44,7 +44,7 @@ export default function Home() {
         <p className={styles.projectNote}>Teknologi di atas mengikuti versi proyek portofolio asal. Menu aplikasi dan Fintrack di situs ini berjalan dengan Next.js dan Supabase.</p>
       </section>
       <section className={`${styles.section} ${styles.skillSection}`} aria-labelledby="skills-title"><div><h2 id="skills-title">Teknologi<br />yang saya gunakan.</h2><p className={styles.muted}>Dari antarmuka hingga infrastruktur.</p></div><ul className={styles.skills}>{skills.map(skill => <li key={skill}>{skill}</li>)}</ul></section>
-      <section id="contact" className={`${styles.section} ${styles.contact}`} aria-labelledby="contact-title"><p className={styles.availability}><span aria-hidden="true" />Terbuka untuk full-time dan kontrak</p><h2 id="contact-title">Let’s build<br />something great.</h2><p className={styles.muted}>Punya proyek atau ingin bekerja bersama? Mari mulai percakapan.</p><ContactActions /></section>
+      <section id="contact" className={`${styles.section} ${styles.contact}`} aria-labelledby="contact-title"><p className={styles.availability}><span aria-hidden="true" />Terbuka untuk full-time dan kontrak</p><h2 id="contact-title">Diskusikan<br />proyek web Anda.</h2><p className={styles.muted}>Punya proyek atau ingin bekerja bersama? Mari mulai percakapan.</p><ContactActions /></section>
     </main>
     <footer className={styles.footer}><div className={styles.container}><span>Fadly Faturrohman</span><div>{socials.map(social => <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer">{social.name}<span className={styles.srOnly}> (tab baru)</span></a>)}<Link href="/menu">Menu aplikasi</Link></div></div></footer>
   </div>

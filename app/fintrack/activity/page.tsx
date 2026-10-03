@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowsLeftRight, CaretLeft, CaretRight, ChartDonut, CircleNotch, Receipt } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, ArrowsLeftRight, CaretLeft, CaretRight, ChartDonut, CircleNotch, Funnel, MagnifyingGlass, Receipt } from '@phosphor-icons/react'
 import { Header } from '../components/header'
 import { BottomNav } from '../components/bottom-nav'
 import { formatRupiah } from '../components/account-card'
 import { useFintrack } from '../components/fintrack-provider'
 import { fintrackRequest } from '@/lib/fintrackRequest'
-import { readFintrackReportCache, writeFintrackReportCache } from '@/lib/fintrackReportCache'
+import { useQuery } from '@tanstack/react-query'
 import type { Category, FintrackReport, ReportSlice, Transaction } from '@/types/fintrack'
 
 const reportColors = ['var(--ft-report-1)', 'var(--ft-report-2)', 'var(--ft-report-3)', 'var(--ft-report-4)', 'var(--ft-report-5)', 'var(--ft-report-6)']
@@ -34,7 +34,7 @@ function ReportChart({ title, items, tone }: { title: string; items: ReportSlice
   const visibleItems = items.slice(safePage * pageSize, safePage * pageSize + pageSize)
   let cursor = 0
   const gradient = items.length ? items.map((item, index) => { const start = cursor; cursor += total ? Number(item.amount) / total * 100 : 0; return `${reportColors[index % reportColors.length]} ${start}% ${cursor}%` }).join(', ') : 'var(--ft-surface-soft) 0 100%'
-  return <article className="ft-report-card"><div className="ft-report-heading"><div><h2>{title}</h2><p>Transfer antar-dompet tidak dihitung.</p></div><strong className={tone === 'income' ? 'ft-positive' : 'ft-negative'}>{formatRupiah(total)}</strong></div>{items.length === 0 ? <div className="ft-empty ft-report-empty"><div><ChartDonut size={32} /><p>Belum ada data pada periode ini.</p></div></div> : <div className="ft-report-content"><div className="ft-donut" style={{ background: `conic-gradient(${gradient})` }} role="img" aria-label={`${title} berdasarkan kategori`}><div><strong>{items.length}</strong><span>kategori</span></div></div><div className="ft-report-legend-column"><div className="ft-report-ranking">{visibleItems.map((item, index) => { const actualIndex = safePage * pageSize + index; const percentage = total ? Math.round(Number(item.amount) / total * 100) : 0; const value = item.category_id || '__none__'; return <div className="ft-rank" key={value}><span><i style={{ background: reportColors[actualIndex % reportColors.length] }} /><span>{item.emoji ? `${item.emoji} ` : ''}{item.name}</span><strong>{percentage}%</strong></span><small>{formatRupiah(item.amount)}</small><span className="ft-rank-track"><i style={{ width: `${percentage}%`, background: reportColors[actualIndex % reportColors.length] }} /></span></div> })}</div>{pageCount > 1 && <nav className="ft-legend-pagination" aria-label={`Kategori ${title.toLowerCase()}`}><button type="button" disabled={safePage === 0} onClick={() => setLegendPage((page) => Math.max(0, page - 1))} aria-label="Kategori sebelumnya"><CaretLeft size={15} /></button><span>{safePage + 1}/{pageCount}</span><button type="button" disabled={safePage === pageCount - 1} onClick={() => setLegendPage((page) => Math.min(pageCount - 1, page + 1))} aria-label="Kategori berikutnya"><CaretRight size={15} /></button></nav>}</div></div>}</article>
+  return <article className="ft-report-card"><div className="ft-report-heading"><div><h2>{title}</h2><p>Transfer antar-dompet tidak dihitung.</p></div><strong className={tone === 'income' ? 'ft-positive' : 'ft-negative'}>{formatRupiah(total)}</strong></div>{items.length === 0 ? <div className="ft-empty ft-report-empty"><div><ChartDonut size={32} /><p>Belum ada data pada periode ini. Pilih periode atau dompet lain, atau catat transaksi lewat tombol tambah.</p></div></div> : <div className="ft-report-content"><div className="ft-donut" style={{ background: `conic-gradient(${gradient})` }} role="img" aria-label={`${title} berdasarkan kategori`}><div><strong>{items.length}</strong><span>kategori</span></div></div><div className="ft-report-legend-column"><div className="ft-report-ranking">{visibleItems.map((item, index) => { const actualIndex = safePage * pageSize + index; const percentage = total ? Math.round(Number(item.amount) / total * 100) : 0; const value = item.category_id || '__none__'; return <div className="ft-rank" key={value}><span><i style={{ background: reportColors[actualIndex % reportColors.length] }} /><span>{item.emoji ? `${item.emoji} ` : ''}{item.name}</span><strong>{percentage}%</strong></span><small>{formatRupiah(item.amount)}</small><span className="ft-rank-track"><i style={{ width: `${percentage}%`, background: reportColors[actualIndex % reportColors.length] }} /></span></div> })}</div>{pageCount > 1 && <nav className="ft-legend-pagination" aria-label={`Kategori ${title.toLowerCase()}`}><button type="button" disabled={safePage === 0} onClick={() => setLegendPage((page) => Math.max(0, page - 1))} aria-label="Kategori sebelumnya"><CaretLeft size={15} /></button><span>{safePage + 1}/{pageCount}</span><button type="button" disabled={safePage === pageCount - 1} onClick={() => setLegendPage((page) => Math.min(pageCount - 1, page + 1))} aria-label="Kategori berikutnya"><CaretRight size={15} /></button></nav>}</div></div>}</article>
 }
 
 function ComparisonChart({ report }: { report: FintrackReport }) {
@@ -52,11 +52,11 @@ function TrendChart({ report, mode, pendingMode, loading, onModeChange }: { repo
   const shouldScroll = points.length * columnWidth > 330
   const gridStyle = { gridTemplateColumns: `repeat(${Math.max(points.length, 1)}, minmax(${columnWidth - 8}px, 1fr))`, minWidth: shouldScroll ? `${points.length * columnWidth}px` : '100%' }
   const axis = [1, .75, .5, .25, 0].map((ratio) => ({ ratio, label: new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(max * ratio) }))
-  return <article className="ft-report-card"><div className="ft-report-heading"><div><h2>Tren {mode === 'monthly' ? 'bulanan' : 'mingguan'}</h2><p>{rangeLabel}</p></div><InlineSpinner active={pending || loading} label={loading ? 'Memuat detail tren' : 'Menerapkan pilihan tren'} /></div><div className="ft-trend-tabs" role="tablist" aria-label="Rentang tren">{([['weekly', 'Mingguan'], ['monthly', 'Bulanan']] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={pendingMode === value} data-active={pendingMode === value} data-pending={pending && pendingMode === value} onClick={() => onModeChange(value)}>{label}</button>)}</div><div data-updating={loading}>{points.length === 0 ? <div className="ft-empty ft-report-empty"><div><p>Belum ada transaksi pada rentang ini.</p></div></div> : <><div className="ft-line-legend"><span><i className="income" />Pemasukan</span><span><i className="expense" />Pengeluaran</span></div><div className="ft-trend-visual"><div className="ft-trend-y-axis" aria-hidden="true">{axis.map((tick) => <span key={tick.ratio}>Rp{tick.label}</span>)}</div><div className="ft-trend-scroll" data-scrollable={shouldScroll}><div className="ft-trend-bars" data-density={mode} style={gridStyle} role="img" aria-label={`Grafik batang tren ${mode} pemasukan dan pengeluaran`}>{points.map((point) => <div className="ft-trend-bar-group" key={point.key}><div><span className="income" tabIndex={0} data-tooltip={`Pemasukan ${formatRupiah(point.income)}`} style={{ height: `${Math.max(3, point.income / max * 100)}%` }} /><span className="expense" tabIndex={0} data-tooltip={`Pengeluaran ${formatRupiah(point.expense)}`} style={{ height: `${Math.max(3, point.expense / max * 100)}%` }} /></div><small>{point.label}</small></div>)}</div></div></div></>}</div></article>
+  return <article className="ft-report-card"><div className="ft-report-heading"><div><h2>Tren {mode === 'monthly' ? 'bulanan' : 'mingguan'}</h2><p>{rangeLabel}</p></div><InlineSpinner active={pending || loading} label={loading ? 'Memuat detail tren' : 'Menerapkan pilihan tren'} /></div><div className="ft-trend-tabs" role="tablist" aria-label="Rentang tren">{([['weekly', 'Mingguan'], ['monthly', 'Bulanan']] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={pendingMode === value} data-active={pendingMode === value} data-pending={pending && pendingMode === value} onClick={() => onModeChange(value)}>{label}</button>)}</div><div data-updating={loading}>{points.length === 0 ? <div className="ft-empty ft-report-empty"><div><p>Belum ada transaksi pada rentang ini. Pilih rentang lain, atau catat transaksi lewat tombol tambah.</p></div></div> : <><div className="ft-line-legend"><span><i className="income" />Pemasukan</span><span><i className="expense" />Pengeluaran</span></div><div className="ft-trend-visual"><div className="ft-trend-y-axis" aria-hidden="true">{axis.map((tick) => <span key={tick.ratio}>Rp{tick.label}</span>)}</div><div className="ft-trend-scroll" data-scrollable={shouldScroll}><div className="ft-trend-bars" data-density={mode} style={gridStyle} role="img" aria-label={`Grafik batang tren ${mode} pemasukan dan pengeluaran`}>{points.map((point) => <div className="ft-trend-bar-group" key={point.key}><div><span className="income" tabIndex={0} data-tooltip={`Pemasukan ${formatRupiah(point.income)}`} style={{ height: `${Math.max(3, point.income / max * 100)}%` }} /><span className="expense" tabIndex={0} data-tooltip={`Pengeluaran ${formatRupiah(point.expense)}`} style={{ height: `${Math.max(3, point.expense / max * 100)}%` }} /></div><small>{point.label}</small></div>)}</div></div></div></>}</div></article>
 }
 
 function TransactionRows({ transactions, accountMap, categoryMap, emptyLabel, onEdit }: { transactions: Transaction[]; accountMap: Map<string, string>; categoryMap: Map<string, Category>; emptyLabel: string; onEdit: (transaction: Transaction) => void }) {
-  return <div className="ft-transaction-list">{transactions.length === 0 ? <div className="ft-empty"><div><Receipt size={34} /><p>{emptyLabel}</p></div></div> : transactions.map((transaction) => {
+  return <div className="ft-transaction-list">{transactions.length === 0 ? <div className="ft-empty"><div><Receipt size={34} /><p>{emptyLabel} Ubah periode atau filter di atas. Untuk catatan baru, gunakan tombol tambah transaksi.</p></div></div> : transactions.map((transaction) => {
     const Icon = transaction.type === 'income' ? ArrowDown : transaction.type === 'expense' ? ArrowUp : ArrowsLeftRight
     const accountId = transaction.type === 'income' ? transaction.to_account_id : transaction.from_account_id, category = transaction.category_id ? categoryMap.get(transaction.category_id) : null
     const meta = [accountId ? accountMap.get(accountId) : null, new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${transaction.transaction_date}T00:00:00`))].filter(Boolean).join(' • ')
@@ -70,99 +70,96 @@ function Pagination({ page, totalPages, total, busy, onPage }: { page: number; t
 }
 
 export default function ActivityPage() {
-  const { data, user, accounts, categories, loading, beginTask, endTask, isBusy, openComposer } = useFintrack()
-  const [view, setView] = useState<'transactions' | 'report'>('transactions'), [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all')
-  const [report, setReport] = useState<FintrackReport | null>(null), [selectedCategory, setSelectedCategory] = useState('__all__'), [pendingCategory, setPendingCategory] = useState('__all__')
-  const [selectedAccount, setSelectedAccount] = useState('__all__'), [pendingAccount, setPendingAccount] = useState('__all__')
-  const [trendMode, setTrendMode] = useState<TrendMode>('monthly'), [pendingTrendMode, setPendingTrendMode] = useState<TrendMode>('monthly')
-  const [pendingMonth, setPendingMonth] = useState<string | null>(null)
+  const { data, user, accounts, categories, loading, openComposer } = useFintrack()
+  const [view, setView] = useState<'transactions' | 'report'>('transactions')
+  const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all')
+  const [month, setMonth] = useState('')
+  const [account, setAccount] = useState('__all__')
+  const [category, setCategory] = useState('__all__')
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [trendMode, setTrendMode] = useState<TrendMode>('monthly')
   const touchStart = useRef<number | null>(null)
-  const debounceTimers = useRef<{ month: number | null; account: number | null; category: number | null; trend: number | null }>({ month: null, account: null, category: null, trend: null })
-  useEffect(() => () => { Object.values(debounceTimers.current).forEach((timer) => { if (timer) window.clearTimeout(timer) }) }, [])
-  const accountMap = useMemo(() => new Map(accounts.map((account) => [account.id, account.name])), [accounts]), categoryMap = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories])
-  if (loading) return <div className="ft-skeleton" aria-hidden="true"><div className="ft-skeleton-line" style={{ width: 150 }} /><div className="ft-skeleton-line" style={{ height: 310, marginTop: 28 }} /></div>
-  if (!user || !data) return null
-  const currentReport = data.report, activeReport = report || currentReport, displayedMonth = pendingMonth || activeReport.month
-  const visibleTransactions = (filter === 'all' ? activeReport.transactions : activeReport.transactions.filter((transaction) => transaction.type === filter)).filter((transaction) => transaction.type !== 'transfer' || filter === 'all')
-  const emptyLabel = filter === 'income' ? 'Belum ada pemasukan pada periode ini.' : filter === 'expense' ? 'Belum ada pengeluaran pada periode ini.' : 'Belum ada transaksi pada periode ini.'
-  const reportCategories = [...activeReport.expense, ...activeReport.income].filter((item, index, array) => array.findIndex((other) => (other.category_id || '__none__') === (item.category_id || '__none__')) === index)
-  const totalPages = Math.max(1, Math.ceil(activeReport.transaction_total / activeReport.transaction_page_size))
+  useEffect(() => {
+    const timer = window.setTimeout(() => { setSearchTerm(search.trim()); setPage(1) }, 300)
+    return () => window.clearTimeout(timer)
+  }, [search])
 
-  const cacheKey = (month: string, account: string, details: boolean) => `${month}:${account}:${details ? 'full' : 'summary'}`
-  async function fetchReport(month: string, account: string, details: boolean) {
-    if (month === currentReport.month && account === '__all__' && !details) return currentReport
-    const key = cacheKey(month, account, details), cached = readFintrackReportCache(key)
-    if (cached) return cached
-    const params = new URLSearchParams({ month, details: details ? '1' : '0' })
-    if (account !== '__all__') params.set('account_id', account)
-    const response = await fintrackRequest(`/api/fintrack/reports?${params}`, undefined, null), body = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(body.error || 'Laporan gagal dimuat')
-    writeFintrackReportCache(key, body.data)
-    return body.data as FintrackReport
-  }
-  async function fetchTransactionPage(page: number, category = '__all__', type: 'all' | 'income' | 'expense' = 'all', includeTransfers = true) {
-    const params = new URLSearchParams({ month: activeReport.month, details: '0', page: String(page), include_transfers: includeTransfers ? '1' : '0' })
-    if (selectedAccount !== '__all__') params.set('account_id', selectedAccount)
+  const selectedMonth = month || data?.report.month || ''
+  const params = new URLSearchParams({ month: selectedMonth, details: view === 'report' ? '1' : '0', page: String(page), include_transfers: view === 'transactions' ? '1' : '0' })
+  if (account !== '__all__') params.set('account_id', account)
+  if (view === 'transactions') {
     if (category !== '__all__') params.set('category_id', category)
-    if (type !== 'all') params.set('transaction_type', type)
-    const key = `transactions:${params.toString()}`, cached = readFintrackReportCache(key)
-    if (cached) return cached
-    const response = await fintrackRequest(`/api/fintrack/reports?${params}`, undefined, null), body = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(body.error || 'Transaksi gagal dimuat')
-    writeFintrackReportCache(key, body.data)
-    return body.data as FintrackReport
+    if (filter !== 'all') params.set('transaction_type', filter)
+    if (searchTerm) params.set('q', searchTerm)
   }
-  async function applyTransactionPage(page: number, category = selectedCategory, type = filter, includeTransfers = view === 'transactions') {
-    beginTask('transaction-page', 'Memuat transaksi')
-    try {
-      const paged = await fetchTransactionPage(page, category, type, includeTransfers)
-      setReport((current) => current?.month === paged.month && current.trend_detail_loaded ? { ...paged, daily: current.daily, weekly: current.weekly, monthly: current.monthly, trend_detail_loaded: true } : paged)
-    } catch (error) { window.alert(error instanceof Error ? error.message : 'Transaksi gagal dimuat') } finally { endTask('transaction-page') }
+  const queryString = params.toString()
+  const reportQuery = useQuery<FintrackReport>({
+    queryKey: ['fintrack', 'activity', user?.id, queryString],
+    enabled: Boolean(user && data),
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const response = await fintrackRequest(`/api/fintrack/reports?${queryString}`)
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Aktivitas belum bisa dimuat. Coba lagi.')
+      return body.data
+    },
+  })
+  const accountMap = useMemo(() => new Map(accounts.map(item => [item.id, item.name])), [accounts])
+  const categoryMap = useMemo(() => new Map(categories.map(item => [item.id, item])), [categories])
+  if (loading || !data || !user) return <p role="status">Memuat aktivitas…</p>
+  const report = reportQuery.data
+  const busy = reportQuery.isPending || (view === 'transactions' && search.trim() !== searchTerm)
+  const categoryOptions = categories.filter(item => account === '__all__' || item.plan_id === accounts.find(wallet => wallet.id === account)?.plan_id)
+  const activeFilters = Number(account !== '__all__') + Number(view === 'transactions' && category !== '__all__')
+  const emptyLabel = accounts.length === 0 ? 'Belum ada dompet. Tambahkan dompet melalui Kelola.' : searchTerm ? `Tidak ada keterangan yang cocok dengan “${searchTerm}”.` : activeFilters || filter !== 'all' ? 'Tidak ada transaksi yang cocok dengan filter ini.' : 'Belum ada transaksi pada periode ini.'
+  function selectMonth(value: string) {
+    if (value > data!.report.month) return
+    setMonth(value); setPage(1)
   }
-  function resetReportFilters() { setSelectedCategory('__all__'); setPendingCategory('__all__'); setTrendMode('monthly'); setPendingTrendMode('monthly') }
-  async function applyMonth(nextMonth: string) {
-    beginTask('report-month', 'Memuat periode')
-    try { setReport(await fetchReport(nextMonth, selectedAccount, false)); resetReportFilters() } catch (error) { window.alert(error instanceof Error ? error.message : 'Periode gagal dimuat') } finally { setPendingMonth(null); endTask('report-month') }
-  }
-  function selectMonth(nextMonth: string) {
-    if (nextMonth > currentReport.month) return
-    setPendingMonth(nextMonth); if (debounceTimers.current.month) window.clearTimeout(debounceTimers.current.month)
-    debounceTimers.current.month = window.setTimeout(() => { void applyMonth(nextMonth) }, 2000)
-  }
-  async function applyAccount(nextAccount: string) {
-    beginTask('report-account', 'Memfilter dompet')
-    try { setReport(await fetchReport(activeReport.month, nextAccount, false)); setSelectedAccount(nextAccount); resetReportFilters() } catch (error) { setPendingAccount(selectedAccount); window.alert(error instanceof Error ? error.message : 'Filter dompet gagal diterapkan') } finally { endTask('report-account') }
-  }
-  function selectAccount(nextAccount: string) {
-    setPendingAccount(nextAccount); if (debounceTimers.current.account) window.clearTimeout(debounceTimers.current.account)
-    debounceTimers.current.account = window.setTimeout(() => { void applyAccount(nextAccount) }, 2000)
-  }
-  function selectCategory(value: string) {
-    setPendingCategory(value); if (debounceTimers.current.category) window.clearTimeout(debounceTimers.current.category)
-    debounceTimers.current.category = window.setTimeout(async () => { setSelectedCategory(value); await applyTransactionPage(1, value, filter, true) }, 2000)
-  }
-  async function applyTrendMode(nextMode: TrendMode) {
-    if (nextMode === 'monthly' || activeReport.trend_detail_loaded) return setTrendMode(nextMode)
-    beginTask('trend-detail', 'Memuat detail tren')
-    try { const detailed = await fetchReport(activeReport.month, selectedAccount, true); setReport((current) => current ? { ...current, daily: detailed.daily, weekly: detailed.weekly, monthly: detailed.monthly, trend_detail_loaded: true } : detailed); setTrendMode(nextMode) } catch (error) { setPendingTrendMode(trendMode); window.alert(error instanceof Error ? error.message : 'Detail tren gagal dimuat') } finally { endTask('trend-detail') }
-  }
-  function selectTrendMode(nextMode: TrendMode) { setPendingTrendMode(nextMode); if (debounceTimers.current.trend) window.clearTimeout(debounceTimers.current.trend); debounceTimers.current.trend = window.setTimeout(() => { void applyTrendMode(nextMode) }, 2000) }
-  function selectTransactionFilter(nextFilter: 'all' | 'income' | 'expense') { setFilter(nextFilter); void applyTransactionPage(1, selectedCategory, nextFilter, true) }
-  function selectView(nextView: 'transactions' | 'report') { setView(nextView); setSelectedCategory('__all__'); setPendingCategory('__all__'); void applyTransactionPage(1, '__all__', 'all', nextView === 'transactions') }
-  const periodPending = Boolean(pendingMonth) || isBusy('report-month'), accountPending = pendingAccount !== selectedAccount || isBusy('report-account')
 
-  return <main className="ft-container"><Header user={user} eyebrow={labelMonth(data.report.month)} title="Aktivitas" />
-    <div className="ft-page-tabs" role="tablist" aria-label="Tampilan aktivitas"><button role="tab" aria-selected={view === 'transactions'} data-active={view === 'transactions'} onClick={() => selectView('transactions')}>Transaksi</button><button role="tab" aria-selected={view === 'report'} data-active={view === 'report'} onClick={() => selectView('report')}>Laporan<InlineSpinner active={periodPending} label="Menerapkan periode laporan" className="ft-tab-spinner" /></button></div>
-    <div className="ft-activity-filters">
-      <div className="ft-month-switcher" data-pending={Boolean(pendingMonth)} onTouchStart={(event) => { if (!isBusy('report-month')) touchStart.current = event.touches[0].clientX }} onTouchEnd={(event) => { if (touchStart.current === null) return; const delta = event.changedTouches[0].clientX - touchStart.current; if (Math.abs(delta) > 45) selectMonth(moveMonth(displayedMonth, delta > 0 ? -1 : 1)); touchStart.current = null }}><button type="button" disabled={isBusy('report-month')} onClick={() => selectMonth(moveMonth(displayedMonth, -1))} aria-label="Bulan sebelumnya"><CaretLeft size={18} /></button><div><span>Periode</span><strong>{labelMonth(displayedMonth)}</strong><small>{new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(new Date(`${activeReport.period_start}T00:00:00`))}-{new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(new Date(`${activeReport.period_end}T00:00:00`))}</small></div><button type="button" disabled={isBusy('report-month') || displayedMonth >= data.report.month} onClick={() => selectMonth(moveMonth(displayedMonth, 1))} aria-label="Bulan berikutnya"><CaretRight size={18} /></button></div>
-      <div className={view === 'transactions' ? 'ft-transaction-filter-grid' : ''}>
-        <div className="ft-report-filter" data-pending={accountPending}><div className="ft-report-filter-heading"><label htmlFor="report-account">Filter dompet</label><InlineSpinner active={accountPending} label="Menerapkan filter dompet" /></div><select id="report-account" className="ft-input" value={pendingAccount} onChange={(event) => selectAccount(event.target.value)}><option value="__all__">Semua dompet</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}{account.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>
-        {view === 'transactions' && <div className="ft-report-filter" data-pending={pendingCategory !== selectedCategory}><div className="ft-report-filter-heading"><label htmlFor="transaction-category">Filter kategori</label><InlineSpinner active={pendingCategory !== selectedCategory} label="Menerapkan filter kategori" /></div><select id="transaction-category" className="ft-input" value={pendingCategory} onChange={(event) => selectCategory(event.target.value)}><option value="__all__">Semua kategori</option>{reportCategories.map((category) => <option key={category.category_id || '__none__'} value={category.category_id || '__none__'}>{category.emoji ? `${category.emoji} ` : ''}{category.name}</option>)}</select></div>}
-      </div>
+  return <main className="ft-container">
+    <Header user={user} eyebrow={labelMonth(data.report.month)} title="Aktivitas" />
+    <section className="ft-month-expense" aria-label="Pengeluaran bulan ini">
+      <div><span>Pengeluaran bulan ini</span><small>{labelMonth(data.report.month)} · {data.report.period_start} hingga {data.report.period_end}</small></div>
+      <strong>{formatRupiah(data.summary.expense)}</strong>
+    </section>
+    <div className="ft-page-tabs" role="tablist" aria-label="Tampilan aktivitas">
+      <button role="tab" aria-selected={view === 'transactions'} data-active={view === 'transactions'} onClick={() => { setView('transactions'); setPage(1) }}>Transaksi</button>
+      <button role="tab" aria-selected={view === 'report'} data-active={view === 'report'} onClick={() => { setView('report'); setPage(1) }}>Laporan</button>
     </div>
-    {view === 'transactions' ? <section className="ft-tab-panel"><div className="ft-sub-tabs" role="tablist" aria-label="Filter transaksi"><button role="tab" aria-selected={filter === 'all'} data-active={filter === 'all'} onClick={() => selectTransactionFilter('all')}>Semua</button><button role="tab" aria-selected={filter === 'income'} data-active={filter === 'income'} onClick={() => selectTransactionFilter('income')}>Pemasukan</button><button role="tab" aria-selected={filter === 'expense'} data-active={filter === 'expense'} onClick={() => selectTransactionFilter('expense')}>Pengeluaran</button></div><div className="ft-card ft-transactions" data-updating={isBusy('report-month') || isBusy('report-account') || isBusy('transaction-page')}><TransactionRows transactions={visibleTransactions} accountMap={accountMap} categoryMap={categoryMap} emptyLabel={emptyLabel} onEdit={openComposer} /></div><Pagination page={activeReport.transaction_page} totalPages={totalPages} total={activeReport.transaction_total} busy={isBusy('transaction-page')} onPage={(page) => void applyTransactionPage(page, selectedCategory, filter, true)} /></section> : <section className="ft-tab-panel ft-report-list">
-      <ComparisonChart report={activeReport} />
-      <TrendChart report={activeReport} mode={trendMode} pendingMode={pendingTrendMode} loading={isBusy('trend-detail')} onModeChange={selectTrendMode} />
-      <ReportChart title="Pengeluaran" items={activeReport.expense} tone="expense" /><ReportChart title="Pemasukan" items={activeReport.income} tone="income" />
-    </section>}<BottomNav /></main>
+    <div className="ft-activity-filters">
+      <div className="ft-month-switcher" onTouchStart={event => { touchStart.current = event.touches[0].clientX }} onTouchEnd={event => {
+        if (touchStart.current === null) return
+        const delta = event.changedTouches[0].clientX - touchStart.current
+        if (Math.abs(delta) > 45) selectMonth(moveMonth(selectedMonth, delta > 0 ? -1 : 1))
+        touchStart.current = null
+      }}>
+        <button type="button" onClick={() => selectMonth(moveMonth(selectedMonth, -1))} aria-label="Bulan sebelumnya"><CaretLeft size={18} /></button>
+        <div><span>Periode</span><strong>{labelMonth(selectedMonth)}</strong>{report && <small>{report.period_start} hingga {report.period_end}</small>}</div>
+        <button type="button" disabled={selectedMonth >= data.report.month} onClick={() => selectMonth(moveMonth(selectedMonth, 1))} aria-label="Bulan berikutnya"><CaretRight size={18} /></button>
+      </div>
+      {view === 'transactions' ? <>
+        <div className="ft-activity-toolbar">
+          <label className="ft-activity-search"><MagnifyingGlass size={18} aria-hidden="true" /><span className="ft-sr-only">Cari keterangan transaksi</span><input type="search" placeholder="Cari keterangan transaksi" maxLength={100} value={search} onChange={event => { setSearch(event.target.value); setPage(1) }} /></label>
+          <button type="button" className="ft-icon-button ft-filter-toggle" aria-label={`Filter dompet dan kategori${activeFilters ? `, ${activeFilters} aktif` : ''}`} aria-expanded={filtersOpen} aria-controls="activity-filters" onClick={() => setFiltersOpen(!filtersOpen)}><Funnel size={20} aria-hidden="true" />{activeFilters > 0 && <span>{activeFilters}</span>}</button>
+        </div>
+        <div id="activity-filters" className="ft-transaction-filter-grid" hidden={!filtersOpen}>
+          <div className="ft-report-filter"><label htmlFor="transaction-account">Dompet</label><select id="transaction-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>
+          <div className="ft-report-filter"><label htmlFor="transaction-category">Kategori</label><select id="transaction-category" className="ft-input" value={category} onChange={event => { setCategory(event.target.value); setPage(1) }}><option value="__all__">Semua kategori</option><option value="__none__">Tanpa kategori</option>{categoryOptions.map(item => <option key={item.id} value={item.id}>{item.emoji ? `${item.emoji} ` : ''}{item.name}</option>)}</select></div>
+        </div>
+      </> : <div className="ft-report-filter"><label htmlFor="report-account">Dompet</label><select id="report-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>}
+    </div>
+    {reportQuery.error && <div className="ft-inline-message ft-error" role="alert"><p>{reportQuery.error.message}</p><button type="button" className="ft-button ft-button-secondary" onClick={() => void reportQuery.refetch()}>Coba lagi</button></div>}
+    {view === 'transactions' && <div className="ft-sub-tabs" role="tablist" aria-label="Filter transaksi">{([['all', 'Semua'], ['income', 'Pemasukan'], ['expense', 'Pengeluaran']] as const).map(([value, label]) => <button key={value} role="tab" aria-selected={filter === value} data-active={filter === value} onClick={() => { setFilter(value); setPage(1) }}>{label}</button>)}</div>}
+    {busy ? <p className="ft-hint" role="status">Memuat aktivitas…</p> : report && (view === 'transactions' ? <section className="ft-tab-panel">
+      <div className="ft-card ft-transactions"><TransactionRows transactions={report.transactions} accountMap={accountMap} categoryMap={categoryMap} emptyLabel={emptyLabel} onEdit={openComposer} /></div>
+      <Pagination page={report.transaction_page} totalPages={Math.max(1, Math.ceil(report.transaction_total / report.transaction_page_size))} total={report.transaction_total} busy={busy} onPage={setPage} />
+    </section> : <section className="ft-tab-panel ft-report-list"><ComparisonChart report={report} /><TrendChart report={report} mode={trendMode} pendingMode={trendMode} loading={false} onModeChange={setTrendMode} /><ReportChart title="Pengeluaran" items={report.expense} tone="expense" /><ReportChart title="Pemasukan" items={report.income} tone="income" /></section>)}
+    <BottomNav />
+  </main>
 }

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Account, Category, Transaction, TransactionType } from '@/types/fintrack'
 import { fintrackRequest } from '@/lib/fintrackRequest'
 import { useFintrack } from './fintrack-provider'
+import { compareCategoryUsage } from '@/lib/fintrackOrdering'
 
 interface TransactionFormProps {
   accounts: Account[]
@@ -82,7 +83,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
 
   const selectedAccountId = type === 'income' ? to : from
   const selectedPlanId = accounts.find((account) => account.id === selectedAccountId)?.plan_id
-  const filteredCategories = categories.filter((item) => item.type === type && (!selectedPlanId || item.plan_id === selectedPlanId))
+  const filteredCategories = categories.filter((item) => item.type === type && (!selectedPlanId || item.plan_id === selectedPlanId)).sort(compareCategoryUsage)
 
   return (
     <form className="ft-form" onSubmit={submit} data-updating={saving}>
@@ -96,7 +97,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
 
       <div className="ft-field">
         <label htmlFor="amount">Nominal</label>
-        <input id="amount" className="ft-input ft-amount-input" inputMode="numeric" placeholder="0" value={formatNominal(amount)} onChange={(e) => setAmount(onlyDigits(e.target.value))} autoFocus required />
+        <input id="amount" className="ft-input ft-amount-input" inputMode="numeric" placeholder="0" value={formatNominal(amount)} onChange={(e) => setAmount(onlyDigits(e.target.value))} required />
       </div>
       {(type === 'expense' || type === 'transfer') && (
         <div className="ft-field">

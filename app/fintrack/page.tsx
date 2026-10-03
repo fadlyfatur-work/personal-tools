@@ -7,6 +7,7 @@ import { Header } from './components/header'
 import { BottomNav } from './components/bottom-nav'
 import { AccountCard, formatRupiah } from './components/account-card'
 import { useFintrack } from './components/fintrack-provider'
+import { compareBudgetUsage } from '@/lib/fintrackOrdering'
 
 const labelMonth = (month: string) => new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(`${month}-01T00:00:00`))
 
@@ -46,7 +47,7 @@ export default function FintrackHome() {
     const used = data.report.expense.find((slice) => slice.category_ids.includes(category.id))?.amount || 0
     const budget = Number(category.budget_amount)
     return { category, used, budget, percentage: Math.round(used / budget * 100) }
-  }).sort((a, b) => b.used - a.used || b.percentage - a.percentage)
+  }).sort(compareBudgetUsage)
   return (
     <main className="ft-container">
       <Header user={user} />

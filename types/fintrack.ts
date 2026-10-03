@@ -24,6 +24,7 @@ export interface Account {
 }
 
 export interface Category {
+  usage_count?: number
   id: string
   plan_id: string
   name: string

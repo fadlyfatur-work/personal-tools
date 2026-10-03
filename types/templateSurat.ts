@@ -1,13 +1,17 @@
 export interface SingleField {
   key: string
   label: string
-  type?: 'text' | 'textarea' | 'date' | 'dateRange'
+  type?: 'text' | 'textarea' | 'date' | 'dateRange' | 'select'
+  options?: string[]
+  required?: boolean
 }
 
 export interface GroupField {
   name: string
   label: string
   maxItems: number
+  minItems?: number
+  repeatRows?: boolean
   fields: SingleField[]
   // dua properti ini opsional — hanya dipakai kalau grup punya tanggal otomatis
   // yang mengikuti sebuah field dateRange (seperti kasus 'agenda' mengikuti 'periode_surat')

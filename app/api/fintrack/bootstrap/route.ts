@@ -83,6 +83,23 @@ export async function GET() {
   }
   const categories = [...new Map((categoriesResult.data || []).map((category) => [category.id, category])).values()]
 
+  const usage = new Map<string, number>()
+  const visibleScope = [
+    ...(planId ? [`plan_id.eq.${planId}`] : []),
+    ...(accessibleAccountIds.length ? [`from_account_id.in.(${accessibleAccountIds.join(',')})`, `to_account_id.in.(${accessibleAccountIds.join(',')})`] : []),
+  ].join(',')
+  if (visibleScope) {
+    // Page through category IDs only; the recent-transactions list is capped at 60.
+    for (let offset = 0; ; offset += 1000) {
+      const { data: rows, error } = await supabaseAdmin.from('fintrack_transactions')
+        .select('category_id').eq('status', 'posted').neq('type', 'transfer').not('category_id', 'is', null)
+        .or(visibleScope).order('id').range(offset, offset + 999)
+      if (error) return NextResponse.json({ error: 'Gagal memuat frekuensi kategori' }, { status: 500 })
+      for (const row of rows || []) usage.set(row.category_id, (usage.get(row.category_id) || 0) + 1)
+      if (!rows || rows.length < 1000) break
+    }
+  }
+
   const sharedTransactions = sharedTransactionsResult.data || []
   const transactions = [...(ownedLatestResult.data || []), ...sharedTransactions]
     .filter((value, index, array) => array.findIndex((item) => item.id === value.id) === index)
@@ -93,7 +110,6 @@ export async function GET() {
 
   const includedOwned = ownedAccounts.filter((account) => account.include_in_net_worth !== false)
   const assets = includedOwned.filter((account) => account.classification === 'asset').reduce((sum, account) => sum + Number(account.current_balance), 0)
-  // const clean_assets = includedOwned.filter((account) => account.classification === 'asset' && account.kind !== 'debt').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const liabilities = includedOwned.filter((account) => account.classification === 'liability').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const income = monthlyTransactions.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0)
   const expense = monthlyTransactions.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0)
@@ -107,7 +123,7 @@ export async function GET() {
     sort_accounts_by_balance: Boolean(securityResult.data?.sort_accounts_by_balance),
     personal_plan_id: planId || null,
     accounts,
-    categories,
+    categories: categories.map(category => ({ ...category, usage_count: usage.get(category.id) || 0 })),
     transactions,
     summary: { assets, liabilities, net_worth: assets - liabilities, income, expense},
     report: { ...report, transactions: report.transactions.slice(0, 10), transaction_page: 1, transaction_page_size: 10, daily: [], weekly: [], trend_detail_loaded: false },

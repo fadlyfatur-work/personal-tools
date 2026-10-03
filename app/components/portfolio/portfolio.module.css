@@ -127,3 +127,17 @@
   .footer > div { align-items: start; flex-direction: column; gap: 12px; }.footer > div > div { gap: 8px 20px; }
 }
 @media (prefers-reduced-motion: reduce) { .portfolio *, .portfolio *::before, .portfolio *::after { animation: none; transition: none; scroll-behavior: auto; } }
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .heroTitle { transform-origin: left top; animation: heroScroll linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+    .section > h2, .section > div, .section > ul, .contact > h2, .contact > p, .project {
+      animation: scrollReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+    .heroTitle:focus-within, .section > div:focus-within, .section > ul:focus-within, .project:focus-within { animation: none; opacity: 1; transform: none; }
+  }
+}
+@keyframes scrollReveal { from { opacity: .25; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes heroScroll { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(45px) scale(.94); opacity: .35; } }

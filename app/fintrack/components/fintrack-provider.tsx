@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -193,7 +193,9 @@ function FintrackState({ children }: { children: React.ReactNode }) {
     const next = { ...current, categories }
     return rebuildDerived(next, next.accounts, knownTransactions(next))
   }), [updateData])
-  const refreshData = useCallback(async () => { await query.refetch() }, [query])
+  const refreshData = useCallback(async () => {
+    await Promise.all([query.refetch(), queryClient.invalidateQueries({ queryKey: ['fintrack', 'activity'] })])
+  }, [query, queryClient])
   const clearCache = useCallback(() => queryClient.removeQueries({ queryKey: ['fintrack'] }), [queryClient])
   const openComposer = useCallback((transaction?: Transaction | null) => setComposer({ open: true, editing: transaction || null }), [])
   const applyTransactionChange = useCallback((previous: Transaction | null, next: Transaction | null) => updateData((current) => {
@@ -247,7 +249,6 @@ function FintrackState({ children }: { children: React.ReactNode }) {
   return (
     <FintrackContext.Provider value={value}>
       <div className="fintrack-app" data-palette={palette} data-theme={theme}>
-        <div className="ft-ambient" aria-hidden="true" />
         <div className="ft-global-loader" data-visible={loaderVisible} role="status" aria-live="polite" aria-hidden={!loaderVisible}><span>{labels.at(-1) || 'Menyelaraskan'}</span><i aria-hidden="true" /></div>
         <div className="ft-page-transition" key={pathname}>{children}</div>
         {composer.open && <TransactionModal editing={composer.editing} onClose={() => setComposer({ open: false, editing: null })} />}
@@ -259,13 +260,15 @@ function FintrackState({ children }: { children: React.ReactNode }) {
 
 function TransactionModal({ editing, onClose }: { editing: Transaction | null; onClose: () => void }) {
   const { accounts, categories, data, loading, beginTask, endTask, applyTransactionChange, refreshData } = useFintrack()
+  const dialogRef = useRef<HTMLDialogElement>(null)
   useEffect(() => {
+    const dialog = dialogRef.current!
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', closeOnEscape) }
-  }, [onClose])
+    dialog.showModal()
+    return () => { dialog.close(); document.body.style.overflow = previousOverflow; trigger?.focus() }
+  }, [])
 
   function saved(transaction: Transaction) {
     applyTransactionChange(editing, transaction)
@@ -289,14 +292,14 @@ function TransactionModal({ editing, onClose }: { editing: Transaction | null; o
   }
 
   return (
-    <div className="ft-modal-layer" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose() }}>
-      <section className="ft-modal" role="dialog" aria-modal="true" aria-labelledby="transaction-modal-title">
+    <dialog ref={dialogRef} className="ft-modal-layer" aria-labelledby="transaction-modal-title" onCancel={(event) => { event.preventDefault(); onClose() }} onClick={(event) => { if (event.currentTarget === event.target) onClose() }}>
+      <section className="ft-modal">
         <div className="ft-modal-header"><div><p>Transaksi</p><h2 id="transaction-modal-title">{editing ? 'Perbarui catatan' : 'Catat uang masuk atau keluar'}</h2></div><button className="ft-icon-button" type="button" onClick={onClose} aria-label="Tutup pencatatan"><X size={19} /></button></div>
         <div className="ft-modal-body" data-updating={loading}>
           {accounts.length === 0 && !loading ? <div className="ft-empty ft-modal-empty"><div><strong>Buat dompet terlebih dahulu</strong><p>Transaksi membutuhkan dompet sebagai sumber atau tujuan saldo.</p><Link href="/fintrack/manage" className="ft-button ft-button-primary" onClick={onClose}>Kelola dompet</Link></div></div> : <TransactionForm key={editing?.id || 'new'} accounts={accounts} categories={categories} editing={editing} onCancelEdit={onClose} onDelete={editing ? removeTransaction : undefined} onSaved={saved} />}
         </div>
       </section>
-    </div>
+    </dialog>
   )
 }
 

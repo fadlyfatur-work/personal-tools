@@ -39,7 +39,12 @@ export function buildFintrackReport(month: string, cutoffDay: number, transactio
   const previous = previousReportMonth(month)
   const currentRange = reportRange(month, cutoffDay)
   const previousRange = reportRange(previous, cutoffDay)
-  const all = transactions.filter((value, index, array) => array.findIndex((item) => item.id === value.id) === index)
+  const seenIds = new Set<string>()
+  const all = transactions.filter((value) => {
+    if (seenIds.has(value.id)) return false
+    seenIds.add(value.id)
+    return true
+  })
   const current = all
     .filter((item) => item.transaction_date >= currentRange.start && item.transaction_date <= currentRange.end)
     .sort((a, b) => `${b.transaction_date}${b.created_at || ''}`.localeCompare(`${a.transaction_date}${a.created_at || ''}`))

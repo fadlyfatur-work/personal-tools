@@ -38,13 +38,9 @@
   box-shadow: 0 0 0 1px rgba(23, 35, 31, .04), 0 24px 70px rgba(23, 35, 31, .14);
   isolation: isolate; font-family: var(--font-geist-sans), Arial, sans-serif;
 }
-.ft-ambient { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background-image: linear-gradient(color-mix(in srgb, var(--ft-border) 42%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--ft-border) 42%, transparent) 1px, transparent 1px); background-size: 36px 36px; mask-image: linear-gradient(to bottom, #000, transparent 42%); opacity: .42; }
-.ft-ambient::before, .ft-ambient::after { content: ''; position: absolute; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, var(--ft-primary-soft), transparent 68%); opacity: .7; animation: ft-ambient-drift 16s ease-in-out infinite alternate; }
-.ft-ambient::before { top: -130px; right: -110px; }
-.ft-ambient::after { top: 38%; left: -180px; animation-delay: -7s; }
 .ft-page-transition { animation: ft-page-in 260ms cubic-bezier(.16, 1, .3, 1); }
 @keyframes ft-page-in { from { opacity: 0; transform: translateY(7px); } }
-@keyframes ft-ambient-drift { to { transform: translate3d(18px, 14px, 0) scale(1.08); } }
+
 .fintrack-app[data-palette="ocean"] {
   --ft-bg: #eef3f5; --ft-primary: #3f6f91; --ft-primary-strong: #315c7b; --ft-primary-soft: #dce9f0;
   --ft-text: #17252c; --ft-muted: #66757c; --ft-border: rgba(28, 63, 78, .11);
@@ -87,7 +83,7 @@
 
 .ft-icon-button, .ft-button, .ft-segment button, .ft-account, .ft-palette-options button, .ft-nav-compose { transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, opacity 150ms ease; }
 .ft-icon-button:active, .ft-button:active, .ft-segment button:active, .ft-account:active, .ft-palette-options button:active, .ft-nav-compose:active { transform: scale(.98); }
-.ft-icon-button { width: 42px; height: 42px; flex: 0 0 auto; border: 1px solid var(--ft-border); border-radius: var(--ft-radius-control); background: var(--ft-surface); color: var(--ft-text); display: grid; place-items: center; cursor: pointer; box-shadow: 0 7px 22px color-mix(in srgb, var(--ft-primary) 8%, transparent); }
+.ft-icon-button { width: 42px; height: 42px; flex: 0 0 auto; border: 1px solid var(--ft-border); border-radius: var(--ft-radius-control); background: var(--ft-surface); color: var(--ft-text); display: grid; place-items: center; cursor: pointer; }
 .ft-button { min-height: 42px; border: 0; border-radius: var(--ft-radius-control); padding: 0 15px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: inherit; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; }
 .ft-button-primary { background: var(--ft-primary); color: #f9fbfa; }
 .ft-button-primary:hover { background: var(--ft-primary-strong); }
@@ -175,12 +171,12 @@
 .ft-account-wrap { position: relative; min-width: 0; }
 .ft-accounts[data-scrollable="true"] .ft-account-wrap { scroll-snap-align: start; }
 .ft-account-wrap .ft-account { width: 100%; }
-.ft-account { width: 100%; min-width: 0; min-height: 122px; border: 0; border-radius: 18px; background: var(--ft-surface); padding: 15px; color: inherit; text-align: left; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 9px 28px color-mix(in srgb, var(--ft-primary) 7%, transparent); }
-.ft-account-button { font: inherit; cursor: pointer; outline: none; transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease; }
-.ft-account-button:hover { box-shadow: 0 12px 32px color-mix(in srgb, var(--ft-primary) 12%, transparent); }
-.ft-account-button:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ft-primary) 18%, transparent), 0 12px 32px color-mix(in srgb, var(--ft-primary) 10%, transparent); }
+.ft-account { width: 100%; min-width: 0; min-height: 122px; border-radius: 18px; background: var(--ft-surface); padding: 15px; color: inherit; text-align: left; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--ft-border); }
+.ft-account-button { font: inherit; cursor: pointer; outline: none; transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease; }
+.ft-account-button:hover { border-color: var(--ft-primary); }
+.ft-account-button:focus-visible { outline: 2px solid var(--ft-primary); outline-offset: 3px; }
 .ft-account-button:active { transform: scale(.98); }
-.ft-account-button[data-selected="true"] { background: color-mix(in srgb, var(--ft-primary-soft) 64%, var(--ft-surface)); box-shadow: inset 0 0 0 1px var(--ft-primary), 0 12px 32px color-mix(in srgb, var(--ft-primary) 12%, transparent); }
+.ft-account-button[data-selected="true"] { background: color-mix(in srgb, var(--ft-primary-soft) 64%, var(--ft-surface)); border-color: var(--ft-primary); }
 .ft-account-excluded { position: absolute; top: 13px; right: 13px; color: var(--ft-muted); pointer-events: none; }
 .ft-account-icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--ft-primary-soft); color: var(--ft-primary); }
 .ft-account-name { color: var(--ft-muted); font-size: 12px; margin: 14px 0 4px; }
@@ -188,7 +184,7 @@
 .ft-shared-label { color: var(--ft-primary); font-size: 10px; margin-top: 5px; }
 
 .ft-workspace { display: block; }
-.ft-card { border: 1px solid var(--ft-border); border-radius: var(--ft-radius-card); background: var(--ft-surface); box-shadow: 0 10px 30px color-mix(in srgb, var(--ft-primary) 6%, transparent); }
+.ft-card { border: 1px solid var(--ft-border); border-radius: var(--ft-radius-card); background: var(--ft-surface); }
 .ft-form { padding: 0; }
 .ft-segment { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--ft-surface-soft); padding: 4px; border-radius: var(--ft-radius-control); margin-bottom: 18px; }
 .ft-segment button { border: 0; border-radius: 9px; padding: 10px 5px; color: var(--ft-muted); background: transparent; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -296,7 +292,9 @@
 .ft-nav-compose small { font-size: 10px; font-weight: 700; color: var(--ft-primary); }
 .ft-nav-compose:active > span { transform: scale(.92) rotate(6deg); }
 
-.ft-modal-layer { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; padding: 12px; box-sizing: border-box; background: rgba(16, 25, 22, .42); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: ft-fade-in 160ms ease-out; }
+.ft-modal-layer { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0; color: var(--ft-text); padding: 12px; box-sizing: border-box; background: transparent; }
+.ft-modal-layer[open] { display: flex; align-items: flex-end; justify-content: center; }
+.ft-modal-layer::backdrop { background: rgba(16, 25, 22, .42); }
 .ft-modal { width: min(100%, 456px); max-height: min(88dvh, 760px); overflow: hidden; border: 1px solid var(--ft-border); border-radius: 22px; background: var(--ft-surface); box-shadow: 0 24px 72px rgba(16, 25, 22, .22); animation: ft-sheet-in 200ms cubic-bezier(.16, 1, .3, 1); }
 .ft-modal-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 17px 18px 14px; border-bottom: 1px solid var(--ft-border); }
 .ft-modal-header p { margin: 0 0 3px; color: var(--ft-muted); font-size: 11px; }
@@ -332,6 +330,19 @@
 
 .ft-report-list { display: grid; gap: 14px; }
 .ft-activity-filters { display: grid; gap: 10px; margin-bottom: 14px; }
+.ft-month-expense { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 8px 22px; }
+.ft-month-expense span, .ft-month-expense small { display: block; }
+.ft-month-expense span { font-size: 13px; font-weight: 650; }
+.ft-month-expense small { color: var(--ft-muted); font-size: 10px; margin-top: 5px; }
+.ft-month-expense strong { font-size: 24px; font-variant-numeric: tabular-nums; }
+.ft-activity-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ft-activity-search { min-width: 0; flex: 1; min-height: 46px; display: flex; align-items: center; gap: 8px; padding-inline: 12px; border: 1px solid var(--ft-border); border-radius: var(--ft-radius-control); background: var(--ft-surface); }
+.ft-activity-search input { width: 100%; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--ft-text); font: inherit; font-size: 14px; }
+.ft-activity-search:focus-within { outline: 2px solid var(--ft-primary); outline-offset: 2px; }
+.ft-filter-toggle { position: relative; min-width: 46px; min-height: 46px; }
+.ft-filter-toggle[aria-expanded=true] { background: var(--ft-primary-soft); }
+.ft-filter-toggle > span { position: absolute; top: -4px; right: -4px; min-width: 18px; border-radius: 50%; background: var(--ft-primary); color: white; font-size: 11px; }
+.ft-transaction-filter-grid[hidden] { display: none; }
 .ft-transaction-filter-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .ft-transaction-filter-grid .ft-report-filter { min-width: 0; padding: 10px; }
 .ft-transaction-filter-grid .ft-input { min-height: 42px; padding-inline: 9px; font-size: 11px; }
@@ -427,7 +438,7 @@
   .ft-inline-spinner[data-active="true"] svg { animation: none; }
 }
 
-.ft-manage-list { overflow: visible; border: 0; border-radius: 18px; background: var(--ft-surface); box-shadow: 0 10px 30px color-mix(in srgb, var(--ft-primary) 6%, transparent); }
+.ft-manage-list { overflow: visible; border: 0; border-radius: 18px; background: var(--ft-surface); }
 .ft-manage-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 13px; }
 .ft-manage-row + .ft-manage-row { border-top: 1px solid var(--ft-border); }
 .ft-manage-identity { min-width: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 11px; }
@@ -529,7 +540,6 @@
 }
 @media (prefers-reduced-transparency: reduce) {
   .ft-bottom-nav, .ft-global-loader { background: var(--ft-surface); backdrop-filter: none; }
-  .ft-modal-layer { backdrop-filter: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }

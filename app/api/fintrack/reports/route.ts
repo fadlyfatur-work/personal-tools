@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFintrackReport } from '@/lib/fintrackReport'
+import { currentReportMonth, getFintrackReport } from '@/lib/fintrackReport'
 import { requireFintrackIdentity } from '@/lib/fintrackUser'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { currentReportMonth } from '@/lib/fintrackReport'
+import { searchTransactionNotes } from '@/lib/fintrackOrdering'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
   const includeTrendDetails = request.nextUrl.searchParams.get('details') !== '0'
   const page = Math.max(1, Number(request.nextUrl.searchParams.get('page') || 1) || 1)
   const categoryId = request.nextUrl.searchParams.get('category_id')
+  const search = (request.nextUrl.searchParams.get('q') || '').trim()
+  if (search.length > 100) return NextResponse.json({ error: 'Pencarian maksimal 100 karakter' }, { status: 400 })
   const transactionType = request.nextUrl.searchParams.get('transaction_type')
   const includeTransfers = request.nextUrl.searchParams.get('include_transfers') !== '0'
   const profile = requestedMonth ? null : await supabaseAdmin.from('fintrack_users').select('month_cutoff_day').eq('id', auth.identity.id).single()
@@ -26,8 +28,9 @@ export async function GET(request: NextRequest) {
     const selectedSlice = [...report.income, ...report.expense].find((item) => item.category_id === categoryId || item.category_ids.includes(categoryId || ''))
     const baseTransactions = report.transactions.filter((item) => (includeTransfers || item.type !== 'transfer') && (!transactionType || item.type === transactionType))
     const filteredTransactions = categoryId === '__none__' ? baseTransactions.filter((item) => !item.category_id) : categoryId ? baseTransactions.filter((item) => Boolean(item.category_id && (selectedSlice?.category_ids || [categoryId]).includes(item.category_id))) : baseTransactions
+    const matchedTransactions = searchTransactionNotes(filteredTransactions, search)
     const pageSize = 10, offset = (page - 1) * pageSize
-    const paged = { ...report, transactions: filteredTransactions.slice(offset, offset + pageSize), transaction_total: filteredTransactions.length, transaction_page: page, transaction_page_size: pageSize }
+    const paged = { ...report, transactions: matchedTransactions.slice(offset, offset + pageSize), transaction_total: matchedTransactions.length, transaction_page: page, transaction_page_size: pageSize }
     const data = includeTrendDetails ? paged : { ...paged, daily: [], weekly: [], trend_detail_loaded: false }
     return NextResponse.json({ data }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch {

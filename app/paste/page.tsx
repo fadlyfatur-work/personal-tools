@@ -12,12 +12,22 @@ export default function PastePage() {
   const [resultText, setResultText] = useState<string>('')
   const [loadingFetch, setLoadingFetch] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string>('')
+  const [saveError, setSaveError] = useState('')
+  const [copyMessage, setCopyMessage] = useState('')
+
+  async function copyCode() {
+    setCopyMessage('')
+    try { await navigator.clipboard.writeText(generatedCode); setCopyMessage('Kode tersalin.') }
+    catch { setCopyMessage('Belum bisa menyalin otomatis. Pilih kode di atas dan salin secara manual.') }
+  }
 
   async function handlePaste() {
     if (!description.trim()) return
 
     setLoadingPaste(true)
     setGeneratedCode('')
+    setSaveError('')
+    setCopyMessage('')
 
     try {
       const res = await fetch('/api/paste', {
@@ -31,13 +41,14 @@ export default function PastePage() {
       })
 
       const data = await res.json()
+      if (!res.ok || !data.code) throw new Error('save failed')
 
       if (data.code) {
         setGeneratedCode(data.code)
         setDescription('')
       }
-    } catch (err) {
-      console.error(err)
+    } catch {
+      setSaveError('Teks belum berhasil disimpan. Isi teks tetap tersedia; coba buat kode lagi.')
     } finally {
       setLoadingPaste(false)
     }
@@ -74,7 +85,6 @@ export default function PastePage() {
     padding: '12px 14px',
     fontSize: 14,
     fontFamily: 'inherit',
-    outline: 'none',
     background: '#fff',
     boxSizing: 'border-box' as const,
   }
@@ -93,6 +103,7 @@ export default function PastePage() {
 
   return (
     <main
+      className="[&_:focus-visible]:outline-2 [&_:focus-visible]:outline-offset-4 [&_:focus-visible]:outline-[#174ea6]"
       style={{
         minHeight: '100vh',
         background: '#f8f9fa',
@@ -186,7 +197,9 @@ export default function PastePage() {
               </p>
             </div>
 
+            <label htmlFor="paste-text" style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>Teks yang dibagikan</label>
             <textarea
+              id="paste-text"
               placeholder="Tulis atau paste teks di sini..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -222,6 +235,7 @@ export default function PastePage() {
               </button>
             </div>
 
+            {saveError && <p role="alert" style={{ color: '#b3261e', marginTop: 12, fontSize: 14 }}>{saveError}</p>}
             {generatedCode && (
               <div
                 style={{
@@ -258,9 +272,7 @@ export default function PastePage() {
                 </div>
 
                 <button
-                  onClick={() =>
-                    navigator.clipboard.writeText(generatedCode)
-                  }
+                  onClick={copyCode}
                   style={{
                     border: '1px solid #dadce0',
                     background: '#fff',
@@ -275,6 +287,7 @@ export default function PastePage() {
                 </button>
               </div>
             )}
+            <p role="status" style={{ fontSize: 14, marginTop: 12 }}>{copyMessage}</p>
           </section>
 
           {/* Divider */}
@@ -313,13 +326,10 @@ export default function PastePage() {
               </p>
             </div>
 
-            <div
-              style={{
-                display: 'flex',
-                gap: 8,
-              }}
-            >
+            <label htmlFor="paste-code" style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>Kode akses</label>
+            <div style={{ display: 'flex', gap: 8 }}>
               <input
+                id="paste-code"
                 type="text"
                 placeholder="Kode"
                 value={codeInput}
@@ -360,6 +370,7 @@ export default function PastePage() {
 
             {errorMsg && (
               <div
+                role="alert"
                 style={{
                   marginTop: 12,
                   fontSize: 13,
@@ -376,17 +387,19 @@ export default function PastePage() {
                   marginTop: 16,
                 }}
               >
-                <div
+                <label htmlFor="paste-result"
                   style={{
                     fontSize: 12,
                     color: '#5f6368',
                     marginBottom: 6,
+                    display: 'block',
                   }}
                 >
                   Hasil
-                </div>
+                </label>
 
                 <textarea
+                  id="paste-result"
                   readOnly
                   value={resultText}
                   rows={6}
@@ -407,7 +420,7 @@ export default function PastePage() {
           style={{
             textAlign: 'center',
             fontSize: 12,
-            color: '#80868b',
+            color: '#5f6368',
             marginTop: 18,
           }}
         >
