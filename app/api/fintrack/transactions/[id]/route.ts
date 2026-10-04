@@ -5,6 +5,7 @@ import { requireFintrackIdentity } from '@/lib/fintrackUser'
 import { requireSensitivePin } from '@/lib/fintrackPin'
 
 const transactionSchema = z.object({
+  goal_item_id: z.string().uuid().nullable().optional(),
   type: z.enum(['income', 'expense', 'transfer']),
   amount: z.number().positive().finite(),
   from_account_id: z.string().uuid().nullable().optional(),
@@ -15,13 +16,16 @@ const transactionSchema = z.object({
   allow_negative: z.boolean().default(false),
 })
 
+export const dynamic = 'force-dynamic'
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireFintrackIdentity()
   if (!auth.identity) return auth.response
   const parsed = transactionSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   const { id } = await params
-  const { data, error } = await supabaseAdmin.rpc('fintrack_replace_transaction', {
+  const { data, error } = await supabaseAdmin.rpc(parsed.data.goal_item_id !== undefined ? 'fintrack_save_goal_transaction' : 'fintrack_replace_transaction', {
+    ...(parsed.data.goal_item_id !== undefined ? { p_goal_item_id: parsed.data.goal_item_id } : {}),
     p_actor_id: auth.identity.id,
     p_transaction_id: id,
     p_type: parsed.data.type,

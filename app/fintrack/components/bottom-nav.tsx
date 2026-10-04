@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChartPieSlice, GearSix, House, Plus, Wallet } from '@phosphor-icons/react'
+import { ChartPieSlice, House, Plus, Target, Wallet } from '@phosphor-icons/react'
 import { useFintrack } from './fintrack-provider'
 
 export function BottomNav() {
@@ -17,8 +17,8 @@ export function BottomNav() {
         <span><Plus size={24} weight="bold" /></span>
         <small>Catat</small>
       </button>
+      <Link href="/fintrack/goals" aria-current={pathname.startsWith('/fintrack/goals') ? 'page' : undefined} data-active={pathname.startsWith('/fintrack/goals')}><Target size={20} weight={pathname.startsWith('/fintrack/goals') ? 'fill' : 'regular'} /><span>Tujuan</span></Link>
       <Link href="/fintrack/manage" aria-current={pathname.startsWith('/fintrack/manage') ? 'page' : undefined} data-active={pathname.startsWith('/fintrack/manage')}><Wallet size={20} weight={pathname.startsWith('/fintrack/manage') ? 'fill' : 'regular'} /><span>Kelola</span></Link>
-      <Link href="/fintrack/settings" aria-current={pathname.startsWith('/fintrack/settings') ? 'page' : undefined} data-active={pathname.startsWith('/fintrack/settings')}><GearSix size={20} weight={pathname.startsWith('/fintrack/settings') ? 'fill' : 'regular'} /><span>Setelan</span></Link>
     </nav>
   )
 }

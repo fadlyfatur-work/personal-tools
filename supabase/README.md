@@ -1,5 +1,7 @@
 # Reset database FinTrack
 
+Untuk fitur Goals pada database yang sudah aktif, jalankan hanya migrasi tambahan `migrations/202610040001_fintrack_goals.sql` setelah migrasi sebelumnya. Panduan fitur ada di [docs/fintrack-goals.md](../docs/fintrack-goals.md). Jangan mengulang reset untuk mengaktifkan Goals.
+
 Migration `202609180001_fintrack_reset.sql` bersifat destruktif untuk modul FinTrack. Semua data FinTrack lama dihapus dan schema dibuat ulang dengan prefix `fintrack_`.
 
 Migration tidak menyentuh tabel modul lain seperti `clipboard` atau `templates`. Jangan mengganti script menjadi `drop schema public cascade` karena itu akan menghapus seluruh fitur dalam project Supabase.

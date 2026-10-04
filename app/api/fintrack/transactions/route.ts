@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getAccountAccess, getOwnedPlanId, requireFintrackIdentity } from '@/lib/fintrackUser'
 
 const transactionSchema = z.object({
+  goal_item_id: z.string().uuid().nullable().optional(),
   type: z.enum(['income', 'expense', 'transfer']),
   amount: z.number().positive().finite(),
   from_account_id: z.string().uuid().nullable().optional(),
@@ -13,6 +14,8 @@ const transactionSchema = z.object({
   transaction_date: z.iso.date(),
   allow_negative: z.boolean().default(false),
 })
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   const auth = await requireFintrackIdentity()
@@ -62,7 +65,8 @@ export async function POST(req: NextRequest) {
   const parsed = transactionSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
 
-  const { data, error } = await supabaseAdmin.rpc('fintrack_create_transaction', {
+  const { data, error } = await supabaseAdmin.rpc(parsed.data.goal_item_id !== undefined ? 'fintrack_save_goal_transaction' : 'fintrack_create_transaction', {
+    ...(parsed.data.goal_item_id !== undefined ? { p_goal_item_id: parsed.data.goal_item_id } : {}),
     p_actor_id: auth.identity.id,
     p_type: parsed.data.type,
     p_amount: parsed.data.amount,

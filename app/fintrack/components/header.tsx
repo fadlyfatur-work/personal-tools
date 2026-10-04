@@ -1,9 +1,7 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { SignOut } from '@phosphor-icons/react'
-import { fintrackRequest } from '@/lib/fintrackRequest'
-import { useFintrack } from './fintrack-provider'
+import Link from 'next/link'
+import { UserCircle } from '@phosphor-icons/react'
 import { useConnectivity } from './connectivity-gate'
 
 function greeting() {
@@ -14,24 +12,10 @@ function greeting() {
   return 'Selamat malam'
 }
 
-export function Header({ user, eyebrow, title }: { user: { name: string; email: string }; eyebrow?: string; title?: string; settings?: boolean }) {
-  const router = useRouter()
-  const { beginTask, endTask, clearCache, isBusy } = useFintrack()
+export function Header({ user, eyebrow, title, settings }: { user: { name: string; email: string }; eyebrow?: string; title?: string; settings?: boolean }) {
   const { status: connectionStatus, countdown } = useConnectivity()
   const dateLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Jakarta' }).format(new Date())
   const firstName = user.name.trim().split(/\s+/)[0] || 'Anda'
-
-  async function logout() {
-    beginTask('logout', 'Mengakhiri sesi')
-    try {
-      await fintrackRequest('/api/fintrack/auth/logout', { method: 'POST' })
-      clearCache()
-      router.replace('/fintrack/login')
-      router.refresh()
-    } finally {
-      endTask('logout')
-    }
-  }
 
   return (
     <header className="ft-topbar">
@@ -39,7 +23,7 @@ export function Header({ user, eyebrow, title }: { user: { name: string; email: 
         <span>{eyebrow || dateLabel}</span>
         <h1>{title || `${greeting()}, ${firstName}`}</h1>
       </div>
-      <div className="ft-header-actions"><span className="ft-header-connectivity" role="status" aria-live="polite"><span className="ft-header-connection" data-status={connectionStatus} aria-label={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'} title={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'}><span className="ft-connection-lamp" data-status={connectionStatus} /></span>{countdown !== null && <small>{countdown} dtk</small>}</span><button type="button" className="ft-icon-button" aria-label="Keluar dari akun" title="Keluar" onClick={logout} disabled={isBusy('logout')}><SignOut size={19} /></button></div>
+      <div className="ft-header-actions"><span className="ft-header-connectivity" role="status" aria-live="polite"><span className="ft-header-connection" data-status={connectionStatus} aria-label={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'} title={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'}><span className="ft-connection-lamp" data-status={connectionStatus} /></span>{countdown !== null && <small>{countdown} dtk</small>}</span><Link href="/fintrack/settings" className="ft-icon-button ft-profile-link" aria-label="Profil dan setelan" title="Profil dan setelan" aria-current={settings ? 'page' : undefined}><UserCircle size={24} weight={settings ? 'fill' : 'regular'} /></Link></div>
     </header>
   )
 }

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarBlank, Check, Copy, Moon, Sun, UserPlus, X } from '@phosphor-icons/react'
+import { useRouter } from 'next/navigation'
+import { CalendarBlank, Check, Copy, Moon, SignOut, Sun, UserPlus, X } from '@phosphor-icons/react'
 import { Header } from '../components/header'
 import { BottomNav } from '../components/bottom-nav'
 import { useFintrack } from '../components/fintrack-provider'
@@ -9,7 +10,8 @@ import { fintrackRequest } from '@/lib/fintrackRequest'
 import { PwaInstallCard } from '../components/pwa-install-card'
 
 export default function FintrackSettingsPage() {
-  const { data, user, accounts, palette, setPalette, theme, setTheme, loading, beginTask, endTask, isBusy, updateData, refreshData } = useFintrack()
+  const router = useRouter()
+  const { data, user, accounts, palette, setPalette, theme, setTheme, loading, beginTask, endTask, isBusy, updateData, refreshData, clearCache } = useFintrack()
   const [pin, setPin] = useState('')
   const [selectedWallet, setSelectedWallet] = useState('')
   const [joinCode, setJoinCode] = useState('')
@@ -18,6 +20,20 @@ export default function FintrackSettingsPage() {
   const [cutoffDay, setCutoffDay] = useState('')
 
   const [copyMessage, setCopyMessage] = useState('')
+  async function logout() {
+    if (isBusy('logout')) return
+    setMessage(null)
+    beginTask('logout', 'Mengakhiri sesi')
+    try {
+      const response = await fintrackRequest('/api/fintrack/auth/logout', { method: 'POST' })
+      if (!response.ok) throw new Error('Belum bisa keluar dari akun. Coba lagi.')
+      clearCache()
+      router.replace('/fintrack/login')
+      router.refresh()
+    } catch (error) {
+      setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Belum bisa keluar dari akun.' })
+    } finally { endTask('logout') }
+  }
   async function copyInvite() {
     if (!invite) return
     setCopyMessage('')
@@ -76,5 +92,7 @@ export default function FintrackSettingsPage() {
       <form className="ft-card ft-settings-card" onSubmit={requestJoin} data-updating={isBusy('join-request')}><h2>Gabung ke dompet</h2><p>Owner harus menyetujui permintaan sebelum akses diberikan.</p><div className="ft-field"><label htmlFor="join-code">Kode undangan</label><input id="join-code" className="ft-input" value={joinCode} maxLength={10} onChange={(event) => setJoinCode(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))} required /></div><button className="ft-button ft-button-secondary" style={{ width: '100%' }}><UserPlus size={17} />Kirim permintaan</button></form>
       {collaboration.pending_requests.length > 0 && <section className="ft-card ft-settings-card" data-updating={isBusy('join-review')}><h2>Permintaan bergabung</h2>{collaboration.pending_requests.map((request) => <div className="ft-request" key={request.id}><div><strong>{request.requester?.name || 'Pengguna'}</strong><span>{request.requester?.email}<br />Meminta akses ke {request.account?.name}</span></div><div className="ft-row" style={{ gap: 7 }}><button className="ft-icon-button" title="Tolak" onClick={() => review(request.id, 'rejected')}><X size={17} /></button><button className="ft-icon-button ft-accept" title="Terima" onClick={() => review(request.id, 'accepted')}><Check size={17} /></button></div></div>)}</section>}
       {collaboration.collaborators.length > 0 && <section className="ft-card ft-settings-card" data-updating={isBusy('access-revoke')}><h2>Kolaborator aktif</h2>{collaboration.collaborators.map((item) => <div className="ft-request" key={`${item.account_id}:${item.user_id}`}><div><strong>{item.user?.name || 'Pengguna'}</strong><span>{item.user?.email}<br />Akses ke {item.account?.name}</span></div><button className="ft-button ft-button-danger" onClick={() => revoke(item.account_id, item.user_id, item.user?.name || 'kolaborator')}>Cabut</button></div>)}</section>}
-    </section><BottomNav /></main>
+    </section>
+    <section className="ft-card ft-settings-card"><h2>Akun</h2><p>{user.name}<br />{user.email}</p><button type="button" className="ft-button ft-button-danger" disabled={isBusy('logout')} onClick={() => void logout()}><SignOut size={18} />{isBusy('logout') ? 'Keluar...' : 'Keluar dari akun'}</button></section>
+    <BottomNav /></main>
 }

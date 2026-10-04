@@ -12,3 +12,12 @@ Tambahkan `GEOAPIFY_API_KEY=<API key dari Geoapify>` ke `.env.local` atau enviro
 - Pencarian mengirim teks query ke Geoapify melalui server. Foto tetap di browser. Atribusi Geoapify dan OpenStreetMap ditampilkan di dropdown.
 
 Jalankan `node scripts/test-timemark-locations.cjs` untuk tes route dengan respons provider simulasi dan cache. Pengujian alamat nyata memerlukan API key aktif.
+
+## Kamera, lokasi perangkat, dan panel editor
+
+- Foto unggahan atau hasil kamera langsung aktif, tanpa konfirmasi penggunaan foto.
+- Desktop: pengaturan dan pratinjau berbagi tinggi viewport; pengaturan memiliki scroll sendiri. Mobile: pratinjau di atas, panel pengaturan dengan scroll di bawah. Pada layar sangat pendek, halaman boleh bergulir agar kontrol tetap dapat diakses.
+- Kamera memakai `getUserMedia`, tanpa audio, dan hanya dibuka lewat tombol. Stream dihentikan saat kamera ditutup atau komponen dilepas, termasuk jika izin baru selesai setelah ditutup. Hasil kamera berupa JPEG.
+- Lokasi diambil setelah tombol ditekan. Koordinat dikirim lewat POST `/api/timemark/location` ke proxy reverse geocoding Geoapify. Hasil alamat dibatasi Indonesia dan tidak dicache di server. Jika alamat gagal diperoleh, koordinat tetap tersedia untuk diganti manual.
+- Kamera/lokasi memerlukan izin browser dan secure context (HTTPS atau localhost). Respons lokasi yang terlambat tidak menimpa pengeditan manual.
+- `node scripts/test-timemark-device.cjs`: simulasi capture, lifecycle kamera, reverse lookup, validasi koordinat, dan edit manual saat lookup berjalan. Hardware kamera/GPS nyata perlu diperiksa pada perangkat pengguna.

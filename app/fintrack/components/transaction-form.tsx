@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Account, Category, Transaction, TransactionType } from '@/types/fintrack'
+import type { Account, Category, Goal, Transaction, TransactionType } from '@/types/fintrack'
+import { useQuery } from '@tanstack/react-query'
 import { fintrackRequest } from '@/lib/fintrackRequest'
 import { useFintrack } from './fintrack-provider'
 import { compareCategoryUsage } from '@/lib/fintrackOrdering'
 
 interface TransactionFormProps {
+  initial?: Partial<Transaction>
   accounts: Account[]
   categories: Category[]
   onSaved: (transaction: Transaction) => Promise<void> | void
@@ -24,21 +26,30 @@ function formatNominal(value: string) {
   return value.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
-export default function TransactionForm({ accounts, categories, onSaved, editing, onCancelEdit, onDelete }: TransactionFormProps) {
+export default function TransactionForm({ accounts, categories, onSaved, editing, initial, onCancelEdit, onDelete }: TransactionFormProps) {
   const { beginTask, endTask } = useFintrack()
-  const [type, setType] = useState<TransactionType>(editing?.type || 'expense')
+  const [type, setType] = useState<TransactionType>(editing?.type || initial?.type || 'expense')
   const [amount, setAmount] = useState(editing ? onlyDigits(String(Math.trunc(Number(editing.amount)))) : '')
-  const [from, setFrom] = useState(editing?.from_account_id || '')
-  const [to, setTo] = useState(editing?.to_account_id || '')
+  const [from, setFrom] = useState(editing?.from_account_id || initial?.from_account_id || '')
+  const [to, setTo] = useState(editing?.to_account_id || initial?.to_account_id || '')
+  const [goalItem, setGoalItem] = useState(editing?.goal_item_id || initial?.goal_item_id || '')
   const [category, setCategory] = useState(editing?.category_id || '')
   const [note, setNote] = useState(editing?.note || '')
   const [date, setDate] = useState(editing?.transaction_date || new Date().toISOString().slice(0, 10))
   const [message, setMessage] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
   const [saving, setSaving] = useState(false)
+  const goalsQuery = useQuery<Goal[]>({ queryKey: ['fintrack', 'goals'], queryFn: async () => {
+    const response = await fintrackRequest('/api/fintrack/goals', { cache: 'no-store' })
+    const body = await response.json()
+    if (!response.ok) throw new Error(body.error || 'Tujuan gagal dimuat')
+    return body.data
+  }, enabled: type === 'expense' && Boolean(from) })
+  const selectedGoal = goalsQuery.data?.find(goal => goal.account_id === from)
 
   function changeType(nextType: TransactionType) {
     setType(nextType)
     setCategory('')
+    setGoalItem('')
     setMessage(null)
     if (nextType === 'income') setFrom('')
     if (nextType === 'expense') setTo('')
@@ -54,7 +65,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
         const res = await fintrackRequest(editing ? `/api/fintrack/transactions/${editing.id}` : '/api/fintrack/transactions', {
           method: editing ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, amount: Number(amount), from_account_id: from || null, to_account_id: to || null, category_id: category || null, note: note || null, transaction_date: date, allow_negative: allowNegative }),
+          body: JSON.stringify({ type, amount: Number(amount), from_account_id: from || null, to_account_id: to || null, category_id: category || null, note: note || null, transaction_date: date, allow_negative: allowNegative, ...((goalItem || editing?.goal_item_id) ? { goal_item_id: goalItem || null } : {}) }),
         })
         const body = await res.json().catch(() => ({}))
         return { res, body }
@@ -102,7 +113,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
       {(type === 'expense' || type === 'transfer') && (
         <div className="ft-field">
           <label htmlFor="from">{type === 'expense' ? 'Bayar dari' : 'Dompet asal'}</label>
-          <select id="from" className="ft-input" value={from} onChange={(e) => { setFrom(e.target.value); setCategory('') }} required>
+          <select id="from" className="ft-input" value={from} onChange={(e) => { setFrom(e.target.value); setCategory(''); setGoalItem('') }} required>
             <option value="">Pilih dompet</option>
             {accounts.filter((a) => a.can_manage).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
           </select>
@@ -126,6 +137,8 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
           </select>
         </div>
       )}
+      {type === 'expense' && selectedGoal && <div className="ft-field"><label htmlFor="goal-item">Item tujuan</label><select id="goal-item" className="ft-input" value={goalItem} onChange={event => setGoalItem(event.target.value)}><option value="">Tanpa item</option>{selectedGoal.items.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select><small>Pengeluaran tetap tercatat dalam laporan keuangan.</small></div>}
+      {type === 'expense' && goalItem && goalsQuery.isError && <p role="alert" className="ft-inline-message ft-error">Item tujuan belum dapat dimuat. Coba tutup dan buka formulir kembali.</p>}
       <div className="ft-field">
         <label htmlFor="date">Tanggal</label>
         <input id="date" className="ft-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
