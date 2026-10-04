@@ -1,11 +1,12 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowClockwise, BellRinging, WarningCircle, X } from '@phosphor-icons/react'
 import TransactionForm from './transaction-form'
+import { TransactionSheet } from './transaction-sheet'
 import { fetchFintrackBootstrap, fintrackKeys } from '@/lib/fintrackClient'
 import { fintrackRequest } from '@/lib/fintrackRequest'
 import type { Account, Category, FintrackBootstrap, FintrackUser, Transaction } from '@/types/fintrack'
@@ -260,23 +261,13 @@ function FintrackState({ children }: { children: React.ReactNode }) {
 
 function TransactionModal({ editing, onClose }: { editing: Transaction | null; onClose: () => void }) {
   const { accounts, categories, data, loading, beginTask, endTask, applyTransactionChange, refreshData } = useFintrack()
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  useEffect(() => {
-    const dialog = dialogRef.current!
-    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    dialog.showModal()
-    return () => { dialog.close(); document.body.style.overflow = previousOverflow; trigger?.focus() }
-  }, [])
-
-  function saved(transaction: Transaction) {
+  function saved(transaction: Transaction, close: () => void) {
     applyTransactionChange(editing, transaction)
     void refreshData()
-    onClose()
+    close()
   }
 
-  async function removeTransaction() {
+  async function removeTransaction(close: () => void) {
     if (!editing || !window.confirm('Hapus transaksi ini dan kembalikan perubahan saldonya?')) return
     const pin = data?.has_pin ? window.prompt('Masukkan PIN konfirmasi 6 digit') : null
     if (data?.has_pin && !pin) return
@@ -287,19 +278,18 @@ function TransactionModal({ editing, onClose }: { editing: Transaction | null; o
       if (!response.ok) throw new Error(body.error || 'Transaksi tidak dapat dihapus')
       applyTransactionChange(editing, null)
       void refreshData()
-      onClose()
+      close()
     } catch (error) { window.alert(error instanceof Error ? error.message : 'Transaksi tidak dapat dihapus') } finally { endTask('transaction-delete') }
   }
 
   return (
-    <dialog ref={dialogRef} className="ft-modal-layer" aria-labelledby="transaction-modal-title" onCancel={(event) => { event.preventDefault(); onClose() }} onClick={(event) => { if (event.currentTarget === event.target) onClose() }}>
-      <section className="ft-modal">
-        <div className="ft-modal-header"><div><p>Transaksi</p><h2 id="transaction-modal-title">{editing ? 'Perbarui catatan' : 'Catat uang masuk atau keluar'}</h2></div><button className="ft-icon-button" type="button" onClick={onClose} aria-label="Tutup pencatatan"><X size={19} /></button></div>
+    <TransactionSheet onClose={onClose}>{close => <>
+
+        <div className="ft-modal-header"><div><p>Transaksi</p><h2 id="transaction-modal-title">{editing ? 'Perbarui catatan' : 'Catat uang masuk atau keluar'}</h2></div><button className="ft-icon-button" type="button" onClick={close} aria-label="Tutup pencatatan"><X size={19} /></button></div>
         <div className="ft-modal-body" data-updating={loading}>
-          {accounts.length === 0 && !loading ? <div className="ft-empty ft-modal-empty"><div><strong>Buat dompet terlebih dahulu</strong><p>Transaksi membutuhkan dompet sebagai sumber atau tujuan saldo.</p><Link href="/fintrack/manage" className="ft-button ft-button-primary" onClick={onClose}>Kelola dompet</Link></div></div> : <TransactionForm key={editing?.id || 'new'} accounts={accounts} categories={categories} editing={editing} onCancelEdit={onClose} onDelete={editing ? removeTransaction : undefined} onSaved={saved} />}
+          {accounts.length === 0 && !loading ? <div className="ft-empty ft-modal-empty"><div><strong>Buat dompet terlebih dahulu</strong><p>Transaksi membutuhkan dompet sebagai sumber atau tujuan saldo.</p><Link href="/fintrack/manage" className="ft-button ft-button-primary" onClick={onClose}>Kelola dompet</Link></div></div> : <TransactionForm key={editing?.id || 'new'} accounts={accounts} categories={categories} editing={editing} onCancelEdit={close} onDelete={editing ? () => removeTransaction(close) : undefined} onSaved={transaction => saved(transaction, close)} />}
         </div>
-      </section>
-    </dialog>
+      </>}</TransactionSheet>
   )
 }
 

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { ArrowRight, Wallet, ClipboardText, FileText } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRight, Wallet, ClipboardText, FileText, TimerIcon } from '@phosphor-icons/react/dist/ssr'
 
 export const metadata: Metadata = {
   title: 'Menu aplikasi — Personal Tools',
@@ -25,6 +25,12 @@ const features = [
     title: 'Nominatif Perjalanan Dinas',
     desc: 'Hitung rincian biaya sesuai aturan dan ekspor Excel.',
     icon: <FileText size={32} aria-hidden="true" />,
+  },
+  {
+    href: '/timemark',
+    title: 'Time Mark',
+    desc: 'Catat waktu dan manajemen tugas.',
+    icon: <TimerIcon size={32} aria-hidden="true" />,
   },
 ]
 

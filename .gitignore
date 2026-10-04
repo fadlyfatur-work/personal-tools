@@ -43,3 +43,6 @@ next-env.d.ts
 #AI
 AGENTS.md
 DESIGN.md
+CLAUDE.md
+
+/anti-slop

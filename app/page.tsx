@@ -24,7 +24,8 @@ export default function Home() {
     <main id="main" className={styles.container}>
       <section className={styles.hero} aria-labelledby="hero-title">
         <div className={styles.heroTitle}>
-          <h1 id="hero-title">Developer.<br />Pengembangan<br className={styles.heroBreak} /> sistem.</h1>
+          <p className={styles.eyebrow}>Fadly Faturrohman / Fullstack Developer</p>
+          <h1 id="hero-title">Developer.<br /><span>Pengembangan<br className={styles.heroBreak} /> sistem.</span></h1>
           <a className={styles.primaryButton} href="#projects">Lihat proyek<ArrowDown size={20} aria-hidden="true" /></a>
         </div>
         <div className={styles.heroIntro}>
@@ -35,7 +36,7 @@ export default function Home() {
         </div>
       </section>
       <section id="about" className={`${styles.section} ${styles.about}`} aria-labelledby="about-title">
-        <h2 id="about-title">Dari ide hingga<br />aplikasi berjalan.</h2>
+        <div className={styles.aboutTitle}><p className={styles.eyebrow}>Tentang saya</p><h2 id="about-title">Dari ide hingga<br />aplikasi berjalan.</h2></div>
         <div><p className={styles.lead}>Membangun aplikasi web dari end-to-end — frontend seperti React dan Vue yang interaktif, hingga backend Laravel, Node.js, dan Go yang scalable, juga infrastruktur container dengan Docker.</p><p className={styles.muted}>Kode bersih dan arsitektur terstruktur.</p><div className={styles.socials}>{socials.map((social, index) => { const Icon = socialIcons[index]; return <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer"><Icon size={20} aria-hidden="true" />{social.name}<span className={styles.srOnly}> (tab baru)</span></a> })}</div></div>
       </section>
       <section id="projects" className={styles.section} aria-labelledby="projects-title">
