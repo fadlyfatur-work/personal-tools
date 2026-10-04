@@ -195,7 +195,7 @@ function FintrackState({ children }: { children: React.ReactNode }) {
     return rebuildDerived(next, next.accounts, knownTransactions(next))
   }), [updateData])
   const refreshData = useCallback(async () => {
-    await Promise.all([query.refetch(), queryClient.invalidateQueries({ queryKey: ['fintrack', 'activity'] })])
+    await Promise.all([query.refetch(), queryClient.invalidateQueries({ queryKey: ['fintrack', 'activity'] }), queryClient.invalidateQueries({ queryKey: ['fintrack', 'goals'] })])
   }, [query, queryClient])
   const clearCache = useCallback(() => queryClient.removeQueries({ queryKey: ['fintrack'] }), [queryClient])
   const openComposer = useCallback((transaction?: Transaction | null) => setComposer({ open: true, editing: transaction || null }), [])

@@ -37,6 +37,7 @@ export interface Category {
 export type TransactionType = 'income' | 'expense' | 'transfer'
 
 export interface Transaction {
+  goal_item_id?: string | null
   id: string
   plan_id: string
   from_account_id?: string | null
@@ -48,6 +49,28 @@ export interface Transaction {
   transaction_date: string
   created_at?: string
   status?: 'posted' | 'voided'
+}
+
+export interface GoalItem {
+  id: string
+  goal_id: string
+  name: string
+  estimated_amount: number
+  spent: number
+}
+
+export interface Goal {
+  id: string
+  account_id: string
+  name: string
+  emoji: string
+  target_amount: number
+  target_date: string | null
+  status: 'active' | 'completed' | 'archived'
+  kind: 'purchase' | 'investment'
+  current_balance: number
+  spent: number
+  items: GoalItem[]
 }
 
 export interface FintrackSummary {

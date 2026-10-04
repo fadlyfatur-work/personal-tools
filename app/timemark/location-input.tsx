@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { cachedLocations, cacheLocations, normalizeQuery } from './location-cache'
 import styles from './timemark.module.css'
 
@@ -10,8 +10,49 @@ export default function LocationInput({ value, onChange, disabled }: { value: st
   const [results, setResults] = useState<string[]>([])
   const [status, setStatus] = useState('Ketik minimal 5 karakter.')
   const [active, setActive] = useState(-1)
+  const [locating, setLocating] = useState(false)
+  const [deviceMessage, setDeviceMessage] = useState('')
+  const deviceRequest = useRef(0)
+  const deviceController = useRef<AbortController | null>(null)
   const listId = useId()
   const normalized = normalizeQuery(query)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLocating(false), 0)
+    return () => { clearTimeout(timer); deviceRequest.current = deviceRequest.current + 1; deviceController.current?.abort() }
+  }, [disabled])
+
+  function cancelLocation() {
+    deviceRequest.current++; deviceController.current?.abort(); setLocating(false); setDeviceMessage('')
+  }
+
+  function locate() {
+    cancelLocation(); setOpen(false)
+    if (!navigator.geolocation) { setDeviceMessage('Lokasi perangkat tidak tersedia. Ketik alamat secara manual.'); return }
+    if (!window.isSecureContext) { setDeviceMessage('Lokasi perangkat memerlukan HTTPS atau localhost.'); return }
+    const version = deviceRequest.current
+    setLocating(true); setDeviceMessage('Menunggu izin dan mencari posisi perangkat…')
+    navigator.geolocation.getCurrentPosition(async position => {
+      if (version !== deviceRequest.current) return
+      const { latitude: lat, longitude: lon, accuracy } = position.coords
+      const coordinates = `${lat.toFixed(6)}, ${lon.toFixed(6)}`
+      const controller = new AbortController(); deviceController.current = controller
+      setDeviceMessage('Mengubah koordinat menjadi alamat…')
+      try {
+        const response = await fetch('/api/timemark/location', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat, lon }), signal: controller.signal })
+        const data = await response.json()
+        if (!response.ok || typeof data.address !== 'string') throw new Error('Alamat tidak tersedia')
+        if (version !== deviceRequest.current) return
+        onChange(data.address); setDeviceMessage(`Lokasi diambil · akurasi ±${Math.round(accuracy)} m. Alamat dapat diganti.`)
+      } catch {
+        if (version !== deviceRequest.current) return
+        onChange(coordinates); setDeviceMessage('Alamat belum tersedia; koordinat digunakan. Kamu bisa menggantinya dengan alamat manual.')
+      } finally { if (version === deviceRequest.current) setLocating(false) }
+    }, error => {
+      if (version !== deviceRequest.current) return
+      setLocating(false); setDeviceMessage(error.code === 1 ? 'Izin lokasi ditolak. Izinkan di browser atau ketik alamat manual.' : error.code === 3 ? 'Pencarian lokasi kehabisan waktu. Coba lagi atau ketik manual.' : 'Posisi perangkat tidak tersedia. Coba lagi atau ketik manual.')
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 })
+  }
 
   useEffect(() => {
     if (!open || disabled || normalized.length < 5 || normalized.length > 200) return
@@ -39,6 +80,7 @@ export default function LocationInput({ value, onChange, disabled }: { value: st
   }, [normalized, query, open, disabled])
 
   function choose(index: number) {
+    cancelLocation()
     const selected = results[index]
     if (selected) onChange(selected)
     else if (query.trim()) onChange(query.trim())
@@ -47,7 +89,7 @@ export default function LocationInput({ value, onChange, disabled }: { value: st
 
   return <div className={styles.location} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false) }}>
     <label>Lokasi<input role="combobox" aria-autocomplete="list" aria-expanded={open && !disabled} aria-controls={listId} aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined} aria-describedby={`${listId}-hint`} maxLength={400} value={query} placeholder="Cari lokasi atau ketik alamat manual" disabled={disabled}
-      onChange={event => { onChange(event.target.value); setResults([]); setActive(-1); setOpen(true); const length = normalizeQuery(event.target.value).length; setStatus(length < 5 ? 'Ketik minimal 5 karakter.' : length > 200 ? 'Alamat panjang dapat digunakan langsung secara manual.' : 'Menunggu selesai mengetik…') }}
+      onChange={event => { cancelLocation(); onChange(event.target.value); setResults([]); setActive(-1); setOpen(true); const length = normalizeQuery(event.target.value).length; setStatus(length < 5 ? 'Ketik minimal 5 karakter.' : length > 200 ? 'Alamat panjang dapat digunakan langsung secara manual.' : 'Menunggu selesai mengetik…') }}
       onKeyDown={event => {
         if (event.key === 'Escape') { setOpen(false); setActive(-1) }
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setOpen(true); setActive(index => event.key === 'ArrowDown' ? Math.min(index + 1, results.length) : Math.max(index - 1, 0)) }
@@ -62,5 +104,9 @@ export default function LocationInput({ value, onChange, disabled }: { value: st
       <p className={styles.attribution}>Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noreferrer">Geoapify</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a></p>
     </div>}
     <p id={`${listId}-hint`} className={styles.help}>Ketik alamat manual atau cari minimal 5 karakter. Maksimal 5 saran di Indonesia.</p>
+    <button className={styles.deviceButton} disabled={disabled || locating} onClick={locate}>{locating ? 'Mengambil lokasi…' : 'Gunakan lokasi perangkat'}</button>
+    {locating && <button className={styles.textButton} onClick={cancelLocation}>Batal</button>}
+    {deviceMessage && <p className={styles.help} role="status">{deviceMessage}</p>}
+    <p className={styles.locationCredit}>Alamat perangkat: <a href="https://www.geoapify.com/" target="_blank" rel="noreferrer">Geoapify</a> / <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>. Koordinat dikirim untuk mencari alamat.</p>
   </div>
 }

@@ -1,0 +1,50 @@
+.ft-goals-intro { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; }
+.ft-goals-intro p { flex: 1; margin: 0; font-size: 13px; line-height: 1.6; }
+.ft-goals-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-bottom: 22px; }
+.ft-goals-overview span, .ft-goal-heading > span, .ft-goal-heading small, .ft-goal-help, .ft-goal-items-title > span { color: var(--ft-muted); font-size: 12px; line-height: 1.6; }
+.ft-goals-overview strong { display: block; margin-top: 5px; font-size: clamp(15px, 4.5vw, 20px); overflow-wrap: anywhere; }
+.ft-goals-empty { padding: 28px 20px; margin-top: 18px; }
+.ft-goals-empty h2 { font-size: 18px; margin: 12px 0 8px; }
+.ft-goals-empty p { font-size: 13px; line-height: 1.7; }
+.ft-goals-list { display: grid; gap: 14px; margin: 18px 0; }
+.ft-goals-page .ft-page-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ft-goal-card { position: relative; overflow: visible; }
+.ft-goal-card:has(.ft-action-menu[open]) { z-index: 16; }
+.ft-goal-card > summary { display: flex; gap: 12px; align-items: flex-start; padding: 18px 16px; list-style: none; cursor: pointer; }
+.ft-goal-card > summary::-webkit-details-marker { display: none; }
+.ft-goal-card > summary:focus-visible { outline: 2px solid var(--ft-primary); outline-offset: -3px; }
+.ft-goal-emoji { font-size: 26px; width: 32px; flex: 0 0 32px; }
+.ft-goal-heading { flex: 1; min-width: 0; }
+.ft-goal-heading h2 { margin: 0 0 4px; font-size: 16px; overflow-wrap: anywhere; }
+.ft-goal-progress-label { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 13px; }
+.ft-goal-progress-label strong { overflow-wrap: anywhere; }
+.ft-goal-heading progress { display: block; width: 100%; height: 7px; margin: 8px 0; border: 0; border-radius: 4px; overflow: hidden; background: var(--ft-primary-soft); accent-color: var(--ft-primary); }
+.ft-goal-heading progress::-webkit-progress-bar { background: var(--ft-primary-soft); }
+.ft-goal-heading progress::-webkit-progress-value { background: var(--ft-primary); }
+.ft-goal-heading progress::-moz-progress-bar { background: var(--ft-primary); }
+.ft-goal-chevron { flex: 0 0 14px; }
+.ft-goal-card[open] .ft-goal-chevron { transform: rotate(180deg); }
+.ft-goal-detail { border-top: 1px solid var(--ft-border); padding: 16px; }
+.ft-goal-numbers { display: grid; gap: 9px; margin: 0 0 16px; font-size: 13px; }
+.ft-goal-numbers > div { display: flex; justify-content: space-between; gap: 12px; }
+.ft-goal-numbers dt { color: var(--ft-muted); }
+.ft-goal-numbers dd { margin: 0; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
+.ft-goal-actions { display: flex; align-items: center; gap: 8px; }
+.ft-goal-actions > button { flex: 1 1 0; min-width: 0; min-height: 44px; padding-inline: 8px; font-size: 12px; }
+.ft-goal-card .ft-action-menu { flex: 0 0 44px; }
+.ft-goal-card .ft-action-menu summary { color: var(--ft-text); }
+.ft-goal-card .ft-action-menu button { color: var(--ft-text); font-size: 13px; }
+.ft-goal-card .ft-action-menu button.danger { color: var(--ft-expense); }
+.ft-goal-card .ft-goal-menu-archive { border-top: 1px solid var(--ft-border); margin-top: 4px; border-radius: 0 0 8px 8px; }
+.ft-goal-items-title { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 8px; }
+.ft-goal-items-title h3 { font-size: 14px; margin: 0; }
+.ft-goal-items-title h3 span { color: var(--ft-muted); font-weight: 400; }
+.ft-goal-add-item { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: var(--ft-text); font: inherit; font-size: 12px; cursor: pointer; }
+.ft-goal-add-item:hover { color: var(--ft-primary); }
+.ft-goal-no-items { margin: 0; }
+.ft-goal-items { padding: 0; margin: 10px 0; list-style: none; }
+.ft-goal-items > li { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--ft-border); }
+.ft-goal-items > li > div:first-child { flex: 1 1 140px; min-width: 0; }
+.ft-goal-items strong { display: block; font-size: 13px; margin-bottom: 4px; overflow-wrap: anywhere; }
+.ft-goal-items span { display: block; font-size: 12px; color: var(--ft-muted); line-height: 1.7; }
+.ft-goal-items span[data-over="true"] { color: var(--ft-expense); }
