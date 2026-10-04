@@ -41,12 +41,12 @@ export default function LocationInput({ value, onChange, disabled }: { value: st
       try {
         const response = await fetch('/api/timemark/location', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat, lon }), signal: controller.signal })
         const data = await response.json()
-        if (!response.ok || typeof data.address !== 'string') throw new Error('Alamat tidak tersedia')
+        if (!response.ok || typeof data.address !== 'string') throw new Error(typeof data.error === 'string' ? data.error : 'Alamat tidak tersedia')
         if (version !== deviceRequest.current) return
         onChange(data.address); setDeviceMessage(`Lokasi diambil · akurasi ±${Math.round(accuracy)} m. Alamat dapat diganti.`)
-      } catch {
+      } catch (error) {
         if (version !== deviceRequest.current) return
-        onChange(coordinates); setDeviceMessage('Alamat belum tersedia; koordinat digunakan. Kamu bisa menggantinya dengan alamat manual.')
+        onChange(coordinates); setDeviceMessage(`${error instanceof Error && error.name !== 'AbortError' ? error.message : 'Alamat belum tersedia.'} Koordinat digunakan dan bisa diganti manual.`)
       } finally { if (version === deviceRequest.current) setLocating(false) }
     }, error => {
       if (version !== deviceRequest.current) return

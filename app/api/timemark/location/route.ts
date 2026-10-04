@@ -5,17 +5,22 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Koordinat tidak valid.' }, { status: 400 })
   }
   const apiKey = process.env.GEOAPIFY_API_KEY
-  if (!apiKey) return Response.json({ error: 'Alamat otomatis belum aktif.' }, { status: 503 })
+  if (!apiKey) return Response.json({ error: 'Geoapify belum dikonfigurasi pada server.' }, { status: 503 })
   const url = new URL('https://api.geoapify.com/v1/geocode/reverse')
   url.search = new URLSearchParams({ lat: String(body.lat), lon: String(body.lon), lang: 'id', format: 'json', limit: '1', apiKey }).toString()
   try {
     const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(8000) })
-    if (!response.ok) throw new Error('Provider unavailable')
+    if (response.status === 401 || response.status === 403) return Response.json({ error: 'API key Geoapify pada server ditolak. Periksa key dan pembatasannya.' }, { status: 502 })
+    if (response.status === 429) return Response.json({ error: 'Kuota Geoapify sedang terlampaui. Coba lagi nanti.' }, { status: 429 })
+    if (!response.ok) return Response.json({ error: `Geoapify gagal merespons (HTTP ${response.status}).` }, { status: 502 })
     const data = await response.json()
     const location = data.results?.[0]
     if (location?.country_code !== 'id' || typeof location.formatted !== 'string' || !location.formatted.trim()) {
       return Response.json({ error: 'Alamat Indonesia tidak ditemukan untuk koordinat ini.' }, { status: 404 })
     }
     return Response.json({ address: location.formatted.slice(0, 400) }, { headers: { 'Cache-Control': 'private, no-store' } })
-  } catch { return Response.json({ error: 'Alamat tidak dapat diambil saat ini.' }, { status: 502 }) }
+  } catch (error) {
+    const message = error instanceof Error && error.name === 'TimeoutError' ? 'Koneksi ke Geoapify kehabisan waktu.' : 'Server tidak dapat menghubungi Geoapify.'
+    return Response.json({ error: message }, { status: 502 })
+  }
 }

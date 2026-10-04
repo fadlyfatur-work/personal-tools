@@ -124,7 +124,7 @@ export default function Editor() {
   }
   const size = photo ? dimensions(photo, rotation) : null
 
-  return <main className={styles.app} data-theme={dark ? 'dark' : 'light'}>
+  return <main className={styles.app} data-theme={dark ? 'dark' : 'light'} data-camera={cameraOpen ? 'open' : 'closed'}>
     <header className={styles.header}><div><Link href="/menu">Personal Tools</Link><span className={styles.divider}>/</span><strong>Timemark</strong></div><div className={styles.headerActions}><span className={styles.local}>Foto diproses di perangkatmu</span><button disabled={!ready} aria-pressed={dark} onClick={toggleTheme}>Mode gelap</button></div></header>
     <div className={styles.heading}><h1>Informasi lengkap. Dalam satu foto.</h1><p>Unggah atau ambil foto, atur informasi, lalu unduh.</p></div>
     <input ref={photoInput} className={styles.hidden} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Unggah foto" onChange={e => { void upload(e.target.files?.[0]); e.target.value = '' }} />
@@ -154,7 +154,7 @@ export default function Editor() {
           {cameraOpen ? <Camera onCapture={upload} onClose={() => setCameraOpen(false)} /> : photo ? <canvas ref={canvas} aria-label={original ? 'Foto asli sebelum diberi cap' : 'Hasil foto dengan cap informasi'} /> : <div className={styles.empty}><ImageSquare size={64} weight="thin" /><h2>Mulai dari fotomu</h2><p>Tarik foto ke sini, atau pilih dari perangkat.<br />Foto langsung siap diberi cap informasi.</p><button className={styles.primary} disabled={busy || !ready} onClick={() => photoInput.current?.click()}>Pilih foto</button></div>}
         </div>
         <div className={styles.caption}><span>{size ? `${size[0]} × ${size[1]} px · ${size[0] > size[1] ? 'Landscape' : 'Portrait'}` : 'Pratinjau foto'}{busy ? ' · Memproses…' : ''}</span><span>Tanpa pemotongan</span></div>
-        <div className={styles.export}><p>Informasi waktu dan lokasi diisi manual.</p><div><select aria-label="Format unduhan" value={format} onChange={e => setFormat(e.target.value)}><option value="image/jpeg">JPG</option><option value="image/png">PNG</option></select><button className={styles.primary} disabled={!photo || busy || !settings.date || !settings.time || !settings.id.trim()} onClick={() => void download()}><DownloadSimple size={19} />{busy ? 'Memproses…' : 'Unduh foto'}</button></div></div>
+        <div className={styles.export}><p>Waktu dan lokasi dapat diubah.</p><div><select aria-label="Format unduhan" value={format} onChange={e => setFormat(e.target.value)}><option value="image/jpeg">JPG</option><option value="image/png">PNG</option></select><button className={styles.primary} disabled={!photo || busy || !settings.date || !settings.time || !settings.id.trim()} onClick={() => void download()}><DownloadSimple size={19} />{busy ? 'Memproses…' : 'Unduh foto'}</button></div></div>
       </section>
     </div>
   </main>
