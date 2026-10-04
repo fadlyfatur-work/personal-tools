@@ -21,3 +21,8 @@ Jalankan `node scripts/test-timemark-locations.cjs` untuk tes route dengan respo
 - Lokasi diambil setelah tombol ditekan. Koordinat dikirim lewat POST `/api/timemark/location` ke proxy reverse geocoding Geoapify. Hasil alamat dibatasi Indonesia dan tidak dicache di server. Jika alamat gagal diperoleh, koordinat tetap tersedia untuk diganti manual.
 - Kamera/lokasi memerlukan izin browser dan secure context (HTTPS atau localhost). Respons lokasi yang terlambat tidak menimpa pengeditan manual.
 - `node scripts/test-timemark-device.cjs`: simulasi capture, lifecycle kamera, reverse lookup, validasi koordinat, dan edit manual saat lookup berjalan. Hardware kamera/GPS nyata perlu diperiksa pada perangkat pengguna.
+
+## Diagnosis produksi (2026-10-04)
+
+Posisi perangkat bisa tersedia walau alamat gagal. Reverse geocoding dan autocomplete produksi sama-sama mengembalikan HTTP 502; panggilan Geoapify dengan key lokal berhasil. Periksa GEOAPIFY_API_KEY di environment server produksi (termasuk pembatasan key) serta akses outbound server ke pi.geoapify.com. Route reverse sekarang mengembalikan pesan yang membedakan key ditolak, kuota, HTTP provider, dan koneksi/timeout. Deploy perubahan dulu untuk melihat pesan yang tepat di produksi. Kamera meminta stream portrait 9:16; CSS menampilkan seluruh video dalam ruang kamera penuh dan mempertahankan kontrol di bawah.
+

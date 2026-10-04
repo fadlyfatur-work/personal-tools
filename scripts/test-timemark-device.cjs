@@ -10,11 +10,13 @@ function load(path, globals) {
 async function main() {
   const env = {}
   let calls = 0
+  let providerStatus = 200
   const route = load('app/api/timemark/location/route.ts', { URL, URLSearchParams, Response, AbortSignal, process: { env }, fetch: async url => {
     calls++
     assert.equal(url.pathname, '/v1/geocode/reverse')
     assert.equal(url.searchParams.get('lat'), '-6.2')
     assert.equal(url.searchParams.get('limit'), '1')
+    if (providerStatus !== 200) return new Response('', { status: providerStatus })
     return Response.json({ results: [{ country_code: 'id', formatted: 'Jakarta, Indonesia' }] })
   } })
   const request = body => new Request('http://localhost/api/timemark/location', { method: 'POST', body: JSON.stringify(body) })
@@ -26,12 +28,16 @@ async function main() {
   const response = await route.POST(request({ lat: -6.2, lon: 106.8 }))
   assert.equal((await response.json()).address, 'Jakarta, Indonesia')
   assert.equal(response.headers.get('cache-control'), 'private, no-store')
+  providerStatus = 403
+  assert.match((await (await route.POST(request({ lat: -6.2, lon: 106.8 }))).json()).error, /key Geoapify/)
+  providerStatus = 429
+  assert.equal((await route.POST(request({ lat: -6.2, lon: 106.8 }))).status, 429)
 
   let effect, resolveStream, stopped = 0, played = 0
   const video = { videoWidth: 640, videoHeight: 480, play: async () => { played++ } }
   const jsx = (type, props) => ({ type, props })
   let captured
-  const Camera = load('app/timemark/camera.tsx', { File, document: { createElement: () => ({ getContext: () => ({ drawImage: () => {} }), toBlob: callback => callback(new Blob(['test'], { type: 'image/jpeg' })) }) }, navigator: { mediaDevices: { getUserMedia: () => new Promise(resolve => { resolveStream = resolve }) } }, DOMException, require: name => name === 'react' ? {
+  const Camera = load('app/timemark/camera.tsx', { File, document: { createElement: () => ({ getContext: () => ({ drawImage: () => {} }), toBlob: callback => callback(new Blob(['test'], { type: 'image/jpeg' })) }) }, navigator: { mediaDevices: { getUserMedia: constraints => { assert.equal(constraints.video.aspectRatio.ideal, 9 / 16); return new Promise(resolve => { resolveStream = resolve }) } } }, DOMException, require: name => name === 'react' ? {
     useRef: () => ({ current: video }), useState: initial => [initial, () => {}], useEffect: callback => { effect = callback },
   } : name === 'react/jsx-runtime' ? { jsx, jsxs: jsx } : { default: {} } }).default
   const tree = Camera({ onCapture: async file => { captured = file }, onClose: () => {} })

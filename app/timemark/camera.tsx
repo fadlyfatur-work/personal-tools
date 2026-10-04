@@ -16,7 +16,7 @@ export default function Camera({ onCapture, onClose }: { onCapture: (file: File)
     async function start() {
       try {
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('Kamera memerlukan HTTPS atau localhost. Kamu juga bisa mengunggah foto.')
-        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } } })
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: facing }, width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 9 / 16 } } })
         if (disposed) { stream.getTracks().forEach(track => track.stop()); return }
         if (video.current) { video.current.srcObject = stream; await video.current.play() }
       } catch (cause) {
