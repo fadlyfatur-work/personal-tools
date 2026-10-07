@@ -75,6 +75,7 @@ export default function ActivityPage() {
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all')
   const [month, setMonth] = useState('')
   const [account, setAccount] = useState('__all__')
+  const [subcategory, setSubcategory] = useState('__all__')
   const [category, setCategory] = useState('__all__')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -90,8 +91,10 @@ export default function ActivityPage() {
   const selectedMonth = month || data?.report.month || ''
   const params = new URLSearchParams({ month: selectedMonth, details: view === 'report' ? '1' : '0', page: String(page), include_transfers: view === 'transactions' ? '1' : '0' })
   if (account !== '__all__') params.set('account_id', account)
+  if (category !== '__all__' && category !== '__none__') params.set('parent_id', category)
+  if (subcategory !== '__all__') params.set('category_id', subcategory)
+  if (category === '__none__') params.set('category_id', category)
   if (view === 'transactions') {
-    if (category !== '__all__') params.set('category_id', category)
     if (filter !== 'all') params.set('transaction_type', filter)
     if (searchTerm) params.set('q', searchTerm)
   }
@@ -115,7 +118,7 @@ export default function ActivityPage() {
   const report = reportQuery.data
   const busy = reportQuery.isPending || (view === 'transactions' && search.trim() !== searchTerm)
   const categoryOptions = categories.filter(item => account === '__all__' || item.plan_id === accounts.find(wallet => wallet.id === account)?.plan_id)
-  const activeFilters = Number(account !== '__all__') + Number(view === 'transactions' && category !== '__all__')
+  const activeFilters = Number(account !== '__all__') + Number(category !== '__all__') + Number(subcategory !== '__all__')
   const emptyLabel = accounts.length === 0 ? 'Belum ada dompet. Tambahkan dompet melalui Kelola.' : searchTerm ? `Tidak ada keterangan yang cocok dengan “${searchTerm}”.` : activeFilters || filter !== 'all' ? 'Tidak ada transaksi yang cocok dengan filter ini.' : 'Belum ada transaksi pada periode ini.'
   function selectMonth(value: string) {
     if (value > data!.report.month) return
@@ -149,10 +152,12 @@ export default function ActivityPage() {
           <button type="button" className="ft-icon-button ft-filter-toggle" aria-label={`Filter dompet dan kategori${activeFilters ? `, ${activeFilters} aktif` : ''}`} aria-expanded={filtersOpen} aria-controls="activity-filters" onClick={() => setFiltersOpen(!filtersOpen)}><Funnel size={20} aria-hidden="true" />{activeFilters > 0 && <span>{activeFilters}</span>}</button>
         </div>
         <div id="activity-filters" className="ft-transaction-filter-grid" hidden={!filtersOpen}>
-          <div className="ft-report-filter"><label htmlFor="transaction-account">Dompet</label><select id="transaction-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>
-          <div className="ft-report-filter"><label htmlFor="transaction-category">Kategori</label><select id="transaction-category" className="ft-input" value={category} onChange={event => { setCategory(event.target.value); setPage(1) }}><option value="__all__">Semua kategori</option><option value="__none__">Tanpa kategori</option>{categoryOptions.map(item => <option key={item.id} value={item.id}>{item.emoji ? `${item.emoji} ` : ''}{item.name}</option>)}</select></div>
+          <div className="ft-report-filter"><label htmlFor="transaction-account">Dompet</label><select id="transaction-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>
+          <div className="ft-report-filter"><label htmlFor="transaction-category">Kategori</label><select id="transaction-category" className="ft-input" value={category} onChange={event => { setCategory(event.target.value); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua kategori</option><option value="__none__">Tanpa kategori</option>{categoryOptions.filter(item => !item.parent_id).map(item => <option key={item.id} value={item.id}>{item.emoji ? `${item.emoji} ` : ''}{item.name}</option>)}</select></div>
         </div>
-      </> : <div className="ft-report-filter"><label htmlFor="report-account">Dompet</label><select id="report-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>}
+      </> : <div className="ft-report-filter"><label htmlFor="report-account">Dompet</label><select id="report-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>}
+      {view === 'report' && <div className="ft-report-filter"><label htmlFor="report-category">Kategori induk</label><select id="report-category" className="ft-input" value={category} onChange={event => { setCategory(event.target.value); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua kategori induk</option>{categoryOptions.filter(item => !item.parent_id).map(item => <option key={item.id} value={item.id}>{item.emoji} {item.name}</option>)}</select><small>Pilih induk untuk melihat rincian subkategori.</small></div>}
+      {categoryOptions.some(item => item.parent_id === category) && (view === 'report' || filtersOpen) && <div className="ft-report-filter"><label htmlFor="activity-subcategory">Subkategori</label><select id="activity-subcategory" className="ft-input" value={subcategory} onChange={event => { setSubcategory(event.target.value); setPage(1) }}><option value="__all__">Semua subkategori</option>{categoryOptions.filter(item => item.parent_id === category).map(item => <option key={item.id} value={item.id}>{item.emoji} {item.name}</option>)}</select></div>}
     </div>
     {reportQuery.error && <div className="ft-inline-message ft-error" role="alert"><p>{reportQuery.error.message}</p><button type="button" className="ft-button ft-button-secondary" onClick={() => void reportQuery.refetch()}>Coba lagi</button></div>}
     {view === 'transactions' && <div className="ft-sub-tabs" role="tablist" aria-label="Filter transaksi">{([['all', 'Semua'], ['income', 'Pemasukan'], ['expense', 'Pengeluaran']] as const).map(([value, label]) => <button key={value} role="tab" aria-selected={filter === value} data-active={filter === value} onClick={() => { setFilter(value); setPage(1) }}>{label}</button>)}</div>}

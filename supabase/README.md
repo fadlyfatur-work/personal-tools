@@ -1,5 +1,7 @@
 # Reset database FinTrack
 
+Untuk kategori bertingkat, jalankan hanya `migrations/202610070001_fintrack_subcategories.sql` setelah migration sebelumnya dan sebelum memakai versi aplikasi terbaru. Panduan: [kategori FinTrack](../docs/fintrack-categories.md). Tidak perlu reset database.
+
 Untuk fitur Goals pada database yang sudah aktif, jalankan hanya migrasi tambahan `migrations/202610040001_fintrack_goals.sql` setelah migrasi sebelumnya. Panduan fitur ada di [docs/fintrack-goals.md](../docs/fintrack-goals.md). Jangan mengulang reset untuk mengaktifkan Goals.
 
 Migration `202609180001_fintrack_reset.sql` bersifat destruktif untuk modul FinTrack. Semua data FinTrack lama dihapus dan schema dibuat ulang dengan prefix `fintrack_`.

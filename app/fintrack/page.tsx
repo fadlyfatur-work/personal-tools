@@ -7,6 +7,8 @@ import { Header } from './components/header'
 import { BottomNav } from './components/bottom-nav'
 import { AccountCard, formatRupiah } from './components/account-card'
 import { useFintrack } from './components/fintrack-provider'
+import { CategoryBudget } from './components/category-budget'
+import { categoryBudget } from '@/lib/fintrackCategories'
 import { compareBudgetUsage } from '@/lib/fintrackOrdering'
 
 const labelMonth = (month: string) => new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(`${month}-01T00:00:00`))
@@ -43,9 +45,9 @@ export default function FintrackHome() {
   const maxFlow = Math.max(data.summary.income, data.summary.expense, 1)
   const recentTransactions = selectedAccountId ? transactions.filter((transaction) => transaction.from_account_id === selectedAccountId || transaction.to_account_id === selectedAccountId) : transactions
   const selectedAccount = selectedAccountId ? accountMap.get(selectedAccountId) : null
-  const budgetWatchers = categories.filter((category) => category.plan_id === data.personal_plan_id && category.type === 'expense' && Number(category.budget_amount || 0) > 0).map((category) => {
-    const used = data.report.expense.find((slice) => slice.category_ids.includes(category.id))?.amount || 0
-    const budget = Number(category.budget_amount)
+  const budgetWatchers = categories.filter((category) => category.plan_id === data.personal_plan_id && category.type === 'expense' && !category.parent_id && categoryBudget(category, categories) > 0).map((category) => {
+    const used = data.report.expense.find((slice) => slice.category_id === category.id)?.amount || 0
+    const budget = categoryBudget(category, categories)
     return { category, used, budget, percentage: Math.round(used / budget * 100) }
   }).sort(compareBudgetUsage)
   return (
@@ -118,7 +120,7 @@ export default function FintrackHome() {
               return <button type="button" className="ft-transaction-row ft-transaction-button" key={transaction.id} onClick={() => openComposer(transaction)} aria-label={`Edit ${category?.name || 'transaksi'} ${formatRupiah(transaction.amount)}`}><span className={`ft-transaction-icon ${transaction.type}`}>{category?.emoji || <Icon size={17} weight="bold" />}</span><span className="ft-transaction-copy"><span className="ft-transaction-category">{category?.name || (transaction.type === 'transfer' ? 'Transfer' : 'Tanpa kategori')}</span><strong>{transaction.note || (transaction.type === 'income' ? 'Pemasukan' : transaction.type === 'expense' ? 'Pengeluaran' : 'Transfer antar-dompet')}</strong><span>{meta}</span></span><span className={`ft-transaction-amount ${transaction.type === 'income' ? 'ft-positive' : transaction.type === 'expense' ? 'ft-negative' : ''}`}>{transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : ''}{formatRupiah(transaction.amount)}</span></button>
             })}
           </div>
-        </div></> : <><div className="ft-section-heading"><div><h2>Pantauan budget</h2><p>{labelMonth(data.report.month)}</p></div><Link href="/fintrack/manage" className="ft-text-link">Atur</Link></div>{budgetWatchers.length > 0 ? <div className="ft-budget-watchers">{budgetWatchers.map(({ category, used, budget, percentage }) => <article key={category.id} data-over={percentage > 100}><div><span className="ft-category-emoji">{category.emoji || '🏷️'}</span><span><strong>{category.name}</strong><small>{formatRupiah(used)} dari {formatRupiah(budget)}</small></span><b>{percentage}%</b></div><i><span style={{ width: `${Math.min(percentage, 100)}%` }} /></i><p>{percentage > 100 ? `Lebih ${formatRupiah(used - budget)}` : `Sisa ${formatRupiah(Math.max(0, budget - used))}`}</p></article>)}</div> : <div className="ft-card ft-empty"><div><Receipt size={32} /><p>Belum ada budget kategori.</p><Link href="/fintrack/manage" className="ft-text-link">Atur budget</Link></div></div>}</>}
+        </div></> : <><div className="ft-section-heading"><div><h2>Pantauan budget</h2><p>{labelMonth(data.report.month)}</p></div><Link href="/fintrack/manage" className="ft-text-link">Atur</Link></div>{budgetWatchers.length > 0 ? <div className="ft-budget-watchers">{budgetWatchers.map(({ category, used }) => <CategoryBudget key={category.id} category={category} used={used} categories={categories} totals={data.report.category_expense || data.report.expense} />)}</div> : <div className="ft-card ft-empty"><div><Receipt size={32} /><p>Belum ada budget kategori.</p><Link href="/fintrack/manage" className="ft-text-link">Atur budget</Link></div></div>}</>}
       </section>
       <BottomNav />
     </main>

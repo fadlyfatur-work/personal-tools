@@ -1,5 +1,7 @@
 'use client'
 
+import { categorySlices, categoryBudget } from '@/lib/fintrackCategories'
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -92,20 +94,7 @@ function rebuildDerived(data: FintrackBootstrap, accounts: Account[], transactio
   const monthly = transactions.filter((transaction) => transaction.transaction_date >= data.report.period_start && transaction.transaction_date <= data.report.period_end)
   const income = monthly.filter((transaction) => transaction.type === 'income').reduce((sum, transaction) => sum + Number(transaction.amount), 0)
   const expense = monthly.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + Number(transaction.amount), 0)
-  const categoryMap = new Map(data.categories.map((category) => [category.id, category]))
-  const reportFor = (type: 'income' | 'expense') => {
-    const grouped = new Map<string, { category_id: string | null; category_ids: string[]; name: string; emoji?: string | null; amount: number }>()
-    monthly.filter((transaction) => transaction.type === type).forEach((transaction) => {
-      const category = transaction.category_id ? categoryMap.get(transaction.category_id) : null
-      const name = category?.name || 'Tanpa kategori'
-      const key = `${type}:${name.trim().toLocaleLowerCase('id-ID')}`
-      const current = grouped.get(key) || { category_id: transaction.category_id || null, category_ids: [], name, emoji: category?.emoji || null, amount: 0 }
-      if (transaction.category_id && !current.category_ids.includes(transaction.category_id)) current.category_ids.push(transaction.category_id)
-      current.amount += Number(transaction.amount)
-      grouped.set(key, current)
-    })
-    return [...grouped.values()].sort((a, b) => b.amount - a.amount)
-  }
+  const reportFor = (type: 'income' | 'expense') => categorySlices(monthly, data.categories, type)
   const dailyMap = new Map<string, { day: string; income: number; expense: number }>()
   monthly.forEach((transaction) => {
     if (transaction.type === 'transfer') return
@@ -113,7 +102,7 @@ function rebuildDerived(data: FintrackBootstrap, accounts: Account[], transactio
     point[transaction.type] += Number(transaction.amount)
     dailyMap.set(transaction.transaction_date, point)
   })
-  return { ...data, accounts, transactions, summary: { assets, liabilities, net_worth: assets - liabilities, income, expense }, report: { ...data.report, income: reportFor('income'), expense: reportFor('expense'), transactions: monthly, daily: [...dailyMap.values()].sort((a, b) => a.day.localeCompare(b.day)) } }
+  return { ...data, accounts, transactions, summary: { assets, liabilities, net_worth: assets - liabilities, income, expense }, report: { ...data.report, category_expense: data.report.category_expense || categorySlices(monthly, data.categories, 'expense', null, false), income: reportFor('income'), expense: reportFor('expense'), transactions: monthly, daily: [...dailyMap.values()].sort((a, b) => a.day.localeCompare(b.day)) } }
 }
 
 export function FintrackProvider({ children }: { children: React.ReactNode }) {
@@ -205,14 +194,22 @@ function FintrackState({ children }: { children: React.ReactNode }) {
     const withoutPrevious = previous ? allTransactions.filter((item) => item.id !== previous.id) : allTransactions
     const transactions = next ? [next, ...withoutPrevious.filter((item) => item.id !== next.id)] : withoutPrevious
     const rebuilt = rebuildDerived(current, accounts, transactions)
+    if (current.report.category_expense) {
+      const totals = current.report.category_expense.map(item => ({ ...item }))
+      for (const [transaction, direction] of [[previous, -1], [next, 1]] as const) {
+        if (!transaction || transaction.type !== 'expense' || transaction.transaction_date < current.report.period_start || transaction.transaction_date > current.report.period_end) continue
+        const slice = totals.find(item => item.category_id === (transaction.category_id || null))
+        if (slice) slice.amount += direction * Number(transaction.amount)
+        else if (direction === 1) totals.push(...categorySlices([transaction], rebuilt.categories, 'expense', null, false))
+      }
+      rebuilt.report.category_expense = totals.filter(item => item.amount > 0)
+    }
     if (next?.type === 'expense' && next.category_id && next.transaction_date >= rebuilt.report.period_start && next.transaction_date <= rebuilt.report.period_end) {
-      const category = rebuilt.categories.find((item) => item.id === next.category_id)
-      const budget = Number(category?.budget_amount || 0)
+      const leaf = rebuilt.categories.find((item) => item.id === next.category_id)
+      const category = rebuilt.categories.find(item => item.id === leaf?.parent_id) || leaf
+      const budget = category ? categoryBudget(category, rebuilt.categories) : 0
       if (budget > 0) {
-        const currentSlice = current.report.expense.find((item) => item.category_ids.includes(next.category_id!))
-        let used = Number(currentSlice?.amount || 0)
-        if (previous?.type === 'expense' && previous.category_id === next.category_id && previous.transaction_date >= current.report.period_start && previous.transaction_date <= current.report.period_end) used -= Number(previous.amount)
-        used += Number(next.amount)
+        const used = (rebuilt.report.category_expense || []).filter(item => item.category_id === category?.id || rebuilt.categories.some(child => child.id === item.category_id && child.parent_id === category?.id)).reduce((sum, item) => sum + item.amount, 0)
         const percentage = Math.round(used / budget * 100)
         if (percentage >= 80) {
           const remaining = budget - used

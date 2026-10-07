@@ -133,7 +133,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
           <div className="ft-field-label-row"><label htmlFor="category">Kategori</label><Link href="/fintrack/manage" onClick={onCancelEdit}>Kelola kategori</Link></div>
           <select id="category" className="ft-input" value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="">Tanpa kategori</option>
-            {filteredCategories.map((item) => <option key={item.id} value={item.id}>{item.emoji ? `${item.emoji} ` : ''}{item.name}</option>)}
+            {filteredCategories.map((item) => <option key={item.id} value={item.id}>{item.emoji ? `${item.emoji} ` : ''}{item.parent_id ? `${categories.find(parent => parent.id === item.parent_id)?.name || 'Kategori'} › ` : ''}{item.name}</option>)}
           </select>
         </div>
       )}
