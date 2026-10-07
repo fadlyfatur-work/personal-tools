@@ -48,7 +48,7 @@ export async function GET() {
   const ownedAccountIds = ownedAccounts.map((account) => account.id)
   const [categoriesResult, ownedLatestResult, ownedReportResult, sharedEntriesResult, requestsResult, ownedCollaborationsResult] = await Promise.all([
     planIds.length
-      ? supabaseAdmin.from('fintrack_categories').select('*').in('plan_id', planIds).is('archived_at', null).order('name')
+      ? supabaseAdmin.from('fintrack_categories').select('*').in('plan_id', planIds).order('name')
       : Promise.resolve({ data: [], error: null }),
     planId
       ? supabaseAdmin.from('fintrack_transactions').select('*').eq('plan_id', planId).eq('status', 'posted').order('transaction_date', { ascending: false }).order('created_at', { ascending: false }).limit(60)
@@ -123,7 +123,7 @@ export async function GET() {
     sort_accounts_by_balance: Boolean(securityResult.data?.sort_accounts_by_balance),
     personal_plan_id: planId || null,
     accounts,
-    categories: categories.map(category => ({ ...category, usage_count: usage.get(category.id) || 0 })),
+    categories: categories.filter(category => !category.archived_at).map(category => ({ ...category, usage_count: usage.get(category.id) || 0 })),
     transactions,
     summary: { assets, liabilities, net_worth: assets - liabilities, income, expense},
     report: { ...report, transactions: report.transactions.slice(0, 10), transaction_page: 1, transaction_page_size: 10, daily: [], weekly: [], trend_detail_loaded: false },

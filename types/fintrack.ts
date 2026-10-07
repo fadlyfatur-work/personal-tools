@@ -24,6 +24,8 @@ export interface Account {
 }
 
 export interface Category {
+  parent_id?: string | null
+  budget_mode?: 'fixed' | 'children'
   usage_count?: number
   id: string
   plan_id: string
@@ -90,6 +92,7 @@ export interface ReportSlice {
 }
 
 export interface FintrackReport {
+  category_expense?: ReportSlice[]
   month: string
   period_start: string
   period_end: string

@@ -32,8 +32,8 @@
 .desktopNav a:hover { color: var(--ink); }
 .desktopNav .menuLink { border: 1px solid var(--line); border-radius: 4px; padding: 0 18px; color: var(--ink); }
 .mobileNav { display: none; }
-.hero { min-height: calc(92dvh - 88px); padding-block: 100px 112px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 72px; align-items: end; }
-.hero h1 { font-size: clamp(48px, 5.9vw, 80px); line-height: 1.07; letter-spacing: -.04em; font-weight: 550; margin-bottom: 38px; }
+.hero { min-height: calc(92dvh - 88px); padding-block: 72px 96px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center; }
+.hero h1 { font-size: clamp(48px, 5.6vw, 76px); line-height: 1.07; letter-spacing: -.04em; font-weight: 550; margin-bottom: 38px; }
 .heroIntro { padding-bottom: 2px; color: var(--muted); max-width: 40ch; }
 .heroIntro .introName { color: var(--ink); font-size: 24px; margin-block: 26px 12px; font-weight: 500; }
 .availability { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
@@ -160,11 +160,6 @@
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .aboutTitle { animation: aboutParallax linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
-    .section:not(.about) > h2, .section:not(.about) > div, .section > ul, .contact > h2, .contact > p {
-      animation: scrollReveal linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 35%;
-    }
     .heroTitle:focus-within, .section > div:focus-within, .section > ul:focus-within, .project:focus-within { animation: none; opacity: 1; transform: none; }
   }
 }
@@ -195,3 +190,44 @@
   }
 }
 
+
+.heroDescription { font-size: 17px; color: var(--muted); margin: 0 0 24px; }
+.explorer { --ink: #eff5fc; --muted: #b9cce4; --accent: #c1dcff; background: #142f53; color: var(--ink); padding: 32px; border-radius: 14px; }
+.explorerHeading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
+.explorerHeading h2 { font-size: 22px; line-height: 1.25; letter-spacing: -.02em; }
+.explorerHeading > a { display: grid; place-items: center; min-width: 44px; min-height: 44px; border-radius: 50%; background: #24486f; }
+.explorerChoices { display: flex; flex-wrap: wrap; gap: 4px 16px; border-bottom: 1px solid #456184; padding-bottom: 18px; }
+.explorerChoices button { position: relative; min-height: 44px; text-align: left; font-size: 13px; color: var(--muted); transition: color 140ms; }
+.explorerChoices button::after { content: ''; position: absolute; bottom: 5px; left: 0; right: 0; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 220ms cubic-bezier(.16,1,.3,1); }
+.explorerChoices button[aria-selected=true] { color: var(--ink); }
+.explorerChoices button[aria-selected=true]::after { transform: scaleX(1); }
+.explorerPanel { min-height: 300px; padding-block: 32px 20px; }
+.explorerPanel h3 { font-size: clamp(28px, 3vw, 40px); font-weight: 500; letter-spacing: -.03em; line-height: 1.12; margin-bottom: 20px; }
+.explorerPanel p { color: var(--muted); font-size: 16px; line-height: 1.7; }
+.explorerTags { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; color: var(--accent); font-size: 12px; }
+.explorerPanel a { display: inline-flex; gap: 12px; align-items: center; min-height: 44px; margin-top: 22px; font-size: 14px; }
+.explorerNote { font-size: 12px; line-height: 1.6; color: var(--muted); border-top: 1px solid #456184; padding-top: 16px; }
+.about .lead { margin-top: 32px; font-size: clamp(20px, 1.7vw, 24px); }
+.about .introName { font-size: 28px; margin-top: 20px; }
+.project { padding-inline: 18px; border-radius: 8px; }
+.project:focus-within { background: var(--surface); }
+.primaryButton svg, .inlineLink svg, .explorerPanel a svg, .project h3 a svg { transition: transform 220ms cubic-bezier(.16,1,.3,1); }
+:is(.primaryButton, .inlineLink, .explorerPanel a, .project h3 a):hover svg { transform: translate(3px, -3px); }
+.primaryButton:hover svg { transform: translateY(3px); }
+.portfolio :is(button, .primaryButton, .secondaryButton):active:not(:disabled) { transform: scale(.97); }
+.desktopNav a:not(.menuLink) { position: relative; }
+.desktopNav a:not(.menuLink)::after { content: ''; position: absolute; bottom: 6px; left: 0; right: 0; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 180ms ease-out; }
+.desktopNav a:hover::after, .desktopNav a:focus-visible::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: no-preference) {
+  .projectReveal { animation: projectChange 380ms cubic-bezier(.16,1,.3,1); }
+  .mobileNav[open] nav { animation: menuOpen 200ms cubic-bezier(.16,1,.3,1); }
+}
+@keyframes projectChange { from { clip-path: inset(0 0 22% 0); transform: translateY(12px); opacity: .5; } to { clip-path: inset(0); transform: none; opacity: 1; } }
+@keyframes menuOpen { from { transform: translateY(-8px); opacity: .5; } }
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; gap: 40px; } .explorerPanel { min-height: 250px; } }
+@media (max-width: 640px) { .explorer { padding: 24px; } .explorerHeading h2 { font-size: 20px; } .explorerPanel { min-height: 310px; } .project { padding-inline: 0; } }
+@media (prefers-reduced-motion: reduce) { .portfolio :is(button, a):active, .portfolio a:hover svg { transform: none; } .explorerChoices button::after { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .portfolio :is(button, .primaryButton, .secondaryButton):active:not(:disabled),
+  :is(.primaryButton, .inlineLink, .explorerPanel a, .project h3 a):hover svg { transform: none; }
+}

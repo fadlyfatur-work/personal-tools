@@ -22,10 +22,14 @@ export async function GET() {
   return NextResponse.json({ data: data || [] })
 }
 
+export const dynamic = 'force-dynamic'
+
 const categorySchema = z.object({
   name: z.string().trim().min(1).max(60),
   type: z.enum(['income', 'expense']),
   emoji: z.string().trim().min(1).max(16).nullable().optional(),
+  parent_id: z.string().uuid().nullable().optional(),
+  budget_mode: z.enum(['fixed', 'children']).optional(),
   budget_amount: z.number().positive().finite().nullable().optional(),
 })
 
@@ -36,8 +40,8 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   const planId = await getOwnedPlanId(auth.identity.id)
   if (!planId) return NextResponse.json({ error: 'Rencana pribadi belum tersedia' }, { status: 409 })
-  const values = { ...parsed.data, budget_amount: parsed.data.type === 'expense' ? parsed.data.budget_amount || null : null }
+  const values = { ...parsed.data, budget_amount: parsed.data.type === 'expense' && parsed.data.budget_mode !== 'children' ? parsed.data.budget_amount || null : null }
   const { data, error } = await supabaseAdmin.from('fintrack_categories').insert({ plan_id: planId, ...values }).select().single()
-  if (error) return NextResponse.json({ error: error.code === '23505' ? 'Kategori sudah tersedia' : 'Kategori gagal dibuat' }, { status: 400 })
+  if (error) return NextResponse.json({ error: error.code === '23505' ? 'Kategori sudah tersedia' : error.code === '23514' ? error.message : 'Kategori gagal dibuat' }, { status: 400 })
   return NextResponse.json({ data }, { status: 201 })
 }
