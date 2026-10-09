@@ -1,5 +1,6 @@
 'use client'
 
+import { sortCategoryTree } from '@/lib/fintrackCategories'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, ArrowsLeftRight, CaretLeft, CaretRight, ChartDonut, CircleNotch, Funnel, MagnifyingGlass, Receipt } from '@phosphor-icons/react'
 import { Header } from '../components/header'
@@ -117,7 +118,7 @@ export default function ActivityPage() {
   if (loading || !data || !user) return <p role="status">Memuat aktivitas…</p>
   const report = reportQuery.data
   const busy = reportQuery.isPending || (view === 'transactions' && search.trim() !== searchTerm)
-  const categoryOptions = categories.filter(item => account === '__all__' || item.plan_id === accounts.find(wallet => wallet.id === account)?.plan_id)
+  const categoryOptions = sortCategoryTree(categories.filter(item => account === '__all__' || item.plan_id === accounts.find(wallet => wallet.id === account)?.plan_id))
   const activeFilters = Number(account !== '__all__') + Number(category !== '__all__') + Number(subcategory !== '__all__')
   const emptyLabel = accounts.length === 0 ? 'Belum ada dompet. Tambahkan dompet melalui Kelola.' : searchTerm ? `Tidak ada keterangan yang cocok dengan “${searchTerm}”.` : activeFilters || filter !== 'all' ? 'Tidak ada transaksi yang cocok dengan filter ini.' : 'Belum ada transaksi pada periode ini.'
   function selectMonth(value: string) {

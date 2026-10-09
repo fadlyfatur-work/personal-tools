@@ -20,7 +20,9 @@ Jalankan `supabase/migrations/202610070001_fintrack_subcategories.sql` melalui S
 
 Laporan awal mengelompokkan transaksi ke induk berdasarkan ID, termasuk transaksi subkategori yang telah diarsipkan. Pilih filter induk untuk melihat rincian subkategori dan transaksi langsung. Filter subkategori tersedia setelah memilih induk. Tren mengikuti filter induk; filter subkategori mempersempit rincian kategori dan daftar transaksi.
 
-Pantauan budget menampilkan induk dan membuka rincian lewat disclosure native. Total budget dan pemakaian tidak bergantung pada batas sepuluh transaksi yang ditampilkan bootstrap.
+Daftar kategori disusun alfabetis berdasarkan induk, diikuti anak secara alfabetis. Label anak memakai format `Belanja > Kebutuhan rumah`.
+
+Pantauan budget hanya menampilkan kategori dengan total pengeluaran lebih dari nol dan target budget lebih dari nol, disusun alfabetis. Induk tanpa pemakaian tidak ditampilkan; rincian anak tanpa pemakaian juga disembunyikan. Pantauan budget menampilkan induk dan membuka rincian lewat disclosure native. Total budget dan pemakaian tidak bergantung pada batas sepuluh transaksi yang ditampilkan bootstrap.
 
 Induk dengan anak tidak dapat dipindahkan menjadi anak. Induk dengan anak aktif tidak dapat diarsipkan atau diganti tipenya; arsipkan atau pindahkan anak dahulu. Nama kategori unik per induk, tipe, dan plan.
 
