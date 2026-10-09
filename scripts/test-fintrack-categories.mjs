@@ -9,6 +9,17 @@ function load(file, imports = {}) {
   return exports
 }
 const helpers = load('lib/fintrackCategories.ts')
+const unordered = [
+  { id: 'house', parent_id: 'shopping', name: 'Kebutuhan rumah', usage_count: 99 },
+  { id: 'transport', name: 'Transportasi' },
+  { id: 'food', parent_id: 'shopping', name: 'Bahan makanan' },
+  { id: 'shopping', name: 'Belanja' },
+  { id: 'fuel', parent_id: 'transport', name: 'Bensin' },
+]
+assert.deepEqual(Array.from(helpers.sortCategoryTree(unordered), item => item.id), ['shopping', 'food', 'house', 'transport', 'fuel'])
+assert.equal(helpers.categoryLabel(unordered[0], unordered), 'Belanja > Kebutuhan rumah')
+assert.equal(helpers.categoryLabel(unordered[3], unordered), 'Belanja')
+assert.equal(unordered[0].id, 'house', 'Sorting does not mutate source order')
 const categories = [
   { id: 'food', name: 'Makanan', type: 'expense', budget_mode: 'children' },
   { id: 'coffee', parent_id: 'food', name: 'Kopi', budget_amount: 100 },

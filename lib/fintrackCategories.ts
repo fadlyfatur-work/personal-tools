@@ -2,6 +2,21 @@ import type { Category, ReportSlice, Transaction } from '@/types/fintrack'
 
 type ReportCategory = Pick<Category, 'id' | 'name' | 'emoji' | 'parent_id'>
 
+export function sortCategoryTree(categories: Category[]) {
+  const categoryMap = new Map(categories.map(item => [item.id, item]))
+  return [...categories].sort((a, b) => {
+    const parentA = categoryMap.get(a.parent_id || '') || a
+    const parentB = categoryMap.get(b.parent_id || '') || b
+    return parentA.name.localeCompare(parentB.name, 'id') || parentA.id.localeCompare(parentB.id)
+      || Number(Boolean(a.parent_id)) - Number(Boolean(b.parent_id)) || a.name.localeCompare(b.name, 'id')
+  })
+}
+
+export function categoryLabel(category: Category, categories: Category[]) {
+  const parent = categories.find(item => item.id === category.parent_id)
+  return parent ? `${parent.name} > ${category.name}` : category.name
+}
+
 export function categoryBudget(category: Category, categories: Category[]) {
   if (category.parent_id || category.budget_mode !== 'children') return Number(category.budget_amount || 0)
   return categories.filter(item => item.parent_id === category.id && !item.archived_at).reduce((sum, item) => sum + Number(item.budget_amount || 0), 0)
