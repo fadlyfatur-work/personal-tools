@@ -12,3 +12,16 @@ export function searchTransactionNotes(transactions: Transaction[], query: strin
   const term = query.trim().toLocaleLowerCase('id')
   return term ? transactions.filter(item => (item.note || '').toLocaleLowerCase('id').includes(term)) : transactions
 }
+
+export function suggestTransactionNotes(transactions: Transaction[], query: string) {
+  const term = query.trim().toLocaleLowerCase('id')
+  if (Array.from(term).length < 3) return []
+  const suggestions = new Map<string, { note: string; count: number }>()
+  for (const transaction of transactions) {
+    const note = transaction.note?.trim(), key = note?.toLocaleLowerCase('id')
+    if (!note || !key || note.length > 100 || key === term || !key.includes(term)) continue
+    const entry = suggestions.get(key)
+    suggestions.set(key, { note: entry?.note || note, count: (entry?.count || 0) + 1 })
+  }
+  return [...suggestions.values()].sort((a, b) => b.count - a.count || a.note.localeCompare(b.note, 'id')).slice(0, 5).map(item => item.note)
+}

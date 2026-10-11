@@ -20,9 +20,9 @@ Jalankan `supabase/migrations/202610070001_fintrack_subcategories.sql` melalui S
 
 Laporan awal mengelompokkan transaksi ke induk berdasarkan ID, termasuk transaksi subkategori yang telah diarsipkan. Pilih filter induk untuk melihat rincian subkategori dan transaksi langsung. Filter subkategori tersedia setelah memilih induk. Tren mengikuti filter induk; filter subkategori mempersempit rincian kategori dan daftar transaksi.
 
-Daftar kategori disusun alfabetis berdasarkan induk, diikuti anak secara alfabetis. Label anak memakai format `Belanja > Kebutuhan rumah`.
+Daftar kategori disusun alfabetis berdasarkan induk, diikuti anak secara alfabetis. Di Kelola, label anak hanya namanya sendiri. Format `Belanja > Kebutuhan rumah` hanya dipakai dalam modal catat transaksi.
 
-Pantauan budget hanya menampilkan kategori dengan total pengeluaran lebih dari nol dan target budget lebih dari nol, disusun alfabetis. Induk tanpa pemakaian tidak ditampilkan; rincian anak tanpa pemakaian juga disembunyikan. Pantauan budget menampilkan induk dan membuka rincian lewat disclosure native. Total budget dan pemakaian tidak bergantung pada batas sepuluh transaksi yang ditampilkan bootstrap.
+Pantauan budget hanya menampilkan kategori dengan total pengeluaran lebih dari nol dan target budget lebih dari nol, diurutkan berdasarkan persentase pemakaian terbesar. Induk tanpa pemakaian tidak ditampilkan; rincian anak tanpa pemakaian juga disembunyikan. Pantauan budget menampilkan induk dan membuka rincian lewat disclosure native. Total budget dan pemakaian tidak bergantung pada batas sepuluh transaksi yang ditampilkan bootstrap.
 
 Induk dengan anak tidak dapat dipindahkan menjadi anak. Induk dengan anak aktif tidak dapat diarsipkan atau diganti tipenya; arsipkan atau pindahkan anak dahulu. Nama kategori unik per induk, tipe, dan plan.
 
@@ -44,3 +44,13 @@ Arah: daftar keuangan mobile FinTrack, mempertahankan palet dan komponen aplikas
 - PASS verifikasi kode: build produksi, TypeScript, dua skrip pengujian kategori/aktivitas, dan lint file yang diubah.
 
 Audit belum mencakup click-through form dan laporan pada akun terautentikasi setelah migration, viewport perangkat penuh, serta uji trigger SQL pada database. Delivery Gate menyeluruh belum dinyatakan lolos; pratinjau komponen tidak menggantikan pengujian integrasi tersebut. Lint seluruh repo masih memiliki error lama pada tiga skrip Timemark CommonJS.
+
+## Grafik dan saran catatan (10 Oktober 2026)
+
+Grafik kategori, perbandingan, dan tren memakai Recharts. Tooltip menampilkan rupiah; rincian angka dapat dibuka tanpa bergantung pada grafik. Animasi mengikuti prefers-reduced-motion. Palet mengikuti tema FinTrack.
+
+Saran catatan muncul setelah tiga karakter, berdasarkan riwayat transaksi terakhir yang tersedia pada bootstrap (maksimal 60 transaksi). Maksimal lima bubble, tanpa duplikasi huruf besar/kecil, diurutkan berdasarkan frekuensi. Memilih bubble mengisi catatan dan mengembalikan fokus ke input; Escape menutup saran. Transaksi tetap perlu disimpan pengguna.
+
+Dompet yang terhubung ke Goals diberi is_goal oleh bootstrap dan disembunyikan dari daftar dompet beranda; tetap tersedia pada alur transaksi dan tetap termasuk perhitungan aset. Tidak ada migration tambahan untuk perubahan ini; migration Goals sebelumnya tetap dibutuhkan.
+
+Verifikasi lokal: TypeScript, lint file perubahan, test-fintrack-categories, test-fintrack-activity (termasuk ambang saran, normalisasi, deduplikasi, batas lima saran), dan production build lolos. Build memerlukan akses Google Fonts. Interaksi chart dan autofill pada akun terautentikasi belum diperiksa di browser.

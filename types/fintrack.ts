@@ -9,6 +9,7 @@ export type AccountKind = 'cash' | 'bank' | 'ewallet' | 'emergency_fund' | 'inve
 export type AccountClassification = 'asset' | 'liability'
 
 export interface Account {
+  is_goal?: boolean
   id: string
   plan_id: string
   name: string

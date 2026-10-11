@@ -41,7 +41,11 @@ export async function GET() {
     access_role: row.role,
     can_manage: row.can_manage,
   })) as unknown as Array<Record<string, unknown> & { id: string; plan_id: string }>
-  const accounts = [...ownedAccounts, ...sharedAccounts]
+  const allAccounts = [...ownedAccounts, ...sharedAccounts]
+  const goalsResult = allAccounts.length ? await supabaseAdmin.from('fintrack_goals').select('account_id').in('account_id', allAccounts.map(account => account.id)) : { data: [], error: null }
+  if (goalsResult.error) return NextResponse.json({ error: 'Gagal memuat dompet tujuan. Pastikan migrasi Goals sudah diterapkan.' }, { status: 503 })
+  const goalAccounts = new Set((goalsResult.data || []).map(goal => goal.account_id))
+  const accounts = allAccounts.map(account => ({ ...account, is_goal: goalAccounts.has(account.id) }))
   const accessibleAccountIds = accounts.map((account) => String(account.id))
   const planIds = [...new Set(accounts.map((account) => String(account.plan_id)))]
 

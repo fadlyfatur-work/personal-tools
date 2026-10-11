@@ -6,11 +6,16 @@ import ts from 'typescript'
 
 function load(file, imports = {}) {
   const exports = {}
-  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
+  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText
   vm.runInNewContext(code, { exports, require(name) { assert.ok(name in imports, `Unexpected import ${name}`); return imports[name] } })
   return exports
 }
 const ordering = load('lib/fintrackOrdering.ts')
+const history = [{ note: 'Kopi kantor' }, { note: 'kopi kantor' }, { note: 'Kopi sore' }, { note: null }, { note: 'Makan siang' }]
+assert.equal(ordering.suggestTransactionNotes(history, 'ko').length, 0)
+assert.deepEqual(Array.from(ordering.suggestTransactionNotes(history, ' KOP ')), ['Kopi kantor', 'Kopi sore'])
+assert.deepEqual(Array.from(ordering.suggestTransactionNotes(history, 'Kopi kantor')), [])
+assert.equal(ordering.suggestTransactionNotes(Array.from({ length: 10 }, (_, i) => ({ note: `Kopi ${i}` })), 'kop').length, 5)
 const budgets = [{ used: 900, budget: 1000 }, { used: 120, budget: 100 }, { used: 91, budget: 100 }]
 assert.deepEqual([...budgets].sort(ordering.compareBudgetUsage).map(item => item.used), [120, 91, 900])
 assert.ok(ordering.compareBudgetUsage({ used: 904, budget: 1000 }, { used: 901, budget: 1000 }) < 0, 'Sort exact ratios before rounding display percentages')

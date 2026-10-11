@@ -6,6 +6,7 @@ import type { Account, Category, Goal, Transaction, TransactionType } from '@/ty
 import { useQuery } from '@tanstack/react-query'
 import { fintrackRequest } from '@/lib/fintrackRequest'
 import { useFintrack } from './fintrack-provider'
+import { suggestTransactionNotes } from '@/lib/fintrackOrdering'
 import { categoryLabel, sortCategoryTree } from '@/lib/fintrackCategories'
 
 interface TransactionFormProps {
@@ -27,14 +28,16 @@ function formatNominal(value: string) {
 }
 
 export default function TransactionForm({ accounts, categories, onSaved, editing, initial, onCancelEdit, onDelete }: TransactionFormProps) {
-  const { beginTask, endTask } = useFintrack()
+  const { beginTask, endTask, transactions } = useFintrack()
   const [type, setType] = useState<TransactionType>(editing?.type || initial?.type || 'expense')
   const [amount, setAmount] = useState(editing ? onlyDigits(String(Math.trunc(Number(editing.amount)))) : '')
   const [from, setFrom] = useState(editing?.from_account_id || initial?.from_account_id || '')
   const [to, setTo] = useState(editing?.to_account_id || initial?.to_account_id || '')
   const [goalItem, setGoalItem] = useState(editing?.goal_item_id || initial?.goal_item_id || '')
   const [category, setCategory] = useState(editing?.category_id || '')
+  const [notesDismissed, setNotesDismissed] = useState(false)
   const [note, setNote] = useState(editing?.note || '')
+  const noteSuggestions = notesDismissed ? [] : suggestTransactionNotes(transactions, note)
   const [date, setDate] = useState(editing?.transaction_date || new Date().toISOString().slice(0, 10))
   const [message, setMessage] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
   const [saving, setSaving] = useState(false)
@@ -145,8 +148,9 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
       </div>
       <div className="ft-field">
         <div className="ft-field-label-row"><label htmlFor="note">Catatan</label><span>{note.length}/100</span></div>
-        <input id="note" className="ft-input" placeholder="Opsional" maxLength={100} value={note} onChange={(e) => setNote(e.target.value)} />
+        <input id="note" autoComplete="off" aria-describedby={noteSuggestions.length ? "note-suggestions" : undefined} onKeyDown={event => { if (event.key === 'Escape') setNotesDismissed(true) }} className="ft-input" placeholder="Opsional" maxLength={100} value={note} onChange={(e) => { setNote(e.target.value); setNotesDismissed(false) }} />
       </div>
+      {noteSuggestions.length > 0 && <div id="note-suggestions" className="ft-note-suggestions" role="group" aria-label="Saran dari catatan sebelumnya">{noteSuggestions.map(suggestion => <button key={suggestion} type="button" onClick={() => { setNote(suggestion); setNotesDismissed(true); document.getElementById('note')?.focus() }}>{suggestion}</button>)}</div>}
       {message && <p className={`ft-inline-message ft-${message.kind}`}>{message.text}</p>}
       <button className="ft-button ft-button-primary" style={{ width: '100%' }} disabled={saving}>
         {saving ? 'Menyimpan...' : editing ? 'Simpan perubahan' : 'Simpan transaksi'}
