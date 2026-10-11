@@ -8,6 +8,7 @@ import { BottomNav } from './components/bottom-nav'
 import { AccountCard, formatRupiah } from './components/account-card'
 import { useFintrack } from './components/fintrack-provider'
 import { CategoryBudget } from './components/category-budget'
+import { compareBudgetUsage } from '@/lib/fintrackOrdering'
 import { categoryBudget } from '@/lib/fintrackCategories'
 
 const labelMonth = (month: string) => new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(`${month}-01T00:00:00`))
@@ -40,7 +41,8 @@ export default function FintrackHome() {
   if (!user || !data) return null
   const accountMap = new Map(accounts.map((account) => [account.id, account]))
   const categoryMap = new Map(categories.map((category) => [category.id, category]))
-  const displayedAccounts = data.sort_accounts_by_balance ? [...accounts].sort((a, b) => Number(b.current_balance) - Number(a.current_balance) || a.name.localeCompare(b.name)) : accounts
+  const homeAccounts = accounts.filter(account => !account.is_goal)
+  const displayedAccounts = data.sort_accounts_by_balance ? [...homeAccounts].sort((a, b) => Number(b.current_balance) - Number(a.current_balance) || a.name.localeCompare(b.name)) : homeAccounts
   const maxFlow = Math.max(data.summary.income, data.summary.expense, 1)
   const recentTransactions = selectedAccountId ? transactions.filter((transaction) => transaction.from_account_id === selectedAccountId || transaction.to_account_id === selectedAccountId) : transactions
   const selectedAccount = selectedAccountId ? accountMap.get(selectedAccountId) : null
@@ -48,7 +50,7 @@ export default function FintrackHome() {
     const used = data.report.expense.find((slice) => slice.category_id === category.id)?.amount || 0
     const budget = categoryBudget(category, categories)
     return { category, used, budget, percentage: Math.round(used / budget * 100) }
-  }).filter(item => item.used > 0).sort((a, b) => a.category.name.localeCompare(b.category.name, 'id'))
+  }).filter(item => item.used > 0).sort(compareBudgetUsage)
   return (
     <main className="ft-container">
       <Header user={user} />

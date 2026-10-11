@@ -587,3 +587,20 @@
 
 .ft-budget-watchers article .ft-budget-child small, .ft-budget-watchers article .ft-budget-copy small { font-size: 11px; line-height: 1.45; }
 .ft-budget-child[data-over="true"] strong { color: var(--ft-expense); }
+
+.ft-library-chart { min-width: 0; }
+.ft-chart-canvas { height: 260px; min-width: 0; }
+.ft-library-chart-pie { width: 160px; max-width: 100%; }
+.ft-library-chart-pie .ft-chart-canvas { height: 160px; }
+.ft-chart-values { font-size: 11px; background: var(--ft-surface); }
+.ft-chart-values summary { min-height: 36px; cursor: pointer; display: flex; align-items: center; color: var(--ft-text); }
+
+.ft-chart-values ul { list-style: none; padding: 0; margin: 0; }
+.ft-chart-values li { padding: 8px 0; border-top: 1px solid var(--ft-border); }
+.ft-chart-values li span { display: block; }
+.ft-note-suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -8px; }
+.ft-note-suggestions button { min-height: 44px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--ft-border); border-radius: 18px; background: var(--ft-primary-soft); color: var(--ft-text); font: inherit; font-size: 12px; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.ft-note-suggestions button:active { opacity: .7; }
+.ft-note-suggestions button:focus-visible, .ft-chart-values summary:focus-visible { outline: 2px solid var(--ft-primary); outline-offset: 3px; }
+
+.ft-chart-values summary { overflow-wrap: anywhere; line-height: 1.4; }
