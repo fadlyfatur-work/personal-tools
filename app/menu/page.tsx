@@ -1,13 +1,19 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { ArrowRight, Wallet, ClipboardText, FileText, TimerIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRight, Wallet, ClipboardText, FileText, TimerIcon, Calculator } from '@phosphor-icons/react/dist/ssr'
 
 export const metadata: Metadata = {
   title: 'Menu aplikasi — Personal Tools',
-  description: 'Pilih Fintrack, Paste Text, atau Nominatif.',
+  description: 'Pilih katalog AHSP, Fintrack, Paste Text, Nominatif, atau Time Mark.',
 }
 
 const features = [
+  {
+    href: '/ahsp',
+    title: 'Katalog AHSP 2026',
+    desc: 'Telusuri pekerjaan, komponen analisis, kalkulator, dan status rekonsiliasi.',
+    icon: <Calculator size={32} aria-hidden="true" />,
+  },
   {
     href: '/fintrack',
     title: 'Fintrack',
