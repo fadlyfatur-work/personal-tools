@@ -13,6 +13,9 @@ const load = (file, imports = {}) => {
 }
 const core = load('lib/ahsp.ts')
 const { calculateAhsp, parseAhspNumber } = core
+const copied = core.formatAhspItemCopy({ code: '1.22.(7a)', name: 'Rambu\tPetunjuk\nsementara', field: 'SMKK', division: 'Komponen 7', unit: 'Buah', ahsp_type: 'Informatif', regulation: 'SE 47/2026', page_from: 43, page_to: 44 }, 'Lampiran V')
+assert.deepEqual(copied.split('\t'), ['1.22.(7a)', 'Rambu Petunjuk sementara', 'SMKK', 'Komponen 7', 'Buah', 'Informatif', 'SE 47/2026', 'Lampiran V', '43-44'], 'A copied work item is one spreadsheet row with nine columns; embedded tabs/newlines cannot add cells or rows')
+assert.ok(!copied.includes('\n'))
 const item = {
   analysis_status: 'extracted', output_quantity: 1, overhead_min: 10, overhead_max: 15,
   components: [
@@ -21,6 +24,17 @@ const item = {
   ],
 }
 const input = { volume: 20, overhead: 10, prices: { labor: 150000, material: 5000 }, coefficients: {} }
+const referenceOrigin = { ...item, id: 'origin', code: '1.1.1.3', name: 'Pagar kawat duri', regulation: 'SE 47/2026', unit: 'm', source_id: '10904', page_from: 159, page_to: 159 }
+const referenceTarget = { ...referenceOrigin, id: 'target', code: 'U.1.1.3 (c)', regulation: 'PERMEN 08/2023', source_id: 'permen08-2023', page_from: 141, page_to: 141 }
+const referenced = { ...referenceOrigin, analysis_target_id: 'target', analysis_reference: {
+  status: 'verified', target_item_id: 'target', target_code: referenceTarget.code, target_regulation: referenceTarget.regulation,
+  source_fingerprint: core.ahspAnalysisFingerprint(referenceOrigin), target_fingerprint: core.ahspAnalysisFingerprint(referenceTarget),
+} }
+assert.equal(core.canUseAhspReference(referenced, referenceTarget), true)
+assert.equal(core.canUseAhspReference({ ...referenced, analysis_reference: { ...referenced.analysis_reference, status: 'review' } }, referenceTarget), false)
+assert.equal(core.canUseAhspReference(referenced, null), false)
+assert.equal(core.canUseAhspReference(referenced, { ...referenceTarget, components: [...referenceTarget.components, { id: 'extra', name: 'Seng', group: 'bahan', coefficient: 1 }] }), false, 'Changed analysis invalidates the previous verification')
+assert.equal(core.canUseAhspReference({ ...referenced, name: 'Pagar seng' }, referenceTarget), false, 'A changed source item also invalidates verification')
 let r = calculateAhsp(item, input)
 assert.equal(r.direct, 8100)
 assert.equal(r.unitPrice, 8910)
@@ -51,18 +65,21 @@ const query = new Proxy({}, { get: (_, prop) => {
 } })
 const route = load('app/api/ahsp/route.ts', {
   zod: { z }, '@/lib/ahsp': core,
-  '@/lib/supabaseAdmin': { getSupabaseAdmin: () => ({ from: table => { calls.push(['from', table]); return query }, rpc: async (name, args) => { calls.push(['rpc', name, args]); return { data: name === 'ahsp_search_items' ? { items: [], total: 0, pageSize: 30 } : {}, error: failure } } }) },
+  '@/lib/supabaseAdmin': { getSupabaseAdmin: () => ({ from: table => { calls.push(['from', table]); return query }, rpc: async (name, args) => { calls.push(['rpc', name, args]); return { data: name === 'ahsp_search_items' ? { items: [], total: 0, pageSize: 30 } : { fields: ['Umum', 'SMKK'] }, error: failure } } }) },
 })
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?page=-1'))).status, 400)
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?id=invalid'))).status, 400)
 assert.equal(calls.length, 0, 'Invalid filters do not reach PostgreSQL')
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?q=galian'))).status, 200)
+const countedOptions = await (await route.GET(new Request('http://localhost/api/ahsp?options=1'))).json()
+assert.deepEqual(countedOptions.options.field_counts, [{ field: 'Umum', count: 0 }, { field: 'SMKK', count: 0 }], 'Field buttons use PostgreSQL exact counts, including zero')
+assert.ok(calls.some(call => call[0] === 'select' && call[2]?.head === true && call[2]?.count === 'exact'), 'Counts do not fetch complete catalogue rows')
 assert.ok(calls.some(c => c[0] === 'rpc' && c[1] === 'ahsp_search_items' && c[2].p_terms[0] === 'galian'))
 await route.GET(new Request('http://localhost/api/ahsp'))
 assert.ok(calls.some(c => c[0] === 'rpc' && c[1] === 'ahsp_search_items' && c[2].p_terms.length === 0), 'Unfiltered lists use the same PostgreSQL result and summary calculation')
 calls = []
 await route.GET(new Request('http://localhost/api/ahsp?mode=multiple&q=x%2Cy%29%25'))
-assert.deepEqual(Array.from(calls.find(c => c[0] === 'rpc')[2].p_terms), ['x', 'y)%'], 'Search terms are RPC parameters; punctuation is never interpreted as SQL or a filter expression')
+assert.deepEqual(Array.from(calls.find(c => c[0] === 'rpc')[2].p_terms), ['x,y)%'], 'Commas remain literal RPC parameters; punctuation is never interpreted as SQL or a filter expression')
 calls = []
 await route.GET(new Request('http://localhost/api/ahsp?q=2.2.1.9.2&scope=components&analysis=extracted'))
 const searchCall = calls.find(c => c[0] === 'rpc')
@@ -70,6 +87,10 @@ assert.equal(searchCall[2].p_terms[0], '2.2.1.9.2')
 assert.equal(searchCall[2].p_scope, 'components')
 assert.equal(searchCall[2].p_analysis, 'extracted')
 assert.equal(searchCall[2].p_match, 'like')
+calls = []
+await route.GET(new Request('http://localhost/api/ahsp?sipasti=database_only'))
+assert.equal(calls.find(c => c[0] === 'rpc')[2].p_sipasti, 'database_only', 'SIPASTI status reaches the PostgreSQL search and statistics filter')
+assert.equal((await route.GET(new Request('http://localhost/api/ahsp?sipasti=invalid'))).status, 400)
 calls = []
 await route.GET(new Request('http://localhost/api/ahsp?q=Rambu%20Petunjuk&match=exact'))
 assert.equal(calls.find(c => c[0] === 'rpc')[2].p_match, 'exact')
@@ -79,7 +100,10 @@ assert.deepEqual(Array.from(calls.find(c => c[0] === 'rpc')[2].p_terms), ['Beton
 assert.equal((await route.GET(new Request(`http://localhost/api/ahsp?mode=multiple&q=${encodeURIComponent(Array.from({ length: 51 }, (_, i) => `term${i}`).join('\n'))}`))).status, 400)
 const searchExample = 'Petugas pengatur lalu lintas,\\\nPeralatan P3K,\\\nRambu petunjuk,\\\nRambu peringatan,\\\nRambu informasi,\\\nKerucut lalu lintas (traffic cone),\\\nTongkat pengatur lalu lintas (Warning Lights Stick),\\\nLampu/alat penerangan sementara,'
 assert.equal(core.parseAhspSearch(searchExample).length, 8)
+assert.equal(core.parseAhspSearch(searchExample)[0], 'Petugas pengatur lalu lintas,', 'A trailing comma is also literal search text')
 assert.deepEqual(Array.from(core.parseAhspSearch('Pekerja; PEKERJA\nBesi diameter 2,5 mm; Alat (kecil, sedang)')), ['Pekerja', 'Besi diameter 2,5 mm', 'Alat (kecil, sedang)'])
+assert.deepEqual(Array.from(core.parseAhspSearch('Beton, mutu K-250;Pekerja\\Mandor\r\nAlat (kecil; sedang)')), ['Beton, mutu K-250', 'Pekerja', 'Mandor', 'Alat (kecil; sedang)'], 'Keep comma-containing names whole and preserve the other delimiter rules')
+assert.deepEqual(Array.from(core.parseAhspSearch('Pekerja,Mandor')), ['Pekerja,Mandor'])
 failure = { message: 'private credential or database error' }
 const unavailable = await route.GET(new Request('http://localhost/api/ahsp'))
 assert.equal(unavailable.status, 503)

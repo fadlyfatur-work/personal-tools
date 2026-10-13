@@ -1,5 +1,6 @@
 export const AHSP_REGULATION = 'SE 47/2026'
 export const AHSP_ACTIVE_REGULATIONS = ['SE 47/2026', 'PERMEN 08/2023']
+export const sipastiLabels = { database_only: 'Hanya ada di Database', sipasti_only: 'Hanya ada di SIPASTI', both: 'Verfied' } as const
 export const reconciliationLabels: Record<string, string> = {
   cocok: 'Cocok', berbeda: 'Berbeda', belum_ditemukan: 'Belum ditemukan',
   perlu_ditinjau: 'Perlu ditinjau', hanya_regulasi: 'Hanya di regulasi',
@@ -11,11 +12,29 @@ export type AhspComponent = {
 export type AhspItem = {
   id: string; code: string; name: string; unit: string; field: string; division: string;
   regulation: string; ahsp_type: string; regulation_status: string;
+  sipasti_status?: keyof typeof sipastiLabels | null;
+  analysis_target_id?: string | null; analysis_reference?: AhspAnalysisReference | null;
   reconciliation_status: string; reconciliation_notes: string[];
   source_id: string | null; page_from: number | null; page_to: number | null;
   printed_page: string; analysis_status: 'extracted' | 'needs_review' | 'unavailable';
   components: AhspComponent[]; source_text: string; overhead_min: number | null;
   overhead_max: number | null; master_rows: number[]; output_quantity: number;
+}
+export type AhspAnalysisReference = {
+  target_item_id: string | null; target_code: string; target_regulation: string; target_name: string;
+  status: 'verified' | 'review' | 'missing'; source_id: string; source_page: number; citation: string;
+  notes: string[]; source_fingerprint?: string; target_fingerprint?: string;
+}
+export function ahspAnalysisFingerprint(item: AhspItem) {
+  return JSON.stringify([item.id, item.code, item.name, item.unit, item.regulation, item.source_id, item.page_from, item.page_to,
+    item.analysis_status, item.output_quantity, item.overhead_min, item.overhead_max,
+    item.components.map(c => [c.group, c.name, c.code, c.unit, c.coefficient, c.expression]).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))])
+}
+export function canUseAhspReference(item: AhspItem, target: AhspItem | null) {
+  const ref = item.analysis_reference
+  return !!(ref?.status === 'verified' && target && item.analysis_target_id === target.id && ref.target_item_id === target.id
+    && ref.target_code === target.code && ref.target_regulation === target.regulation && target.analysis_status === 'extracted'
+    && target.components.length && ref.source_fingerprint === ahspAnalysisFingerprint(item) && ref.target_fingerprint === ahspAnalysisFingerprint(target))
 }
 export type AhspSource = { id: string; title: string; annex: string; url: string; page_count: number; checked_at: string; sha256: string; assets: { url: string; page_start: number; page_end: number; preview_base_url?: string }[] }
 export type AhspOptions = {
@@ -23,6 +42,7 @@ export type AhspOptions = {
   units: string[]; statuses: { status: string; count: number }[];
   analysis: { status: string; count: number }[]; sources: AhspSource[];
   types?: AhspTypeCount[];
+  field_counts?: { field: string; count: number | null }[];
 }
 export type AhspTypeCount = { type: string; count: number }
 export type AhspSearchStats = {
@@ -31,6 +51,11 @@ export type AhspSearchStats = {
   terms: { term: string; exact_count: number; like_count: number }[]; match: 'like' | 'exact';
 }
 export function ahspTypeLabel(type: string) { return type || 'Belum teridentifikasi' }
+export function formatAhspItemCopy(item: Pick<AhspItem, 'code' | 'name' | 'field' | 'division' | 'unit' | 'ahsp_type' | 'regulation' | 'page_from' | 'page_to'>, annex = '') {
+  const pages = item.page_from ? `${item.page_from}${item.page_to && item.page_to !== item.page_from ? `-${item.page_to}` : ''}` : ''
+  return [item.code, item.name, item.field, item.division, item.unit, ahspTypeLabel(item.ahsp_type), item.regulation, annex, pages]
+    .map(value => value.replace(/[\t\r\n]+/g, ' ')).join('\t')
+}
 export type CalculationInput = { volume: number | null; overhead: number | null; prices: Record<string, number | null>; coefficients: Record<string, number | null> }
 
 export function parseAhspSearch(value: string): string[] {
@@ -41,8 +66,7 @@ export function parseAhspSearch(value: string): string[] {
     const char = value[index]
     if (char === '(') depth++
     if (char === ')') depth = Math.max(0, depth - 1)
-    const decimalComma = char === ',' && /\d/.test(value[index - 1] ?? '') && /\d/.test(value[index + 1] ?? '')
-    if (char === '\n' || char === '\r' || char === '\\' || (depth === 0 && (char === ';' || (char === ',' && !decimalComma)))) flush()
+    if (char === '\n' || char === '\r' || char === '\\' || (depth === 0 && char === ';')) flush()
     else current += char
   }
   flush()

@@ -60,7 +60,7 @@ Analisis hasil ekstraksi yang belum lengkap tidak menghasilkan total. Untuk tabe
 ```text
 node scripts/test-ahsp.mjs
 python scripts/test-ahsp-inventory.py
-npm run typecheck
+npx tsc --noEmit
 npm run build
 ```
 
@@ -72,13 +72,29 @@ Snapshot 12 Oktober 2026 memuat 6.129 item dari 6.001 baris master yang masuk ca
 
 ## Pencarian dan ringkasan hasil
 
-Pencarian dasar memakai nama/kode item pekerjaan dan regulasi. Panel lanjutan menerima banyak istilah, bidang, divisi, satuan, serta mode Exact-match atau Like-match; nama/kode komponen yang sudah diekstrak ikut dicari. Daftar dipisahkan dengan baris baru, koma, titik koma, atau backslash. Koma desimal dan koma di dalam tanda kurung dipertahankan. Istilah ganda yang hanya berbeda kapitalisasi dihitung sekali.
+Pencarian dasar memakai nama/kode item pekerjaan, regulasi, dan pilihan bidang. Panel lanjutan menerima banyak istilah, divisi, satuan, serta mode Exact-match atau Like-match; nama/kode komponen yang sudah diekstrak ikut dicari. Daftar dipisahkan dengan baris baru, titik koma, atau backslash. Koma selalu menjadi bagian teks pencarian, termasuk koma di akhir baris; contoh input memakai baris baru tanpa koma tambahan. Titik koma di dalam tanda kurung dipertahankan. Istilah ganda yang hanya berbeda kapitalisasi dihitung sekali.
+
+Filter Bidang dipindahkan dari dropdown advanced ke tombol pilihan pada pencarian utama. Tombol menampilkan jumlah item dalam katalog aktif sebelum filter pencarian/regulasi, termasuk tombol Semua. Jumlah diambil melalui exact count PostgreSQL ketika options dimuat, bukan angka pada gambar contoh. Klik bidang langsung menyaring snapshot pencarian yang telah diterapkan dan mereset divisi/page; draft istilah advanced tidak ikut diterapkan. Bidang tetap dipertahankan saat single search berubah. Tombol membungkus ke baris berikutnya pada layar sempit dan memperlihatkan aria-pressed untuk pilihan aktif.
+
+Pencarian tunggal otomatis setelah jeda mengetik 200 ms; timer dan permintaan sebelumnya dibatalkan saat input berubah. Advanced search menyimpan perubahan istilah, bidang, divisi, satuan, regulasi, serta mode sebagai draft. Draft baru diterapkan melalui tombol Cari/submit form, tanpa debounce tambahan. Hasil dan pagination tetap memakai snapshot filter yang terakhir diterapkan. UI memberi keterangan bila ada perubahan advanced yang belum diterapkan. Mengubah input pencarian tunggal kembali memakai scope pekerjaan dan mengabaikan filter advanced. Pengujian pemicu pencarian: `node scripts/test-ahsp-search-trigger.mjs`.
 
 Migrasi `202610120003` menambahkan pencarian, `202610120004` menambahkan mode, dan `202610120005` menambahkan ringkasan serta statistik tipe. Jalankan berurutan melalui SQL Editor. Fungsi baca memakai parameter RPC; teks pencarian tidak digabungkan ke SQL. Tidak ada perubahan izin baca langsung untuk anon/authenticated.
 
+Migrasi `202610130006` memperbaiki timeout pencarian: hasil kecocokan diagregasi sekali per ID, lalu digabungkan dengan kandidat; daftar komponen yang cocok hanya disusun untuk halaman hasil. Struktur respons, statistik, filter, dan data katalog tetap sama. API membedakan timeout (`SEARCH_TIMEOUT`), kegagalan koneksi (`DATABASE_CONNECTION_FAILED`), dan fungsi database yang tidak tersedia (`SEARCH_FUNCTION_UNAVAILABLE`). Respons gagal menyertakan referensi acak yang sama dengan log `[AHSP]` di terminal server. Log memuat kode dan jumlah istilah, tanpa isi pencarian, kredensial, atau pesan mentah database.
+
+Migrasi `202610130007` menghilangkan konfigurasi per pemanggilan pada pembanding teks agar PostgreSQL dapat melakukan SQL inlining. Fungsi hanya memakai operasi bawaan yang disebut eksplisit dengan namespace `pg_catalog`; tetap immutable, security invoker, dan hanya dapat dijalankan service_role. Perbandingan exact tetap tidak peka kapitalisasi dan mengabaikan spasi di ujung, sedangkan like memakai pencarian substring literal.
+
 Total hasil menghitung ID item pekerjaan unik. Ringkasan menghitung jumlah istilah yang mempunyai hasil, kecocokan exact seluruh istilah terhadap item dalam cakupan filter, dan jumlah exact/like untuk setiap istilah. Statistik tidak dibatasi halaman saat ini. Istilah yang bertumpang tindih dapat membuat jumlah baris statistik lebih besar daripada total item unik.
 
-Pada desktop, pencarian ditempatkan pada kolom samping yang dapat digulir, sementara hasil tetap terlihat di sebelahnya. Pada layar kecil, tombol Tampilkan hasil menutup panel panjang dan memindahkan fokus ke hasil; Ubah pencarian mengembalikan fokus ke isian. Membuka/menutup panel tidak membuang hasil atau filter aktif. Mengubah pencarian dasar kembali memakai mode pencarian satu item.
+Setiap baris pekerjaan memiliki tombol ikon Salin yang terpisah dari pembuka modal. Clipboard berisi satu baris TSV tanpa header, dengan urutan kolom: kode, nama pekerjaan, bidang, divisi, satuan, jenis item, regulasi, lampiran, halaman PDF. Tab/baris baru di dalam nilai diganti spasi agar hasil tetap menjadi satu baris saat ditempel ke spreadsheet. Ikon centang dan status yang diumumkan pembaca layar menandai keberhasilan; kegagalan clipboard ditampilkan sebagai pesan. Tidak ada perubahan data PostgreSQL.
+
+Klik teks kode menyalin kode saja; klik teks nama pekerjaan menyalin nama saja. Keduanya memakai tombol teks yang dapat difokuskan dengan keyboard dan tidak bersarang dalam tombol pembuka analisis. Area baris lainnya tetap membuka modal. Ikon Salin di ujung baris tetap menyalin seluruh data TSV.
+
+Status sukses/gagal salin tampil sebagai floating alert di kanan bawah selama 3 detik, tanpa menggeser tabel atau mengambil fokus. Menyalin lagi memulai ulang durasinya, termasuk untuk teks yang sama. Indikator centang baris kembali normal setelah expiry. Alert memakai aria-live polite, mengikuti tema dan safe area, tidak menangkap pointer, serta menonaktifkan animasi entrance ketika reduced motion aktif.
+
+Ringkasan pencarian lanjutan berada di sidebar kanan selebar 320 piksel pada viewport minimal 1280 piksel. Di layar lebih sempit, ringkasan menjadi disclosure yang tertutup secara default sebelum tabel. Pengguna dapat membuka/menutup ringkasan pada kedua layout; jumlah hasil tetap ditampilkan pada header pekerjaan. Kecocokan per istilah memakai daftar dengan nilai Exact/Like, sehingga nama panjang dapat membungkus tanpa tabel statistik yang sempit. Sidebar tidak sticky, tidak menutupi tabel, dan memakai gulir halaman. Saat pencarian diperbarui, panel mempertahankan posisinya dan menampilkan status memuat agar statistik lama tidak dianggap hasil baru.
+
+Pencarian berada di atas tabel dalam layout bertumpuk pada semua ukuran layar. Baris utama berisi pencarian tunggal dan regulasi. Tombol Cari berada di dalam panel lanjutan, dalam kelompok yang sama dengan textarea: di sampingnya mulai lebar 900 piksel dan tepat di bawahnya pada layar kecil. Pencarian tunggal tetap otomatis dengan debounce tanpa tombol tambahan. Panel lanjutan dapat dibuka dari baris kontrol di bawahnya; pilihan Like-match/Exact-match berdekatan dengan isian banyak istilah. Bidang, divisi, dan satuan dikelompokkan di sebelahnya pada desktop dan mengalir ke bawah pada ponsel. Tombol Cari menutup panel lanjutan dan memindahkan fokus ke hasil pada semua ukuran layar; Ubah pencarian mengembalikan fokus ke isian. Membuka/menutup panel tidak membuang hasil atau filter aktif. Mengubah pencarian dasar kembali memakai mode pencarian satu item. Panel tidak sticky dan tidak mempunyai area gulir sendiri.
 
 Jenis Normatif/Informatif diambil dari daftar lampiran. SMKK mengikuti label Informatif untuk kelompok A.7 dalam daftar isi Lampiran V (halaman PDF 4). Pada snapshot ini ada 2.868 Normatif, 2.339 Informatif, dan 922 yang belum teridentifikasi. Label terakhir menunjukkan data jenis yang belum terpetakan.
 
@@ -90,4 +106,45 @@ node --env-file=.env.local scripts/ahsp-upload-previews.mjs <manifest-preview.js
 node --env-file=.env.local scripts/test-ahsp-search-live.mjs
 ```
 
-Uji live tersebut hanya membaca PostgreSQL dan menguji jumlah per istilah, exact/like, hasil bertumpang tindih, tipe, dan pagination.
+Uji live tersebut hanya membaca PostgreSQL dan menguji jumlah per istilah, exact/like, hasil bertumpang tindih, tipe, pagination, dan pencarian 50 istilah.
+
+## Rekonsiliasi SIPASTI PU
+
+Migrasi `202610130008_ahsp_sipasti_reconciliation.sql` menambahkan `sipasti_status`, asal item, hash sumber dan nomor baris JSON. Ekspor JSON disimpan pada tabel `ahsp_sipasti_imports` yang hanya dapat diakses service_role. Aplikasi tidak menampilkan data mentah sumber tersebut.
+
+```text
+node --env-file=.env.local scripts/reconcile-ahsp-sipasti.mjs <json-SIPASTI> <direktori-laporan>
+node --env-file=.env.local scripts/reconcile-ahsp-sipasti.mjs <json-SIPASTI> <direktori-laporan> --apply
+node scripts/test-ahsp-sipasti.mjs
+```
+
+Tanpa `--apply`, skrip hanya membaca database dan menghasilkan laporan. Dengan `--apply`, RPC melakukan pemeriksaan snapshot, pembaruan tag, dan penambahan item dalam satu transaksi. Jika identitas/jumlah katalog berubah, seluruh transaksi dibatalkan. Nama, satuan, koefisien, dan halaman item lama tidak ditimpa. Item baru dari SIPASTI belum memiliki rincian komponen lampiran dan diberi `analysis_status = unavailable`.
+
+Pencocokan memakai kode yang dinormalisasi spasi/kapitalisasi, bidang, dan regulasi aktif. Sufiks huruf, angka tambahan, dan tanda kurung tetap dibedakan. Untuk kode yang mewakili beberapa nama database berbeda, nama juga harus cocok setelah normalisasi spasi/kapitalisasi. Baris JSON ganda tidak menambah item ganda; referensi semua baris dipertahankan. Nama/satuan yang berbeda pada kode tunggal dilaporkan terpisah.
+
+Tag `Verfied` mengikuti ejaan permintaan pengguna dan berarti keberadaan item pada kedua sumber, bukan validasi kelengkapan analisis atau kesamaan seluruh metadata. Item yang ditambahkan hanya dari SIPASTI mempertahankan asal tersebut ketika proses dijalankan ulang. Ekspor hanya memuat SE 47/2026; tidak munculnya item Umum Permen 8/2023 berarti di luar cakupan ekspor, bukan item tidak sah.
+
+Pengguna mengoreksi kode `2.3.(25a)1` dan nama `1Saluran U Pracetak Tipe DS 5` menjadi `2.3.(25a)` / `Saluran U Pracetak Tipe DS 5`. Importer mengenali pasangan salah tersebut secara khusus pada bidang Bina Marga dan regulasi SE 47/2026. Duplikat kosong telah digabungkan ke item asli setelah backup, dan referensi baris 2.862 dipindahkan. Hasil terkini: 6.129 item, terdiri dari 5.718 Verfied, 411 Hanya ada di Database, dan 0 Hanya ada di SIPASTI.
+
+Tiga tombol status berada dalam pencarian lanjutan, menggunakan satu pilihan aktif dan hanya diterapkan setelah klik Cari. Klik tombol aktif lagi menghapus pilihan. Tag tampil tepat di bawah nama pekerjaan. Filter status diterapkan sebelum pencocokan dan penghitungan ringkasan, sehingga total/statistik/pagination tetap memakai cakupan yang sama.
+
+Rekonsiliasi berikutnya memakai ekspor gabungan SE 47/2026 dan Permen 8/2023. Importer kini mengenali kedua regulasi, memprioritaskan SE 47/2026 jika satu baris menyebut keduanya, dan mempertahankan referensi nomor baris JSON asli. SMKK Permen 8/2023 dikecualikan secara default sesuai permintaan versi terbaru; `--include-permen-smkk` hanya digunakan jika pengguna memilih memasukkan versi tersebut. Pekerjaan tanpa kode menggunakan identitas nama/satuan bersama bidang/regulasi. Laporan pengecualian dihasilkan bersama CSV rekonsiliasi.
+
+Penerapan ekspor gabungan 6.250 baris mengubah 249 item Umum menjadi Verfied. Pengguna kemudian memilih memasukkan SMKK Permen 8/2023: 249 baris menjadi 248 item unik tanpa kode, memakai nama dan satuan sebagai identitas bersama bidang/regulasi. Cakupan ini diimpor dengan `--include-permen-smkk`, dan impor ulang harus memakai pilihan yang sama. Total terbaru 6.377, Verfied 5.967, Hanya ada di Database 162, Hanya ada di SIPASTI 248. SMKK berjumlah 397: 149 SE 47/2026 dan 248 Permen 8/2023. Tidak diperlukan migrasi baru; RPC migrasi 08 digunakan kembali. Sumber fallback modal mengikuti regulasi Permen untuk item yang belum terpetakan; metadata dan analisis lama tidak ditimpa.
+
+## Preloader awal
+
+Komponen `initial-preloader.tsx` menutupi viewport pada pemuatan pertama. Indikator tiga baris memakai transform/opacity, latar inert, dan gulir dikunci sementara. Respons pertama yang sukses maupun gagal memulai fade 180 ms; reduced motion memakai indikator statis dan exit segera. Tidak ada persentase atau durasi pemuatan minimum buatan. Kembali ke menu tetap tersedia. Pencarian, filter, pagination, dan retry berikutnya tidak mengaktifkan preloader lagi. Verifikasi: `node scripts/test-ahsp-preloader.mjs` dan `node scripts/test-ahsp-search-trigger.mjs`.
+
+## Rujukan analisis
+
+Migrasi 09 menambahkan foreign key `analysis_target_id` dan metadata `analysis_reference`. Audit memetakan kutipan Permen pada judul item SE berdasarkan kode masing-masing, bukan seluruh teks halaman. Sebanyak 103 relasi tersimpan: 2 terverifikasi dan 101 perlu tinjauan. Dua relasi siap adalah 1.1.1.3 → U.1.1.3 (c), serta 1.3.1.5 → U.3.5.1.e (a). Kekosongan metadata batas biaya umum, analisis belum lengkap dan perbedaan nama/satuan/komponen dilaporkan, bukan diasumsikan setara.
+
+Label rujukan tampil di bawah nama dan sumber analisis pada kolom regulasi. Modal tetap mempertahankan identitas item asal; kalkulator dan komponen menggunakan item tujuan hanya ketika `reference_ready` dari API bernilai true. Sidik data asal/tujuan diperiksa setiap kali detail dimuat sehingga perubahan analisis membatalkan kesiapan lama. Relasi belum siap membatasi perhitungan otomatis dan menampilkan catatan pemeriksaan. Tombol terpisah membuka item tujuan, halaman rujukan SE, atau lampiran Permen. Kutipan rujukan tersedia dalam disclosure.
+
+```text
+node --env-file=.env.local scripts/import-ahsp-references.mjs <audit.json> <snapshot.json> <hasil-audit.json>
+node --env-file=.env.local scripts/test-ahsp-references-live.mjs
+```
+
+Importer menolak perubahan analisis sejak snapshot dan menerapkan relasi melalui RPC atomik tanpa menyalin/menimpa komponen. Uji live menjalankan handler API asli terhadap PostgreSQL; tidak memerlukan server Next.js.

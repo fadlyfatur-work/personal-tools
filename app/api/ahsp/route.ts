@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { AHSP_ACTIVE_REGULATIONS, parseAhspSearch } from '@/lib/ahsp'
+import { AHSP_ACTIVE_REGULATIONS, canUseAhspReference, parseAhspSearch } from '@/lib/ahsp'
 
 export const dynamic = 'force-dynamic'
 const schema = z.object({
@@ -14,6 +14,7 @@ const schema = z.object({
   scope: z.enum(['all', 'jobs', 'components']).default('all'),
   mode: z.enum(['single', 'multiple']).default('single'),
   match: z.enum(['like', 'exact']).default('like'),
+  sipasti: z.enum(['', 'database_only', 'sipasti_only', 'both']).default(''),
 })
 export async function GET(request: Request) {
   const parsed = schema.safeParse(Object.fromEntries(new URL(request.url).searchParams))
@@ -29,20 +30,40 @@ export async function GET(request: Request) {
       const { data, error } = await db.from('ahsp_items').select('*').eq('id', filters.id).in('regulation', AHSP_ACTIVE_REGULATIONS).maybeSingle()
       if (error) throw error
       if (!data) return Response.json({ error: 'Item pekerjaan tidak ditemukan.' }, { status: 404 })
-      return Response.json({ item: data })
+      let target = null
+      if (data.analysis_target_id) {
+        const result = await db.from('ahsp_items').select('*').eq('id', data.analysis_target_id).in('regulation', AHSP_ACTIVE_REGULATIONS).maybeSingle()
+        if (result.error) throw result.error
+        target = result.data
+      }
+      return Response.json({ item: data, reference_target: target, reference_ready: canUseAhspReference(data, target) })
     }
     {
       const search = await db.rpc('ahsp_search_items', {
         p_terms: terms, p_page: filters.page, p_field: filters.field,
         p_division: filters.division, p_unit: filters.unit,
         p_regulation: filters.regulation, p_analysis: filters.analysis, p_scope: filters.scope, p_match: filters.match,
+        ...(filters.sipasti ? { p_sipasti: filters.sipasti } : {}),
       })
       if (search.error) throw search.error
+      if (search.data.items.length) {
+        const references = await db.from('ahsp_items').select('id,analysis_reference').in('id', search.data.items.map((item: { id: string }) => item.id))
+        if (references.error && references.error.code !== '42703') throw references.error
+        if (references.data) search.data.items = search.data.items.map((item: { id: string }) => {
+          const ref = references.data.find(row => row.id === item.id)?.analysis_reference
+          return { ...item, analysis_reference: ref ? { ...ref, source_fingerprint: undefined, target_fingerprint: undefined } : null }
+        })
+      }
       let options = null
       if (filters.options === '1') {
         const result = await db.rpc('ahsp_catalog_options')
         if (result.error) throw result.error
-        options = { ...result.data, types: search.data.catalog_types }
+        const fieldCounts = await Promise.all((result.data.fields as string[]).map(async field => {
+          const counted = await db.from('ahsp_items').select('id', { count: 'exact', head: true }).eq('field', field).in('regulation', AHSP_ACTIVE_REGULATIONS)
+          if (counted.error) throw counted.error
+          return { field, count: counted.count }
+        }))
+        options = { ...result.data, field_counts: fieldCounts, types: search.data.catalog_types }
       }
       return Response.json({ ...search.data, search_stats: { ...search.data.search_stats, match: filters.match }, options })
     }
