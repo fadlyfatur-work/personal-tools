@@ -9,6 +9,7 @@ export type AccountKind = 'cash' | 'bank' | 'ewallet' | 'emergency_fund' | 'inve
 export type AccountClassification = 'asset' | 'liability'
 
 export interface Account {
+  provider_code?: string | null
   is_goal?: boolean
   id: string
   plan_id: string
@@ -93,6 +94,7 @@ export interface ReportSlice {
 }
 
 export interface FintrackReport {
+  calendar_days?: Array<{ day: string; income: boolean; expense: boolean }>
   category_expense?: ReportSlice[]
   month: string
   period_start: string

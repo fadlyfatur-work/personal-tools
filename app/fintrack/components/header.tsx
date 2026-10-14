@@ -12,7 +12,7 @@ function greeting() {
   return 'Selamat malam'
 }
 
-export function Header({ user, eyebrow, title, settings }: { user: { name: string; email: string }; eyebrow?: string; title?: string; settings?: boolean }) {
+export function Header({ user, title, settings }: { user: { name: string; email: string }; eyebrow?: string; title?: string; settings?: boolean }) {
   const { status: connectionStatus, countdown } = useConnectivity()
   const dateLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Jakarta' }).format(new Date())
   const firstName = user.name.trim().split(/\s+/)[0] || 'Anda'
@@ -20,7 +20,7 @@ export function Header({ user, eyebrow, title, settings }: { user: { name: strin
   return (
     <header className="ft-topbar">
       <div className="ft-identity">
-        <span>{eyebrow || dateLabel}</span>
+        {!title && <span>{dateLabel}</span>}
         <h1>{title || `${greeting()}, ${firstName}`}</h1>
       </div>
       <div className="ft-header-actions"><span className="ft-header-connectivity" role="status" aria-live="polite"><span className="ft-header-connection" data-status={connectionStatus} aria-label={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'} title={connectionStatus === 'online' ? 'Terhubung' : connectionStatus === 'checking' ? 'Memeriksa koneksi' : connectionStatus === 'offline' ? 'Tidak ada internet' : 'Server tidak tersedia'}><span className="ft-connection-lamp" data-status={connectionStatus} /></span>{countdown !== null && <small>{countdown} dtk</small>}</span><Link href="/fintrack/settings" className="ft-icon-button ft-profile-link" aria-label="Profil dan setelan" title="Profil dan setelan" aria-current={settings ? 'page' : undefined}><UserCircle size={24} weight={settings ? 'fill' : 'regular'} /></Link></div>

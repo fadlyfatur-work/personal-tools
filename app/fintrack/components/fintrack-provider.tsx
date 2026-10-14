@@ -45,7 +45,7 @@ const FintrackContext = createContext<FintrackContextValue | null>(null)
 
 function getPaletteSnapshot(): Palette {
   const saved = window.localStorage.getItem('fintrack-palette')
-  return saved === 'ocean' || saved === 'earth' ? saved : 'forest'
+  return saved === 'forest' || saved === 'earth' ? saved : 'ocean'
 }
 
 function subscribePalette(callback: () => void) {
@@ -119,7 +119,7 @@ function FintrackState({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const palette = useSyncExternalStore<Palette>(subscribePalette, getPaletteSnapshot, () => 'forest')
+  const palette = useSyncExternalStore<Palette>(subscribePalette, getPaletteSnapshot, () => 'ocean')
   const theme = useSyncExternalStore<Theme>(subscribeTheme, getThemeSnapshot, () => 'light')
   const shouldBootstrap = !pathname.includes('/login') && !pathname.includes('/register') && !pathname.includes('/reset-pin')
   const query = useQuery({
@@ -282,7 +282,7 @@ function TransactionModal({ editing, onClose }: { editing: Transaction | null; o
   return (
     <TransactionSheet onClose={onClose}>{close => <>
 
-        <div className="ft-modal-header"><div><p>Transaksi</p><h2 id="transaction-modal-title">{editing ? 'Perbarui catatan' : 'Catat uang masuk atau keluar'}</h2></div><button className="ft-icon-button" type="button" onClick={close} aria-label="Tutup pencatatan"><X size={19} /></button></div>
+        <div className="ft-modal-header"><div><p>Transaksi</p><h2 id="transaction-modal-title">{editing ? 'Perbarui catatan' : 'Catat transaksi'}</h2></div><button className="ft-icon-button" type="button" onClick={close} aria-label="Tutup pencatatan"><X size={19} /></button></div>
         <div className="ft-modal-body" data-updating={loading}>
           {accounts.length === 0 && !loading ? <div className="ft-empty ft-modal-empty"><div><strong>Buat dompet terlebih dahulu</strong><p>Transaksi membutuhkan dompet sebagai sumber atau tujuan saldo.</p><Link href="/fintrack/manage" className="ft-button ft-button-primary" onClick={onClose}>Kelola dompet</Link></div></div> : <TransactionForm key={editing?.id || 'new'} accounts={accounts} categories={categories} editing={editing} onCancelEdit={close} onDelete={editing ? () => removeTransaction(close) : undefined} onSaved={transaction => saved(transaction, close)} />}
         </div>

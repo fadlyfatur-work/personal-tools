@@ -1,0 +1,56 @@
+{
+  "mandiri": {
+    "site": "https://www.bankmandiri.co.id",
+    "url": "https://www.bankmandiri.co.id/o/mandiri-corporate-theme/images/favicon.ico",
+    "contentType": "image/x-icon",
+    "path": "/fintrack/providers/mandiri.png"
+  },
+  "dana": {
+    "site": "https://www.dana.id",
+    "url": "https://www.dana.id/favicon.ico",
+    "contentType": "image/x-icon",
+    "path": "/fintrack/providers/dana.png"
+  },
+  "gopay": {
+    "site": "https://gopay.co.id",
+    "url": "https://gopay-website.al-gp-id-p.cdn.gtflabs.io/assets/img/homepage/apple-touch-icon.png",
+    "contentType": "image/png",
+    "path": "/fintrack/providers/gopay.png"
+  },
+  "bca": {
+    "site": "https://www.bca.co.id",
+    "url": "https://www.bca.co.id/homepage/assets/images/favicon-bca.png?v=202610131615",
+    "contentType": "image/png",
+    "path": "/fintrack/providers/bca.png"
+  },
+  "shopeepay": {
+    "site": "https://shopeepay.co.id",
+    "url": "https://www.google.com/s2/favicons?domain=shopeepay.co.id&sz=128",
+    "contentType": "image/png",
+    "path": "/fintrack/providers/shopeepay.png"
+  },
+  "bri": {
+    "site": "https://bri.co.id",
+    "url": "https://www.google.com/s2/favicons?domain=bri.co.id&sz=128",
+    "contentType": "image/png",
+    "path": "/fintrack/providers/bri.png"
+  },
+  "bsi": {
+    "site": "https://www.bankbsi.co.id",
+    "url": "https://www.google.com/s2/favicons?domain=www.bankbsi.co.id&sz=128",
+    "contentType": "image/png",
+    "path": "/fintrack/providers/bsi.png"
+  },
+  "bni": {
+    "site": "https://www.bni.co.id",
+    "url": "https://www.google.com/s2/favicons?domain=www.bni.co.id&sz=128",
+    "contentType": "image/png",
+    "path": "/fintrack/providers/bni.png"
+  },
+  "ovo": {
+    "site": "https://www.ovo.id",
+    "url": "https://www.ovo.id/ovo_front_res/favicon.png",
+    "contentType": "image/png",
+    "path": "/fintrack/providers/ovo.png"
+  }
+}
