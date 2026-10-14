@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { FintrackProvider } from './components/fintrack-provider'
 import { ConnectivityGate } from './components/connectivity-gate'
 import './fintrack-mobile.css'
+import './revamp.css'
 
 export const metadata: Metadata = {
   title: 'FinTrack | Keuangan yang terasa ringan',

@@ -1,22 +1,13 @@
-import { Bank, Coins, CreditCard, HandCoins, PiggyBank, Wallet } from '@phosphor-icons/react'
+import { ProviderIcon } from './provider-icon'
+import { walletProviders } from '@/lib/fintrackProviders'
 import type { Account } from '@/types/fintrack'
 
-const icons = {
-  cash: Wallet,
-  bank: Bank,
-  ewallet: CreditCard,
-  emergency_fund: PiggyBank,
-  investment: Coins,
-  debt: CreditCard,
-  receivable: HandCoins,
-}
-
 export function AccountCard({ account, selected = false, onClick }: { account: Account; selected?: boolean; onClick?: () => void }) {
-  const Icon = icons[account.kind] || Wallet
+  const provider = walletProviders.find(item => item.code === account.provider_code)
   const content = <>
-      <div className="ft-account-icon"><Icon size={18} weight="fill" /></div>
+      <div className="ft-account-top"><p className="ft-account-name">{account.name}</p><ProviderIcon account={account} /></div>
       <div>
-        <p className="ft-account-name">{account.name}</p>
+        <span className="ft-account-kind">{provider?.name || ({ cash: 'Tunai', bank: 'Rekening bank', ewallet: 'E-wallet', debt: 'Utang', investment: 'Investasi', emergency_fund: 'Dana darurat', receivable: 'Piutang' })[account.kind]}</span>
         <p className="ft-account-balance">{formatRupiah(account.current_balance)}</p>
         {account.access_role !== 'owner' && <div className="ft-shared-label">Dibagikan kepada Anda</div>}
       </div>

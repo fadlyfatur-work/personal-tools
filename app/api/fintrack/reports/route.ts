@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, Number(request.nextUrl.searchParams.get('page') || 1) || 1)
   const parentId = request.nextUrl.searchParams.get('parent_id')
   const categoryId = request.nextUrl.searchParams.get('category_id')
+  const date = request.nextUrl.searchParams.get('date')
+  if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date)) return NextResponse.json({ error: 'Tanggal tidak valid' }, { status: 400 })
   const search = (request.nextUrl.searchParams.get('q') || '').trim()
   if (search.length > 100) return NextResponse.json({ error: 'Pencarian maksimal 100 karakter' }, { status: 400 })
   const transactionType = request.nextUrl.searchParams.get('transaction_type')
@@ -35,8 +37,15 @@ export async function GET(request: NextRequest) {
       report.expense = report.expense.filter(matches)
     }
     const matchedTransactions = searchTransactionNotes(filteredTransactions, search)
+    const dayMap = new Map<string, { day: string; income: boolean; expense: boolean }>()
+    for (const transaction of matchedTransactions) {
+      const day = dayMap.get(transaction.transaction_date) || { day: transaction.transaction_date, income: false, expense: false }
+      if (transaction.type !== 'transfer') day[transaction.type] = true
+      dayMap.set(day.day, day)
+    }
+    const selectedTransactions = date ? matchedTransactions.filter(item => item.transaction_date === date) : matchedTransactions
     const pageSize = 10, offset = (page - 1) * pageSize
-    const paged = { ...report, transactions: matchedTransactions.slice(offset, offset + pageSize), transaction_total: matchedTransactions.length, transaction_page: page, transaction_page_size: pageSize }
+    const paged = { ...report, calendar_days: [...dayMap.values()], transactions: selectedTransactions.slice(offset, offset + pageSize), transaction_total: selectedTransactions.length, transaction_page: page, transaction_page_size: pageSize }
     const data = includeTrendDetails ? paged : { ...paged, daily: [], weekly: [], trend_detail_loaded: false }
     return NextResponse.json({ data }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch {

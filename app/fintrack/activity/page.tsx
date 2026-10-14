@@ -1,16 +1,19 @@
 'use client'
 
+import { TransactionList } from '../components/transaction-list'
+import { ActivityCalendar } from '../components/activity-calendar'
 import { ReportGraphic } from '../components/report-chart'
 import { sortCategoryTree } from '@/lib/fintrackCategories'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowsLeftRight, CaretLeft, CaretRight, ChartDonut, CircleNotch, Funnel, MagnifyingGlass, Receipt } from '@phosphor-icons/react'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { CaretDown, CaretLeft, CaretRight, ChartDonut, CircleNotch, Funnel, MagnifyingGlass } from '@phosphor-icons/react'
 import { Header } from '../components/header'
 import { BottomNav } from '../components/bottom-nav'
 import { formatRupiah } from '../components/account-card'
 import { useFintrack } from '../components/fintrack-provider'
 import { fintrackRequest } from '@/lib/fintrackRequest'
-import { useQuery } from '@tanstack/react-query'
-import type { Category, FintrackReport, ReportSlice, Transaction } from '@/types/fintrack'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import type { FintrackReport, ReportSlice } from '@/types/fintrack'
 
 const reportColors = ['var(--ft-report-1)', 'var(--ft-report-2)', 'var(--ft-report-3)', 'var(--ft-report-4)', 'var(--ft-report-5)', 'var(--ft-report-6)']
 type TrendMode = 'weekly' | 'monthly'
@@ -27,14 +30,14 @@ function trendPoints(report: FintrackReport, mode: TrendMode): TrendPoint[] {
   return report.weekly
 }
 
-function ReportChart({ title, items, tone }: { title: string; items: ReportSlice[]; tone: 'income' | 'expense' }) {
+function ReportChart({ title, items, tone, onSelect }: { title: string; items: ReportSlice[]; tone: 'income' | 'expense'; onSelect: (id: string | null) => void }) {
   const [legendPage, setLegendPage] = useState(0)
   const total = items.reduce((sum, item) => sum + Number(item.amount), 0)
   const pageSize = 5
   const pageCount = Math.max(1, Math.ceil(items.length / pageSize))
   const safePage = Math.min(legendPage, pageCount - 1)
   const visibleItems = items.slice(safePage * pageSize, safePage * pageSize + pageSize)
-  return <article className="ft-report-card"><div className="ft-report-heading"><div><h2>{title}</h2><p>Transfer antar-dompet tidak dihitung.</p></div><strong className={tone === 'income' ? 'ft-positive' : 'ft-negative'}>{formatRupiah(total)}</strong></div>{items.length === 0 ? <div className="ft-empty ft-report-empty"><div><ChartDonut size={32} /><p>Belum ada data pada periode ini. Pilih periode atau dompet lain, atau catat transaksi lewat tombol tambah.</p></div></div> : <div className="ft-report-content"><ReportGraphic kind="pie" label={`${title} berdasarkan kategori`} data={items.map(item => ({ name: item.name, amount: Number(item.amount) }))} /><div className="ft-report-legend-column"><div className="ft-report-ranking">{visibleItems.map((item, index) => { const actualIndex = safePage * pageSize + index; const percentage = total ? Math.round(Number(item.amount) / total * 100) : 0; const value = item.category_id || '__none__'; return <div className="ft-rank" key={value}><span><i style={{ background: reportColors[actualIndex % reportColors.length] }} /><span>{item.emoji ? `${item.emoji} ` : ''}{item.name}</span><strong>{percentage}%</strong></span><small>{formatRupiah(item.amount)}</small><span className="ft-rank-track"><i style={{ width: `${percentage}%`, background: reportColors[actualIndex % reportColors.length] }} /></span></div> })}</div>{pageCount > 1 && <nav className="ft-legend-pagination" aria-label={`Kategori ${title.toLowerCase()}`}><button type="button" disabled={safePage === 0} onClick={() => setLegendPage((page) => Math.max(0, page - 1))} aria-label="Kategori sebelumnya"><CaretLeft size={15} /></button><span>{safePage + 1}/{pageCount}</span><button type="button" disabled={safePage === pageCount - 1} onClick={() => setLegendPage((page) => Math.min(pageCount - 1, page + 1))} aria-label="Kategori berikutnya"><CaretRight size={15} /></button></nav>}</div></div>}</article>
+  return <article className="ft-report-card"><div className="ft-report-heading"><div><h2>{title}</h2><p>Transfer antar-dompet tidak dihitung.</p></div><strong className={tone === 'income' ? 'ft-positive' : 'ft-negative'}>{formatRupiah(total)}</strong></div>{items.length === 0 ? <div className="ft-empty ft-report-empty"><div><ChartDonut size={32} /><p>Belum ada data pada periode ini. Pilih periode atau dompet lain, atau catat transaksi lewat tombol tambah.</p></div></div> : <div className="ft-report-content"><ReportGraphic kind="pie" label={`${title} berdasarkan kategori`} data={items.map(item => ({ name: item.name, amount: Number(item.amount) }))} onSelect={index => onSelect(items[index]?.category_id || null)} /><div className="ft-report-legend-column"><div className="ft-report-ranking">{visibleItems.map((item, index) => { const actualIndex = safePage * pageSize + index; const percentage = total ? Math.round(Number(item.amount) / total * 100) : 0; const value = item.category_id || '__none__'; return <button type="button" className="ft-rank" key={value} onClick={() => onSelect(item.category_id)}><span><i style={{ background: reportColors[actualIndex % reportColors.length] }} /><span>{item.emoji ? `${item.emoji} ` : ''}{item.name}</span><strong>{percentage}%</strong></span><small>{formatRupiah(item.amount)}</small><span className="ft-rank-track"><i style={{ width: `${percentage}%`, background: reportColors[actualIndex % reportColors.length] }} /></span></button> })}</div>{pageCount > 1 && <nav className="ft-legend-pagination" aria-label={`Kategori ${title.toLowerCase()}`}><button type="button" disabled={safePage === 0} onClick={() => setLegendPage((page) => Math.max(0, page - 1))} aria-label="Kategori sebelumnya"><CaretLeft size={15} /></button><span>{safePage + 1}/{pageCount}</span><button type="button" disabled={safePage === pageCount - 1} onClick={() => setLegendPage((page) => Math.min(pageCount - 1, page + 1))} aria-label="Kategori berikutnya"><CaretRight size={15} /></button></nav>}</div></div>}</article>
 }
 
 function ComparisonChart({ report }: { report: FintrackReport }) {
@@ -50,32 +53,34 @@ function TrendChart({ report, mode, pendingMode, loading, onModeChange }: { repo
   return <article className="ft-report-card"><div className="ft-report-heading"><div><h2>Tren {mode === 'monthly' ? 'bulanan' : 'mingguan'}</h2><p>{rangeLabel}</p></div><InlineSpinner active={pending || loading} label={loading ? 'Memuat detail tren' : 'Menerapkan pilihan tren'} /></div><div className="ft-trend-tabs" role="tablist" aria-label="Rentang tren">{([['weekly', 'Mingguan'], ['monthly', 'Bulanan']] as const).map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={pendingMode === value} data-active={pendingMode === value} data-pending={pending && pendingMode === value} onClick={() => onModeChange(value)}>{label}</button>)}</div><div data-updating={loading}>{points.length === 0 ? <div className="ft-empty ft-report-empty"><div><p>Belum ada transaksi pada rentang ini. Pilih rentang lain, atau catat transaksi lewat tombol tambah.</p></div></div> : <><ReportGraphic kind="area" label={`Tren ${mode === 'monthly' ? 'bulanan' : 'mingguan'}`} data={points.map(point => ({ name: point.label, income: point.income, expense: point.expense }))} /></>}</div></article>
 }
 
-function TransactionRows({ transactions, accountMap, categoryMap, emptyLabel, onEdit }: { transactions: Transaction[]; accountMap: Map<string, string>; categoryMap: Map<string, Category>; emptyLabel: string; onEdit: (transaction: Transaction) => void }) {
-  return <div className="ft-transaction-list">{transactions.length === 0 ? <div className="ft-empty"><div><Receipt size={34} /><p>{emptyLabel} Ubah periode atau filter di atas. Untuk catatan baru, gunakan tombol tambah transaksi.</p></div></div> : transactions.map((transaction) => {
-    const Icon = transaction.type === 'income' ? ArrowDown : transaction.type === 'expense' ? ArrowUp : ArrowsLeftRight
-    const accountId = transaction.type === 'income' ? transaction.to_account_id : transaction.from_account_id, category = transaction.category_id ? categoryMap.get(transaction.category_id) : null
-    const meta = [accountId ? accountMap.get(accountId) : null, new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${transaction.transaction_date}T00:00:00`))].filter(Boolean).join(' • ')
-    return <button type="button" className="ft-transaction-row ft-transaction-button" key={transaction.id} onClick={() => onEdit(transaction)}><span className={`ft-transaction-icon ${transaction.type}`}>{category?.emoji || <Icon size={17} weight="bold" />}</span><span className="ft-transaction-copy"><span className="ft-transaction-category">{category?.name || (transaction.type === 'transfer' ? 'Transfer' : 'Tanpa kategori')}</span><strong>{transaction.note || (transaction.type === 'income' ? 'Pemasukan' : transaction.type === 'expense' ? 'Pengeluaran' : 'Transfer antar-dompet')}</strong><span>{meta}</span></span><span className={`ft-transaction-amount ${transaction.type === 'income' ? 'ft-positive' : transaction.type === 'expense' ? 'ft-negative' : ''}`}>{transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : ''}{formatRupiah(transaction.amount)}</span></button>
-  })}</div>
-}
-
 function Pagination({ page, totalPages, total, busy, onPage }: { page: number; totalPages: number; total: number; busy: boolean; onPage: (page: number) => void }) {
   if (total <= 10) return null
   return <nav className="ft-pagination" aria-label="Halaman transaksi"><button type="button" disabled={busy || page <= 1} onClick={() => onPage(page - 1)} aria-label="Halaman sebelumnya"><CaretLeft size={16} /></button><span>Halaman <strong>{page}</strong> dari {totalPages}</span><button type="button" disabled={busy || page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Halaman berikutnya"><CaretRight size={16} /></button></nav>
 }
 
 export default function ActivityPage() {
+  return <Suspense fallback={<p role="status">Memuat aktivitas…</p>}><ActivityFromLink /></Suspense>
+}
+
+function ActivityFromLink() {
+  const params = useSearchParams()
+  return <ActivityContent key={params.toString()} initialMonth={params.get('month') || ''} initialCategory={params.get('parent_id') || '__all__'} initialSubcategory={params.get('category_id') || '__all__'} />
+}
+
+function ActivityContent({ initialMonth, initialCategory, initialSubcategory }: { initialMonth: string; initialCategory: string; initialSubcategory: string }) {
   const { data, user, accounts, categories, loading, openComposer } = useFintrack()
   const [view, setView] = useState<'transactions' | 'report'>('transactions')
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all')
-  const [month, setMonth] = useState('')
+  const [month, setMonth] = useState(/^\d{4}-(0[1-9]|1[0-2])$/.test(initialMonth) ? initialMonth : '')
   const [account, setAccount] = useState('__all__')
-  const [subcategory, setSubcategory] = useState('__all__')
-  const [category, setCategory] = useState('__all__')
+  const [selectedDate, setSelectedDate] = useState('')
+  const [reportTone, setReportTone] = useState<'expense' | 'income'>('expense')
+  const [subcategory, setSubcategory] = useState(initialSubcategory)
+  const [category, setCategory] = useState(initialCategory)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(initialCategory !== '__all__' || initialSubcategory !== '__all__')
   const [trendMode, setTrendMode] = useState<TrendMode>('monthly')
   const touchStart = useRef<number | null>(null)
   useEffect(() => {
@@ -90,6 +95,7 @@ export default function ActivityPage() {
   if (subcategory !== '__all__') params.set('category_id', subcategory)
   if (category === '__none__') params.set('category_id', category)
   if (view === 'transactions') {
+    if (selectedDate) params.set('date', selectedDate)
     if (filter !== 'all') params.set('transaction_type', filter)
     if (searchTerm) params.set('q', searchTerm)
   }
@@ -98,6 +104,7 @@ export default function ActivityPage() {
     queryKey: ['fintrack', 'activity', user?.id, queryString],
     enabled: Boolean(user && data),
     staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     queryFn: async () => {
@@ -107,25 +114,19 @@ export default function ActivityPage() {
       return body.data
     },
   })
-  const accountMap = useMemo(() => new Map(accounts.map(item => [item.id, item.name])), [accounts])
-  const categoryMap = useMemo(() => new Map(categories.map(item => [item.id, item])), [categories])
   if (loading || !data || !user) return <p role="status">Memuat aktivitas…</p>
   const report = reportQuery.data
-  const busy = reportQuery.isPending || (view === 'transactions' && search.trim() !== searchTerm)
+  const busy = reportQuery.isPending || reportQuery.isPlaceholderData || (view === 'transactions' && search.trim() !== searchTerm)
   const categoryOptions = sortCategoryTree(categories.filter(item => account === '__all__' || item.plan_id === accounts.find(wallet => wallet.id === account)?.plan_id))
   const activeFilters = Number(account !== '__all__') + Number(category !== '__all__') + Number(subcategory !== '__all__')
   const emptyLabel = accounts.length === 0 ? 'Belum ada dompet. Tambahkan dompet melalui Kelola.' : searchTerm ? `Tidak ada keterangan yang cocok dengan “${searchTerm}”.` : activeFilters || filter !== 'all' ? 'Tidak ada transaksi yang cocok dengan filter ini.' : 'Belum ada transaksi pada periode ini.'
   function selectMonth(value: string) {
     if (value > data!.report.month) return
-    setMonth(value); setPage(1)
+    setMonth(value); setSelectedDate(''); setPage(1)
   }
 
   return <main className="ft-container">
-    <Header user={user} eyebrow={labelMonth(data.report.month)} title="Aktivitas" />
-    <section className="ft-month-expense" aria-label="Pengeluaran bulan ini">
-      <div><span>Pengeluaran bulan ini</span><small>{labelMonth(data.report.month)} · {data.report.period_start} hingga {data.report.period_end}</small></div>
-      <strong>{formatRupiah(data.summary.expense)}</strong>
-    </section>
+    <Header user={user} eyebrow={labelMonth(data.report.month)} title={view === 'report' ? 'Laporan' : 'Aktivitas'} />
     <div className="ft-page-tabs" role="tablist" aria-label="Tampilan aktivitas">
       <button role="tab" aria-selected={view === 'transactions'} data-active={view === 'transactions'} onClick={() => { setView('transactions'); setPage(1) }}>Transaksi</button>
       <button role="tab" aria-selected={view === 'report'} data-active={view === 'report'} onClick={() => { setView('report'); setPage(1) }}>Laporan</button>
@@ -138,7 +139,7 @@ export default function ActivityPage() {
         touchStart.current = null
       }}>
         <button type="button" onClick={() => selectMonth(moveMonth(selectedMonth, -1))} aria-label="Bulan sebelumnya"><CaretLeft size={18} /></button>
-        <div><span>Periode</span><strong>{labelMonth(selectedMonth)}</strong>{report && <small>{report.period_start} hingga {report.period_end}</small>}</div>
+        <label className="ft-period-select"><span className="ft-sr-only">Periode laporan</span><select value={selectedMonth} onChange={event => selectMonth(event.target.value)}>{Array.from({ length: 36 }, (_, index) => moveMonth(data.report.month, -index)).map(value => <option key={value} value={value}>{labelMonth(value)}</option>)}</select></label>
         <button type="button" disabled={selectedMonth >= data.report.month} onClick={() => selectMonth(moveMonth(selectedMonth, 1))} aria-label="Bulan berikutnya"><CaretRight size={18} /></button>
       </div>
       {view === 'transactions' ? <>
@@ -150,16 +151,17 @@ export default function ActivityPage() {
           <div className="ft-report-filter"><label htmlFor="transaction-account">Dompet</label><select id="transaction-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>
           <div className="ft-report-filter"><label htmlFor="transaction-category">Kategori</label><select id="transaction-category" className="ft-input" value={category} onChange={event => { setCategory(event.target.value); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua kategori</option><option value="__none__">Tanpa kategori</option>{categoryOptions.filter(item => !item.parent_id).map(item => <option key={item.id} value={item.id}>{item.emoji ? `${item.emoji} ` : ''}{item.name}</option>)}</select></div>
         </div>
-      </> : <div className="ft-report-filter"><label htmlFor="report-account">Dompet</label><select id="report-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div>}
-      {view === 'report' && <div className="ft-report-filter"><label htmlFor="report-category">Kategori induk</label><select id="report-category" className="ft-input" value={category} onChange={event => { setCategory(event.target.value); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua kategori induk</option>{categoryOptions.filter(item => !item.parent_id).map(item => <option key={item.id} value={item.id}>{item.emoji} {item.name}</option>)}</select><small>Pilih induk untuk melihat rincian subkategori.</small></div>}
-      {categoryOptions.some(item => item.parent_id === category) && (view === 'report' || filtersOpen) && <div className="ft-report-filter"><label htmlFor="activity-subcategory">Subkategori</label><select id="activity-subcategory" className="ft-input" value={subcategory} onChange={event => { setSubcategory(event.target.value); setPage(1) }}><option value="__all__">Semua subkategori</option>{categoryOptions.filter(item => item.parent_id === category).map(item => <option key={item.id} value={item.id}>{item.emoji} {item.name}</option>)}</select></div>}
+      </> : <div className="ft-report-controls"><button type="button" className="ft-button ft-button-secondary" aria-expanded={filtersOpen} aria-controls="report-filter-panel" onClick={() => setFiltersOpen(!filtersOpen)}><Funnel size={18} aria-hidden="true" /><span>Filter dompet & kategori{activeFilters > 0 && ` (${activeFilters})`}</span><CaretDown size={16} aria-hidden="true" /></button><div id="report-filter-panel" hidden={!filtersOpen} className="ft-report-filter"><label htmlFor="report-account">Dompet</label><select id="report-account" className="ft-input" value={account} onChange={event => { setAccount(event.target.value); setCategory('__all__'); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua dompet</option>{accounts.map(item => <option key={item.id} value={item.id}>{item.name}{item.access_role !== 'owner' ? ' (dibagikan)' : ''}</option>)}</select></div></div>}
+      {view === 'report' && filtersOpen && <div className="ft-report-filter"><label htmlFor="report-category">Kategori induk</label><select id="report-category" className="ft-input" value={category} onChange={event => { setCategory(event.target.value); setSubcategory('__all__'); setPage(1) }}><option value="__all__">Semua kategori induk</option>{categoryOptions.filter(item => !item.parent_id).map(item => <option key={item.id} value={item.id}>{item.emoji} {item.name}</option>)}</select><small>Pilih induk untuk melihat rincian subkategori.</small></div>}
+      {categoryOptions.some(item => item.parent_id === category) && filtersOpen && <div className="ft-report-filter"><label htmlFor="activity-subcategory">Subkategori</label><select id="activity-subcategory" className="ft-input" value={subcategory} onChange={event => { setSubcategory(event.target.value); setPage(1) }}><option value="__all__">Semua subkategori</option><option value={category}>Langsung ke induk</option>{categoryOptions.filter(item => item.parent_id === category).map(item => <option key={item.id} value={item.id}>{item.emoji} {item.name}</option>)}</select></div>}
     </div>
+    {view === 'transactions' && report && <><section className="ft-flow-summary"><div><span>Pengeluaran periode</span><strong>{formatRupiah(report.expense.reduce((sum, item) => sum + item.amount, 0))}</strong></div><div><span>Pemasukan periode</span><strong className="ft-positive">{formatRupiah(report.income.reduce((sum, item) => sum + item.amount, 0))}</strong></div></section><ActivityCalendar key={`${report.period_start}-${report.period_end}`} start={report.period_start} end={report.period_end} days={report.calendar_days || []} selected={selectedDate} onSelect={day => { setSelectedDate(day); setPage(1) }} /></>}
     {reportQuery.error && <div className="ft-inline-message ft-error" role="alert"><p>{reportQuery.error.message}</p><button type="button" className="ft-button ft-button-secondary" onClick={() => void reportQuery.refetch()}>Coba lagi</button></div>}
     {view === 'transactions' && <div className="ft-sub-tabs" role="tablist" aria-label="Filter transaksi">{([['all', 'Semua'], ['income', 'Pemasukan'], ['expense', 'Pengeluaran']] as const).map(([value, label]) => <button key={value} role="tab" aria-selected={filter === value} data-active={filter === value} onClick={() => { setFilter(value); setPage(1) }}>{label}</button>)}</div>}
     {busy ? <p className="ft-hint" role="status">Memuat aktivitas…</p> : report && (view === 'transactions' ? <section className="ft-tab-panel">
-      <div className="ft-card ft-transactions"><TransactionRows transactions={report.transactions} accountMap={accountMap} categoryMap={categoryMap} emptyLabel={emptyLabel} onEdit={openComposer} /></div>
+      <div className="ft-card ft-transactions"><TransactionList transactions={report.transactions} accounts={accounts} categories={categories} emptyLabel={emptyLabel} onEdit={openComposer} /></div>
       <Pagination page={report.transaction_page} totalPages={Math.max(1, Math.ceil(report.transaction_total / report.transaction_page_size))} total={report.transaction_total} busy={busy} onPage={setPage} />
-    </section> : <section className="ft-tab-panel ft-report-list"><ComparisonChart report={report} /><TrendChart report={report} mode={trendMode} pendingMode={trendMode} loading={false} onModeChange={setTrendMode} /><ReportChart title="Pengeluaran" items={report.expense} tone="expense" /><ReportChart title="Pemasukan" items={report.income} tone="income" /></section>)}
+    </section> : <section className="ft-tab-panel ft-report-list"><div className="ft-report-kind"><label htmlFor="report-kind">Tampilkan</label><select id="report-kind" className="ft-input" value={reportTone} onChange={event => setReportTone(event.target.value as 'expense' | 'income')}><option value="expense">Pengeluaran</option><option value="income">Pemasukan</option></select></div>{category !== '__all__' && <button type="button" className="ft-text-link" onClick={() => { setCategory('__all__'); setSubcategory('__all__') }}>Semua kategori › {categories.find(item => item.id === category)?.name}</button>}<ReportChart title={reportTone === 'expense' ? 'Pengeluaran' : 'Pemasukan'} items={report[reportTone]} tone={reportTone} onSelect={id => { if (!id) { setCategory('__none__'); setSubcategory('__all__'); return } if (category === '__all__') setCategory(id); else if (id !== category) setSubcategory(id); setPage(1) }} /><TrendChart report={report} mode={trendMode} pendingMode={trendMode} loading={false} onModeChange={setTrendMode} /><ComparisonChart report={report} /></section>)}
     <BottomNav />
   </main>
 }

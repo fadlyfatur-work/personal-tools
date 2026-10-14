@@ -46,3 +46,6 @@ DESIGN.md
 CLAUDE.md
 
 /anti-slop
+
+# Local browser audit artifacts
+.playwright-cli/

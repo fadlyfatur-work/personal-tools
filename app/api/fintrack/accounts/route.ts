@@ -1,9 +1,13 @@
+import { validProvider, walletProviders } from '@/lib/fintrackProviders'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getOwnedPlanId, requireFintrackIdentity } from '@/lib/fintrackUser'
 
+export const dynamic = 'force-dynamic'
+
 const accountSchema = z.object({
+  provider_code: z.string().refine(value => walletProviders.some(item => item.code === value), 'Penyedia tidak valid').nullable().optional(),
   name: z.string().trim().min(1).max(60),
   kind: z.enum(['cash', 'bank', 'ewallet', 'emergency_fund', 'investment', 'debt', 'receivable']),
   initial_balance: z.number().finite().default(0),
@@ -43,6 +47,7 @@ export async function POST(req: NextRequest) {
   const parsed = accountSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
 
+  if (!validProvider(parsed.data.provider_code, parsed.data.kind)) return NextResponse.json({ error: 'Penyedia tidak sesuai jenis dompet' }, { status: 400 })
   const planId = await getOwnedPlanId(auth.identity.id)
   if (!planId) return NextResponse.json({ error: 'Rencana pribadi belum tersedia' }, { status: 409 })
     const classification = parsed.data.kind === 'debt' ? 'liability' : 'asset'
@@ -51,6 +56,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabaseAdmin.from('fintrack_accounts').insert({
     plan_id: planId,
     name: parsed.data.name,
+    provider_code: parsed.data.provider_code || null,
     kind: parsed.data.kind,
     classification,
     initial_balance: parsed.data.initial_balance,

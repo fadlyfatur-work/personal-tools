@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T00:00:00Z",
+  "title": "Design System: FinTrack",
+  "extensions": {
+    "scope": "app/fintrack",
+    "designDocument": "app/fintrack/DESIGN.md",
+    "sourceStyles": ["app/fintrack/fintrack-mobile.css", "app/fintrack/revamp.css"],
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Ocean", "tonalRamp": ["oklch(15% 0.08 260)", "oklch(27% 0.08 260)", "oklch(38% 0.08 260)", "oklch(50% 0.08 260)", "oklch(61% 0.08 260)", "oklch(73% 0.08 260)", "oklch(84% 0.08 260)", "oklch(95% 0.08 260)"] }
+    },
+    "shadows": [
+      { "name": "navigation", "value": "0 12px 32px rgb(13 27 50 / .18)", "purpose": "Memisahkan navigasi mengambang dari konten." },
+      { "name": "wallet", "value": "0 8px 18px rgb(18 68 127 / .16)", "purpose": "Menegaskan kartu dompet sebagai objek keuangan." },
+      { "name": "sheet", "value": "0 -16px 46px rgb(0 0 0 / .18)", "purpose": "Memisahkan dialog dari layar dasar." }
+    ],
+    "motion": [
+      { "name": "press", "value": "scale(.98)", "purpose": "Umpan balik tekan; ditiadakan saat reduced motion." },
+      { "name": "page-entry", "value": "260ms cubic-bezier(.16, 1, .3, 1)", "purpose": "Transisi halaman yang diwarisi; ditiadakan saat reduced motion." },
+      { "name": "control-feedback", "value": "transform 150ms ease, opacity 150ms ease", "purpose": "Umpan balik fisik; warna teks dan permukaan berubah bersamaan saat pergantian tema." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "359px" }
+    ],
+    "safeArea": { "contentBottom": "calc(142px + env(safe-area-inset-bottom))", "navigationBottom": "max(18px, env(safe-area-inset-bottom))" },
+    "mobileCanvas": { "maxWidth": "430px", "width": "min(100%, var(--ft-mobile-width))", "navigationMaxWidth": "402px", "modalMaxWidth": "430px", "layout": "centered single-column mobile at every viewport", "wallets": "horizontal carousel", "responsiveTypographyUnit": "cqw" },
+    "provenance": "public/fintrack/providers/sources.json",
+    "previewNote": "Snippet panel merupakan pratinjau visual; tidak tersambung ke data atau tindakan aplikasi."
+  },
+  "components": [
+    {
+      "name": "Tombol utama", "kind": "button", "refersTo": "button-primary", "description": "Tindakan utama dengan fokus jelas.",
+      "html": "<button class=\"ds-primary\">Simpan perubahan</button>",
+      "css": ".ds-primary{background:var(--ft-primary,#1565d8);color:#fff;border:0;border-radius:14px;min-height:46px;padding:12px 18px;font:500 13px Arial,sans-serif}.ds-primary:hover{background:var(--ft-primary-strong,#104dad)}.ds-primary:focus-visible{outline:2px solid var(--ft-primary,#1565d8);outline-offset:4px}.ds-primary:active{transform:scale(.98)}@media(prefers-reduced-motion:reduce){.ds-primary:active{transform:none}}"
+    },
+    {
+      "name": "Input nominal", "kind": "input", "refersTo": "input", "description": "Input formulir dengan stroke netral.",
+      "html": "<label>Saldo awal <input class=\"ds-input\" inputmode=\"numeric\" value=\"1.500.000\"></label>",
+      "css": ".ds-input{display:block;border:1px solid var(--ft-border,#dce3ec);border-radius:14px;background:var(--ft-surface,#fff);color:var(--ft-text,#17212f);min-height:46px;padding:0 14px;font:14px Arial,sans-serif}.ds-input:hover{border-color:var(--ft-muted,#566476)}.ds-input:focus-visible{outline:2px solid var(--ft-primary,#1565d8);outline-offset:4px}"
+    },
+    {
+      "name": "Filter periode", "kind": "chip", "description": "Pil untuk pilihan periode.",
+      "html": "<select class=\"ds-filter\" aria-label=\"Periode laporan\"><option>Oktober 2026</option><option>September 2026</option></select>",
+      "css": ".ds-filter{border:1px solid var(--ft-border,#dce3ec);border-radius:28px;min-height:46px;padding:12px 18px;background:var(--ft-surface,#fff);color:var(--ft-text,#17212f);font:13px Arial,sans-serif}.ds-filter:hover{border-color:var(--ft-muted,#566476)}.ds-filter:focus-visible{outline:2px solid var(--ft-primary,#1565d8);outline-offset:4px}"
+    },
+    {
+      "name": "Navigasi mengambang", "kind": "nav", "description": "Kapsul navigasi dengan pilihan aktif.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-current\" href=\"/fintrack\">Beranda</a><a href=\"/fintrack/activity\">Aktivitas</a><a href=\"/fintrack/goals\">Target</a></nav>",
+      "css": ".ds-nav{display:flex;gap:8px;padding:8px;border-radius:34px;background:var(--ft-surface,#fff);box-shadow:0 12px 32px rgb(13 27 50 / .18)}.ds-nav a{display:flex;align-items:center;min-height:58px;padding:0 16px;border-radius:26px;font:12px Arial,sans-serif;color:var(--ft-muted,#566476);text-decoration:none}.ds-nav .ds-current,.ds-nav a:hover{background:var(--ft-primary-soft,#e2edff);color:var(--ft-primary,#1565d8)}.ds-nav a:focus-visible{outline:2px solid var(--ft-primary,#1565d8);outline-offset:4px}"
+    },
+    {
+      "name": "Kartu laporan", "kind": "card", "refersTo": "report-card", "description": "Permukaan datar untuk laporan dan ranking.",
+      "html": "<article class=\"ds-report\"><h2>Pengeluaran</h2><p>Belum ada data pada periode ini.</p></article>",
+      "css": ".ds-report{padding:22px;border-radius:24px;background:var(--ft-surface,#fff);color:var(--ft-text,#17212f);font:14px Arial,sans-serif}.ds-report h2{font-size:20px;font-weight:550}.ds-report p{color:var(--ft-muted,#566476)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Keuangan dalam genggaman",
+    "overview": "FinTrack adalah aplikasi keuangan pribadi dengan tampilan mobile pada semua ukuran viewport. Kekayaan bersih menjadi angka utama; dompet, transaksi, budget kategori, dan target tabungan membantu menjelaskan perubahan angka tersebut. Semua teks antarmuka memakai bahasa Indonesia.",
+    "keyCharacteristics": ["Angka keuangan menjadi pusat perhatian.", "Permukaan tenang dengan aksen Ocean.", "Daftar dikelompokkan menurut tanggal agar mudah dipindai."],
+    "rules": [
+      { "name": "The Preference Rule", "body": "Ocean adalah palet awal. Pilihan Forest, Earth, serta mode terang atau gelap yang sudah tersimpan harus tetap dihormati.", "section": "colors" },
+      { "name": "The Wallet Gradient Rule", "body": "Gradien hanya digunakan pada kartu dompet sebagai penanda objek keuangan. Laporan, daftar transaksi, pengaturan, dan budget menggunakan permukaan datar.", "section": "colors" },
+      { "name": "The Mobile Canvas Rule", "body": "Semua viewport memakai satu kanvas mobile yang terpusat, dengan `--ft-mobile-width: 430px` dan lebar `min(100%, var(--ft-mobile-width))`. Tablet dan desktop mempertahankan susunan mobile yang sama. Dashboard tetap satu kolom dan dompet tetap carousel horizontal.", "section": "layout" }
+    ],
+    "dos": ["Do pertahankan pilihan tema dan palet tersimpan.", "Do tampilkan kekayaan bersih sebagai angka utama.", "Do sediakan status kosong, memuat, error, serta fokus keyboard.", "Do batasi gradien pada kartu dompet.", "Do pertahankan kanvas mobile pada setiap ukuran viewport."],
+    "donts": ["Don't gunakan merek penyedia tanpa pilihan pengguna.", "Don't ubah aturan Goals, budget, atau saldo demi tampilan.", "Don't menutupi konten terakhir dengan navigasi mengambang."]
+  }
+}
