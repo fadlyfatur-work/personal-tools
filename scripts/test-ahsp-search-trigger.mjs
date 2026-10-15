@@ -14,6 +14,8 @@ const clipboardWrites = []
 let clipboardFailure = false
 let catalogueFailure = false
 const sampleItem = { id: 'job-1', code: '1.22.(7a)', name: 'Rambu Petunjuk', field: 'SMKK', division: 'Komponen 7', unit: 'Buah', ahsp_type: 'Informatif', regulation: 'SE 47/2026', sipasti_status: 'both', analysis_status: 'extracted', source_id: null, page_from: 43, page_to: 43, components: [], output_quantity: 1, overhead_min: 0, overhead_max: 0 }
+const sampleLegacyVersion = { ...sampleItem, id: 'job-legacy', code: '', unit: 'bh', regulation: 'PERMEN 08/2023', ahsp_type: 'Normatif', analysis_status: 'unavailable', sipasti_status: 'sipasti_only', page_from: null, page_to: null }
+sampleItem.versions = [{ ...sampleItem }, sampleLegacyVersion]
 const sampleSources = [{ id: '10899', title: 'SMKK SE 47/2026', annex: 'Lampiran V', url: 'https://example.test/se47' }, { id: 'permen08-2023', title: 'Permen 8/2023', annex: 'Pedoman dasar', url: 'https://example.test/permen08' }]
 let sampleReferenceTarget = null, sampleReferenceReady = false
 const react = {
@@ -51,7 +53,8 @@ vm.runInNewContext(compile('app/ahsp/catalog.tsx'), {
   fetch: async url => {
     requests.push(new URL(url, 'http://localhost').searchParams)
     if (catalogueFailure) return { ok: false, json: async () => ({ error: 'Katalog gagal dimuat untuk uji.' }) }
-    return { ok: true, json: async () => ({ item: sampleItem, reference_target: sampleReferenceTarget, reference_ready: sampleReferenceReady, items: [sampleItem], total: 42, search_stats: { input_count: 0 }, options: { total: 6129, sources: sampleSources, fields: ['SMKK', 'Umum'], field_counts: [{ field: 'SMKK', count: 149 }, { field: 'Umum', count: 249 }], divisions: [], units: ['Buah'] } }) }
+    const legacy = new URL(url, 'http://localhost').searchParams.get('id') === 'job-legacy'
+    return { ok: true, json: async () => ({ item: legacy ? sampleLegacyVersion : sampleItem, reference_target: legacy ? null : sampleReferenceTarget, reference_ready: legacy ? false : sampleReferenceReady, items: [sampleItem], total: 42, search_stats: { input_count: 0 }, options: { total: 6129, version_total: 11541, sources: sampleSources, fields: ['SMKK', 'Umum'], field_counts: [{ field: 'SMKK', count: 149 }, { field: 'Umum', count: 249 }], divisions: [], units: ['Buah'] } }) }
   },
 })
 const render = () => { stateIndex = 0; effectIndex = 0; return catalogModule.exports.default() }
@@ -137,8 +140,41 @@ await drain(); tree = render()
 assert.equal(requests.length, 7)
 assert.equal(requests.at(-1).get('q'), 'Rambu', 'Submitting a single search does not restore old advanced terms, even while the advanced panel is visible')
 assert.equal(requests.at(-1).get('scope'), 'jobs')
+button(tree, 'Pencarian lanjutan').props.onClick(); tree = render()
+button(tree, 'Gabungan frasa').props.onClick(); tree = render()
+assert.equal(button(tree, 'Gabungan frasa').props['aria-pressed'], true)
+assert.ok(find(tree, node => node.type === 'textarea').props.placeholder.includes('"Alat Berat"'))
+const requestsBeforePhrases = requests.length
+find(tree, node => node.type === 'textarea').props.onChange({ target: { value: '"Excavator" "EXCAVATOR"' } }); tree = render()
+button(tree, 'Cari').props.onClick(); tree = render(); await drain(); tree = render()
+assert.equal(requests.length, requestsBeforePhrases, 'Fewer than two distinct phrases keeps the draft open without a request')
+assert.equal(find(tree, node => node.type === 'textarea').props['aria-invalid'], true)
+assert.ok(text(find(tree, node => node.props.id === 'ahsp-search-validation')).includes('minimal 2 frasa'))
+find(tree, node => node.type === 'textarea').props.onChange({ target: { value: '"Mobilisasi dan Demobilisasi" "Alat Berat" "Excavator"' } }); tree = render()
+assert.equal(find(tree, node => node.type === 'textarea').props['aria-invalid'], false)
+assert.ok(text(find(tree, node => node.props.id === 'ahsp-match-help')).includes('minimal 2 frasa'))
+button(tree, 'Cari 3 frasa').props.onClick(); tree = render(); await drain(); tree = render()
+assert.equal(requests.at(-1).get('match'), 'phrases')
+assert.equal(requests.at(-1).get('scope'), 'jobs')
+assert.equal(requests.at(-1).get('mode'), 'multiple')
+button(tree, 'Berikutnya').props.onClick(); tree = render(); await drain(); tree = render()
+assert.equal(requests.at(-1).get('page'), '2')
+assert.equal(requests.at(-1).get('match'), 'phrases')
+button(tree, 'Reset pencarian').props.onClick(); tree = render(); await drain(); tree = render()
+assert.equal(requests.at(-1).get('match'), 'like')
 const dialog = find(tree, node => node.type === 'dialog').props.ref
 dialog.current = { open: false, showModal() { this.open = true }, close() { this.open = false } }
+assert.ok(nodes(tree).some(node => node.type === 'summary' && text(node) === 'Versi dan sumber lainnya (1)'))
+assert.equal(nodes(find(tree, node => node.props.className === 'itemList')).filter(node => node.props.className === 'item').length, 1, 'Versions remain inside one primary work row')
+const alternateVersion = find(tree, node => node.props['aria-label'] === 'Buka versi PERMEN 08/2023 tanpa kode SMKK bh: Rambu Petunjuk')
+alternateVersion.props.onClick(); tree = render()
+await new Promise(resolve => setImmediate(resolve)); tree = render()
+assert.equal(requests.at(-1).get('id'), 'job-legacy')
+assert.ok(text(find(tree, node => node.props.className === 'modalHeader')).includes('PERMEN 08/2023 / Satuan bh'))
+assert.ok(text(find(tree, node => node.props.className === 'analysisInfo')).includes('Analisis belum tersedia'))
+button(tree, 'Cara hitung dan lampiran').props.onClick(); tree = render()
+assert.equal(find(tree, node => node.type?.name === 'SourceReference').props.source.id, 'permen08-2023')
+button(tree, 'Tutup').props.onClick(); tree = render()
 assert.equal(nodes(tree).some(node => node.type === 'button' && nodes(node.props.children).some(child => child.type === 'button')), false, 'Copy controls are never nested inside the modal button')
 await find(tree, node => node.props['aria-label'] === 'Salin kode 1.22.(7a)').props.onClick(); tree = render()
 assert.equal(clipboardWrites.at(-1), '1.22.(7a)')
@@ -196,6 +232,25 @@ find(tree, node => node.props['aria-label'] === 'Buka analisis 1.22.(7a): Rambu 
 await new Promise(resolve => setImmediate(resolve)); tree = render()
 assert.ok(text(find(tree, node => node.props.className === 'referencePanel')).includes('Kalkulator belum memakai acuan ini'))
 assert.ok(text(find(tree, node => node.props.className === 'analysisInfo')).includes('Analisis perlu ditinjau'))
+button(tree, 'Tutup').props.onClick(); tree = render()
+sampleItem.regulation = 'SE 182/2025'
+sampleItem.analysis_reference = null
+sampleItem.analysis_status = 'unavailable'
+sampleReferenceTarget = null
+sampleReferenceReady = false
+field(tree, 'Regulasi').props.onChange({ target: { value: 'SE 182/2025' } }); tree = render(); await drain(); tree = render()
+assert.equal(requests.at(-1).get('regulation'), 'SE 182/2025')
+assert.ok(nodes(field(tree, 'Regulasi')).some(node => node.type === 'option' && node.props.value === 'SE 182/2025' && text(node).includes('(arsip)')))
+assert.ok(text(find(tree, node => node.props.className === 'state')).includes('Digantikan oleh SE 47/2026'))
+find(tree, node => node.props['aria-label'] === 'Buka analisis 1.22.(7a): Rambu Petunjuk').props.onClick(); tree = render()
+await new Promise(resolve => setImmediate(resolve)); tree = render()
+assert.ok(text(find(tree, node => node.props.className === 'modalHeader')).includes('Digantikan oleh SE 47/2026. Data ini merupakan arsip regulasi.'))
+assert.ok(text(find(tree, node => node.props.className === 'analysisInfo')).includes('Analisis belum tersedia'))
+button(tree, 'Cara hitung dan lampiran').props.onClick(); tree = render()
+assert.equal(find(tree, node => node.type?.name === 'SourceReference').props.source, undefined, 'An archived master item cannot fall back to a latest-edition PDF')
+button(tree, 'Tutup').props.onClick(); tree = render()
+sampleItem.regulation = 'SE 47/2026'
+sampleItem.analysis_status = 'extracted'
 for (const effect of effects) effect?.cleanup?.()
 states.length = 0; effects.length = 0; jobs.length = 0; requests.length = 0
 catalogueFailure = true

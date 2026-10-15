@@ -1,5 +1,8 @@
 export const AHSP_REGULATION = 'SE 47/2026'
 export const AHSP_ACTIVE_REGULATIONS = ['SE 47/2026', 'PERMEN 08/2023']
+export const AHSP_ARCHIVED_REGULATION = 'SE 182/2025'
+export const AHSP_CATALOG_REGULATIONS = [...AHSP_ACTIVE_REGULATIONS, AHSP_ARCHIVED_REGULATION]
+export const AHSP_ARCHIVE_NOTICE = 'Digantikan oleh SE 47/2026'
 export const sipastiLabels = { database_only: 'Hanya ada di Database', sipasti_only: 'Hanya ada di SIPASTI', both: 'Verfied' } as const
 export const reconciliationLabels: Record<string, string> = {
   cocok: 'Cocok', berbeda: 'Berbeda', belum_ditemukan: 'Belum ditemukan',
@@ -25,6 +28,8 @@ export type AhspAnalysisReference = {
   status: 'verified' | 'review' | 'missing'; source_id: string; source_page: number; citation: string;
   notes: string[]; source_fingerprint?: string; target_fingerprint?: string;
 }
+export type AhspVersion = Pick<AhspItem, 'id' | 'code' | 'name' | 'unit' | 'field' | 'division' | 'regulation' | 'ahsp_type' | 'analysis_status' | 'source_id' | 'page_from' | 'page_to' | 'sipasti_status' | 'analysis_reference'>
+export type AhspSummary = AhspVersion & { matched_components?: string[]; versions?: AhspVersion[] }
 export function ahspAnalysisFingerprint(item: AhspItem) {
   return JSON.stringify([item.id, item.code, item.name, item.unit, item.regulation, item.source_id, item.page_from, item.page_to,
     item.analysis_status, item.output_quantity, item.overhead_min, item.overhead_max,
@@ -38,7 +43,7 @@ export function canUseAhspReference(item: AhspItem, target: AhspItem | null) {
 }
 export type AhspSource = { id: string; title: string; annex: string; url: string; page_count: number; checked_at: string; sha256: string; assets: { url: string; page_start: number; page_end: number; preview_base_url?: string }[] }
 export type AhspOptions = {
-  total: number; fields: string[]; divisions: { field: string; division: string }[];
+  total: number; version_total?: number; fields: string[]; divisions: { field: string; division: string }[];
   units: string[]; statuses: { status: string; count: number }[];
   analysis: { status: string; count: number }[]; sources: AhspSource[];
   types?: AhspTypeCount[];
@@ -48,7 +53,7 @@ export type AhspTypeCount = { type: string; count: number }
 export type AhspSearchStats = {
   input_count: number; found_terms: number; exact_found_terms: number; like_found_terms: number;
   exact_total: number; like_total: number; filtered_catalog_total: number; catalog_total: number;
-  terms: { term: string; exact_count: number; like_count: number }[]; match: 'like' | 'exact';
+  terms: { term: string; exact_count: number; like_count: number }[]; match: 'like' | 'exact' | 'phrases';
 }
 export function ahspTypeLabel(type: string) { return type || 'Belum teridentifikasi' }
 export function formatAhspItemCopy(item: Pick<AhspItem, 'code' | 'name' | 'field' | 'division' | 'unit' | 'ahsp_type' | 'regulation' | 'page_from' | 'page_to'>, annex = '') {
@@ -58,15 +63,18 @@ export function formatAhspItemCopy(item: Pick<AhspItem, 'code' | 'name' | 'field
 }
 export type CalculationInput = { volume: number | null; overhead: number | null; prices: Record<string, number | null>; coefficients: Record<string, number | null> }
 
-export function parseAhspSearch(value: string): string[] {
+export function parseAhspSearch(value: string, match = 'like'): string[] {
   const terms: string[] = []
-  let current = ''; let depth = 0
+  let current = ''; let depth = 0; let quoted = false
+  if (match === 'phrases') value = value.replace(/[“”]/g, '"')
   const flush = () => { const term = current.replace(/\s+/g, ' ').trim(); if (term) terms.push(term); current = '' }
   for (let index = 0; index < value.length; index++) {
     const char = value[index]
+    if (match === 'phrases' && char === '"') { flush(); quoted = !quoted; continue }
+    if (quoted) { current += char; continue }
     if (char === '(') depth++
     if (char === ')') depth = Math.max(0, depth - 1)
-    if (char === '\n' || char === '\r' || char === '\\' || (depth === 0 && char === ';')) flush()
+    if (char === '\n' || char === '\r' || char === '\\' || (depth === 0 && (char === ';' || (match === 'phrases' && /\s/.test(char))))) flush()
     else current += char
   }
   flush()
@@ -76,6 +84,11 @@ export function parseAhspSearch(value: string): string[] {
     if (!unique.has(key)) unique.set(key, term)
   }
   return Array.from(unique.values())
+}
+
+export function ahspPhraseSearchError(value: string): string {
+  if ((value.match(/["“”]/g)?.length ?? 0) % 2) return 'Tutup setiap frasa dengan tanda kutip.'
+  return parseAhspSearch(value, 'phrases').length < 2 ? 'Masukkan minimal 2 frasa berbeda untuk Gabungan frasa.' : ''
 }
 
 export function parseAhspNumber(value: string): number | null {

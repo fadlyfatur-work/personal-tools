@@ -55,6 +55,8 @@
 .regulation strong { font-size:17px; }
 .context { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; border-top:1px solid var(--line); padding:12px 0; font-size:13px; }
 .context button { font-size:12px; }
+.page .mptkButton { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 14px; border:1px solid var(--action); border-radius:4px; background:var(--action); color:var(--actionInk); font-weight:600; text-decoration:none; }
+.page .mptkButton:hover { filter:brightness(.94); }
 .context select { width:auto; margin-left:auto; font-size:12px; }
 .sources { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:20px; margin-bottom:20px; }
 .sources p { margin-top:10px; }
@@ -82,7 +84,7 @@
 .itemList li+li { border-top:1px solid var(--line); }
 .page .item { position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px 16px; width:100%; text-align:left; padding:16px; border:0; border-radius:0; }
 .page .openItem { position:absolute; inset:0; width:100%; height:100%; padding:0; border:0; border-radius:0; background:transparent; }
-.item>span { position:relative; pointer-events:none; }
+.item>span,.item>.name { position:relative; pointer-events:none; }
 .page .textCopy { position:relative; pointer-events:auto; display:block; width:fit-content; max-width:100%; min-height:0; padding:0; border:0; background:transparent; text-align:left; font-weight:550; overflow-wrap:anywhere; cursor:copy; }
 .page .textCopy:hover:not(:disabled) { background:transparent; text-decoration:underline; text-underline-offset:3px; }
 .page .code .textCopy { font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; }
@@ -170,6 +172,13 @@
 .sipastiFilters legend { font-size:12px; font-weight:600; padding:0 8px 0 0; }
 .sipastiFilters p { margin-top:8px; max-width:80ch; }
 .page .sipastiTag { align-self:flex-start; color:var(--ink); background:var(--tint); border:1px solid var(--line); border-radius:4px; padding:2px 7px; font-weight:500; }
+.page .archiveTag { color:var(--warning); background:var(--warningBg); padding:4px 7px; border-radius:4px; overflow-wrap:anywhere; }
+.versions { min-width:0; pointer-events:auto; }
+.versions>summary { cursor:pointer; color:var(--action); font-size:12px; min-height:44px; padding:10px 0; overflow-wrap:anywhere; }
+.versionList { list-style:none; margin:0; padding:0; }
+.versionList>li { display:flex; flex-direction:column; align-items:flex-start; gap:5px; padding:12px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+.versionList strong { font-size:12px; }
+.page .versionList button { margin-top:4px; font-size:12px; }
 .page .fieldOptions button { border-radius:8px; padding:8px 12px; font-size:.8125rem; max-width:100%; min-width:0; white-space:normal; overflow-wrap:anywhere; text-align:left; background:var(--canvas); }
 .page .fieldOptions button[aria-pressed=true] { background:var(--action); border-color:var(--action); color:var(--actionInk); }
 .fieldFilters .searchHelp { margin-top:8px; }
@@ -187,10 +196,8 @@
 .refinementFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; min-width:0; }
 .refinementFields label:last-child { grid-column:1/-1; }
 .searchEntryHeader { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
-.matchMode { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.matchMode { display:flex; flex-wrap:wrap; gap:4px; }
 .page .matchMode button { font-size:.8125rem; padding:8px 12px; }
-.matchMode button:first-child { border-radius:4px 0 0 4px; }
-.matchMode button:last-child { border-radius:0 4px 4px 0; border-left:0; }
 .page .matchMode button[aria-pressed=true] { background:var(--action); color:var(--actionInk); border-color:var(--action); }
 .search .searchHelp { margin-top:6px; }
 .workspace {

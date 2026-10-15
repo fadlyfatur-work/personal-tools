@@ -58,6 +58,9 @@ assert.equal(calculateAhsp(smkk, { volume: 5, overhead: 10, prices: { smkk: 5000
 
 let calls = []
 let failure = null
+let phraseSupport = true
+let archiveSupport = true
+let groupSupport = true
 let result = { data: [], count: 0, error: null }
 const query = new Proxy({}, { get: (_, prop) => {
   if (prop === 'then') return resolve => resolve(failure ? { error: failure } : result)
@@ -65,15 +68,17 @@ const query = new Proxy({}, { get: (_, prop) => {
 } })
 const route = load('app/api/ahsp/route.ts', {
   zod: { z }, '@/lib/ahsp': core,
-  '@/lib/supabaseAdmin': { getSupabaseAdmin: () => ({ from: table => { calls.push(['from', table]); return query }, rpc: async (name, args) => { calls.push(['rpc', name, args]); return { data: name === 'ahsp_search_items' ? { items: [], total: 0, pageSize: 30 } : { fields: ['Umum', 'SMKK'] }, error: failure } } }) },
+  '@/lib/supabaseAdmin': { getSupabaseAdmin: () => ({ from: table => { calls.push(['from', table]); return query }, rpc: async (name, args) => { calls.push(['rpc', name, args]); return { data: name === 'ahsp_search_items' ? { items: [], total: 0, pageSize: 30, grouped_by_name: groupSupport, archive_supported: archiveSupport, search_stats: { match: phraseSupport ? args.p_match : undefined } } : { grouped_by_name: groupSupport, total: 5, version_total: 9, fields: ['Umum', 'SMKK'], field_counts: [{field:'Umum',count:3},{field:'SMKK',count:2}] }, error: failure } } }) },
 })
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?page=-1'))).status, 400)
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?id=invalid'))).status, 400)
 assert.equal(calls.length, 0, 'Invalid filters do not reach PostgreSQL')
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?q=galian'))).status, 200)
 const countedOptions = await (await route.GET(new Request('http://localhost/api/ahsp?options=1'))).json()
-assert.deepEqual(countedOptions.options.field_counts, [{ field: 'Umum', count: 0 }, { field: 'SMKK', count: 0 }], 'Field buttons use PostgreSQL exact counts, including zero')
-assert.ok(calls.some(call => call[0] === 'select' && call[2]?.head === true && call[2]?.count === 'exact'), 'Counts do not fetch complete catalogue rows')
+assert.deepEqual(countedOptions.options.field_counts, [{ field: 'Umum', count: 3 }, { field: 'SMKK', count: 2 }], 'Field buttons use unique-name counts from the grouped SQL options')
+assert.equal(countedOptions.options.total, 5)
+assert.equal(countedOptions.options.version_total, 9)
+assert.ok(!calls.some(call => call[0] === 'select' && call[2]?.head === true), 'Grouped counts are not replaced by raw version counts')
 assert.ok(calls.some(c => c[0] === 'rpc' && c[1] === 'ahsp_search_items' && c[2].p_terms[0] === 'galian'))
 await route.GET(new Request('http://localhost/api/ahsp'))
 assert.ok(calls.some(c => c[0] === 'rpc' && c[1] === 'ahsp_search_items' && c[2].p_terms.length === 0), 'Unfiltered lists use the same PostgreSQL result and summary calculation')
@@ -104,6 +109,39 @@ assert.equal(core.parseAhspSearch(searchExample)[0], 'Petugas pengatur lalu lint
 assert.deepEqual(Array.from(core.parseAhspSearch('Pekerja; PEKERJA\nBesi diameter 2,5 mm; Alat (kecil, sedang)')), ['Pekerja', 'Besi diameter 2,5 mm', 'Alat (kecil, sedang)'])
 assert.deepEqual(Array.from(core.parseAhspSearch('Beton, mutu K-250;Pekerja\\Mandor\r\nAlat (kecil; sedang)')), ['Beton, mutu K-250', 'Pekerja', 'Mandor', 'Alat (kecil; sedang)'], 'Keep comma-containing names whole and preserve the other delimiter rules')
 assert.deepEqual(Array.from(core.parseAhspSearch('Pekerja,Mandor')), ['Pekerja,Mandor'])
+const phraseInput = '"Mobilisasi dan Demobilisasi" "Alat Berat" "Excavator"'
+assert.deepEqual(Array.from(core.parseAhspSearch(phraseInput, 'phrases')), ['Mobilisasi dan Demobilisasi', 'Alat Berat', 'Excavator'])
+assert.deepEqual(Array.from(core.parseAhspSearch('“Alat   Berat”\n"ALAT BERAT"; Excavator', 'phrases')), ['Alat Berat', 'Excavator'], 'Normalize whitespace, smart quotes, and duplicate phrases')
+assert.deepEqual(Array.from(core.parseAhspSearch('Alat Berat "Excavator 20 ton"', 'phrases')), ['Alat', 'Berat', 'Excavator 20 ton'])
+assert.deepEqual(Array.from(core.parseAhspSearch('"Beton, mutu K-250" "Alat (kecil; sedang)"', 'phrases')), ['Beton, mutu K-250', 'Alat (kecil; sedang)'])
+assert.deepEqual(Array.from(core.parseAhspSearch(phraseInput)), [phraseInput], 'Existing match modes keep literal quotes and spaces')
+assert.equal(core.ahspPhraseSearchError(phraseInput), '')
+calls = []
+const phraseResponse = await route.GET(new Request(`http://localhost/api/ahsp?match=phrases&scope=components&q=${encodeURIComponent(phraseInput)}`))
+assert.equal(phraseResponse.status, 200)
+assert.equal((await phraseResponse.json()).search_stats.match, 'phrases')
+const phraseCall = calls.find(c => c[0] === 'rpc')[2]
+assert.deepEqual(Array.from(phraseCall.p_terms), ['Mobilisasi dan Demobilisasi', 'Alat Berat', 'Excavator'])
+assert.equal(phraseCall.p_match, 'phrases')
+assert.equal(phraseCall.p_scope, 'jobs', 'Phrase matches always use job names, irrespective of requested scope')
+for (const invalid of ['', '"Excavator"', '"Excavator" "EXCAVATOR"', '"Alat Berat" "Excavator']) {
+  calls = []
+  assert.equal((await route.GET(new Request(`http://localhost/api/ahsp?match=phrases&q=${encodeURIComponent(invalid)}`))).status, 400)
+  assert.equal(calls.length, 0, 'Invalid phrase searches do not reach the database')
+}
+phraseSupport = false
+assert.equal((await route.GET(new Request(`http://localhost/api/ahsp?match=phrases&q=${encodeURIComponent(phraseInput)}`))).status, 503, 'An unapplied migration cannot silently return Like-match results')
+phraseSupport = true
+calls = []
+assert.equal((await route.GET(new Request('http://localhost/api/ahsp?regulation=SE%20182%2F2025'))).status, 200)
+assert.equal(calls.find(c => c[0] === 'rpc')[2].p_regulation, 'SE 182/2025')
+assert.equal((await route.GET(new Request('http://localhost/api/ahsp?regulation=SE%20147%2F2025'))).status, 400)
+archiveSupport = false
+assert.equal((await route.GET(new Request('http://localhost/api/ahsp?regulation=SE%20182%2F2025'))).status, 503, 'Missing archive migration cannot appear as a successful empty catalogue')
+archiveSupport = true
+groupSupport = false
+assert.equal((await route.GET(new Request('http://localhost/api/ahsp?q=Papan'))).status, 503, 'An unapplied grouping migration cannot silently return duplicate names')
+groupSupport = true
 failure = { message: 'private credential or database error' }
 const unavailable = await route.GET(new Request('http://localhost/api/ahsp'))
 assert.equal(unavailable.status, 503)

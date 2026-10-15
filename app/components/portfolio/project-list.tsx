@@ -44,7 +44,7 @@ export function ProjectList() {
     <p className={styles.srOnly} role="status">{message} {error}</p>
     {error && <p className={styles.helper}>{error}</p>}
     {visible.length === 0 ? <div className={styles.empty}><BookmarkSimple size={28} aria-hidden="true" /><h3>Belum ada proyek favorit</h3><p>Tandai proyek yang ingin Anda lihat kembali lewat tombol bookmark.</p><button className={styles.secondaryButton} onClick={() => setOnlyFavorites(false)}>Lihat semua proyek</button></div> :
-      <ul className={styles.projectList}>{visible.map(id => {
+      <ul id="project-list" className={styles.projectList}>{visible.map(id => {
         const project = projects.find(item => item.id === id)!
         const index = order.indexOf(id)
         return <li key={id} className={styles.project} data-dragging={dragged === id} draggable={ready && reordering}
@@ -52,6 +52,7 @@ export function ProjectList() {
           onDragOver={event => { if (reordering && draggedId.current) event.preventDefault() }}
           onDrop={event => { event.preventDefault(); if (reordering && draggedId.current) move(draggedId.current, index); draggedId.current = null; setDragged(null) }}
           onDragEnd={() => { draggedId.current = null; setDragged(null) }}>
+          <span className={styles.projectIndex} aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
           <div className={styles.projectCopy}>
             <h3>{project.href ? <Link draggable={false} href={project.href}>{project.title}<ArrowUpRight size={22} aria-hidden="true" /></Link> : project.title}</h3>
             <p>{project.desc}</p>

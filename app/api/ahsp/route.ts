@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { AHSP_ACTIVE_REGULATIONS, canUseAhspReference, parseAhspSearch } from '@/lib/ahsp'
+import { AHSP_CATALOG_REGULATIONS, AHSP_ARCHIVED_REGULATION, ahspPhraseSearchError, canUseAhspReference, parseAhspSearch } from '@/lib/ahsp'
 
 export const dynamic = 'force-dynamic'
 const schema = z.object({
@@ -9,11 +9,11 @@ const schema = z.object({
   division: z.string().max(240).default(''), unit: z.string().max(80).default(''),
   status: z.enum(['','cocok','berbeda','belum_ditemukan','perlu_ditinjau','hanya_regulasi']).default(''),
   options: z.enum(['0','1']).default('0'),
-  regulation: z.enum(['', 'SE 47/2026', 'PERMEN 08/2023']).default(''),
+  regulation: z.enum(['', 'SE 47/2026', 'PERMEN 08/2023', 'SE 182/2025']).default(''),
   analysis: z.enum(['', 'extracted', 'needs_review', 'unavailable']).default(''),
   scope: z.enum(['all', 'jobs', 'components']).default('all'),
   mode: z.enum(['single', 'multiple']).default('single'),
-  match: z.enum(['like', 'exact']).default('like'),
+  match: z.enum(['like', 'exact', 'phrases']).default('like'),
   sipasti: z.enum(['', 'database_only', 'sipasti_only', 'both']).default(''),
 })
 export async function GET(request: Request) {
@@ -22,17 +22,21 @@ export async function GET(request: Request) {
   const filters = parsed.data
   const searchText = filters.q.replace(/[\u0000-\u0009\u000b\u000c\u000e-\u001f]/g, ' ')
   const single = searchText.replace(/\s+/g, ' ').trim()
-  const terms = filters.mode === 'multiple' ? parseAhspSearch(searchText) : single ? [single] : []
+  if (!filters.id && filters.match === 'phrases') {
+    const error = ahspPhraseSearchError(searchText)
+    if (error) return Response.json({ error }, { status: 400 })
+  }
+  const terms = filters.match === 'phrases' || filters.mode === 'multiple' ? parseAhspSearch(searchText, filters.match) : single ? [single] : []
   if (terms.length > 50 || terms.some(term => term.length > 240)) return Response.json({ error: 'Gunakan maksimal 50 istilah, masing-masing sampai 240 karakter.' }, { status: 400 })
   try {
     const db = getSupabaseAdmin()
     if (filters.id) {
-      const { data, error } = await db.from('ahsp_items').select('*').eq('id', filters.id).in('regulation', AHSP_ACTIVE_REGULATIONS).maybeSingle()
+      const { data, error } = await db.from('ahsp_items').select('*').eq('id', filters.id).in('regulation', AHSP_CATALOG_REGULATIONS).maybeSingle()
       if (error) throw error
       if (!data) return Response.json({ error: 'Item pekerjaan tidak ditemukan.' }, { status: 404 })
       let target = null
       if (data.analysis_target_id) {
-        const result = await db.from('ahsp_items').select('*').eq('id', data.analysis_target_id).in('regulation', AHSP_ACTIVE_REGULATIONS).maybeSingle()
+        const result = await db.from('ahsp_items').select('*').eq('id', data.analysis_target_id).in('regulation', AHSP_CATALOG_REGULATIONS).maybeSingle()
         if (result.error) throw result.error
         target = result.data
       }
@@ -42,10 +46,13 @@ export async function GET(request: Request) {
       const search = await db.rpc('ahsp_search_items', {
         p_terms: terms, p_page: filters.page, p_field: filters.field,
         p_division: filters.division, p_unit: filters.unit,
-        p_regulation: filters.regulation, p_analysis: filters.analysis, p_scope: filters.scope, p_match: filters.match,
+        p_regulation: filters.regulation, p_analysis: filters.analysis, p_scope: filters.match === 'phrases' ? 'jobs' : filters.scope, p_match: filters.match,
         ...(filters.sipasti ? { p_sipasti: filters.sipasti } : {}),
       })
       if (search.error) throw search.error
+      if (search.data.grouped_by_name !== true) throw { code: 'PGRST202' }
+      if (filters.regulation === AHSP_ARCHIVED_REGULATION && search.data.archive_supported !== true) throw { code: 'PGRST202' }
+      if (filters.match === 'phrases' && search.data.search_stats?.match !== 'phrases') throw { code: 'PGRST202' }
       if (search.data.items.length) {
         const references = await db.from('ahsp_items').select('id,analysis_reference').in('id', search.data.items.map((item: { id: string }) => item.id))
         if (references.error && references.error.code !== '42703') throw references.error
@@ -58,12 +65,8 @@ export async function GET(request: Request) {
       if (filters.options === '1') {
         const result = await db.rpc('ahsp_catalog_options')
         if (result.error) throw result.error
-        const fieldCounts = await Promise.all((result.data.fields as string[]).map(async field => {
-          const counted = await db.from('ahsp_items').select('id', { count: 'exact', head: true }).eq('field', field).in('regulation', AHSP_ACTIVE_REGULATIONS)
-          if (counted.error) throw counted.error
-          return { field, count: counted.count }
-        }))
-        options = { ...result.data, field_counts: fieldCounts, types: search.data.catalog_types }
+        if (result.data.grouped_by_name !== true) throw { code: 'PGRST202' }
+        options = { ...result.data, types: search.data.catalog_types }
       }
       return Response.json({ ...search.data, search_stats: { ...search.data.search_stats, match: filters.match }, options })
     }

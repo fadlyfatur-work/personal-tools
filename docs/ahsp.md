@@ -1,5 +1,35 @@
 # Katalog AHSP 2026
 
+## Rekapitulasi MPTK
+
+Halaman `/ahsp/mptk`, ditautkan dari katalog AHSP, mencari komponen tenaga kerja, material, dan peralatan sebagai hasil utama. Setiap komponen menampilkan pekerjaan penggunanya, koefisien atau ekspresi asli, basis analisis, status ekstraksi, regulasi, serta tautan halaman sumber. Pencarian nama/kode memakai substring literal tanpa membedakan kapitalisasi; filter jenis, bidang, satuan komponen, regulasi, dan status analisis diterapkan sebelum pengelompokan/pagination. Kolom pencarian diterapkan dengan Cari/Enter; perubahan filter juga menerapkan kata kunci yang sedang diisi. Daftar komponen dan daftar penggunaan masing-masing berhalaman 30 baris.
+
+Rincian penggunaan dibuka sebagai modal native `<dialog>`, dengan tombol Tutup, Escape, pemulihan fokus ke baris pemicu, serta penguncian scroll latar. Modal menggunakan tema yang dipilih dan pagination penggunaan tetap berada di dalam modal. Navigasi ke MPTK dari AHSP berbentuk tombol tautan.
+
+Setiap baris komponen menampilkan ringkasan koefisien menurut pekerjaan: sampai dua contoh nilai atau rumus, satuan komponen, basis analisis (kuantitas dan satuan output), kode/nama pekerjaan, serta regulasi. Bila ada beberapa variasi, jumlahnya ditampilkan dan seluruh kemunculan dapat dilihat dalam modal. Nilai nol dibedakan dari koefisien kosong. Rumus ditampilkan sebagai ekspresi sumber, bukan dihitung otomatis. Nilai yang sama pada basis berbeda dihitung sebagai variasi terpisah; koefisien tidak dirata-ratakan atau dianggap satu nilai global komponen.
+
+Jalankan `202610150003_ahsp_mptk_coefficients.sql` melalui Supabase SQL Editor setelah migrasi MPTK 01 dan 02. RPC `ahsp_mptk_coefficients` membaca view tervalidasi, menerapkan filter yang sama dengan katalog, dan merangkum seluruh kemunculan untuk maksimal 30 komponen pada halaman hasil. Contoh dipilih stabil, memprioritaskan regulasi terbaru dan analisis terekstrak. API memperkaya baris hasil serta header komponen pada detail, termasuk ketika pagination penggunaan sudah melewati halaman pertama. Tidak ada perubahan pada nilai atau tabel sumber. Uji `scripts/test-ahsp-mptk.mjs` mencakup ringkasan, basis berbeda, nol/kosong/rumus, filter, API, serta penolakan akses anon/authenticated.
+
+Aktifkan dengan menjalankan seluruh `supabase/migrations/202610150001_ahsp_mptk_catalog.sql` melalui Supabase SQL Editor setelah migrasi AHSP sebelumnya, khususnya `202610140003`. Migrasi menambahkan view `ahsp_mptk_occurrences` dan RPC `ahsp_search_mptk`, tanpa menyalin atau mengubah komponen sumber. View memakai security invoker; view dan RPC hanya dapat diakses service_role melalui API server `/api/ahsp/mptk`. Tidak ada database baru, impor ulang, atau dependency aplikasi tambahan.
+
+Identitas katalog menggunakan jenis + nama ternormalisasi NFKC/spasi/kapitalisasi + satuan, dengan alias `bh`, `bh.`, `buah` mengikuti helper AHSP. Satuan berbeda dan nama yang hanya mirip tetap terpisah. Kode sumber bukan identitas unik, dapat kosong atau dipakai beberapa jenis tukang. Pengelompokan menyatukan pencarian identitas, bukan menyatakan spesifikasi teknis seluruh sumber setara. Kode, nama dan satuan asli, koefisien, serta regulasi dipertahankan pada setiap kemunculan; dua baris komponen dalam satu pekerjaan tetap ditampilkan terpisah. Tidak ada konversi satuan otomatis atau satu koefisien global.
+
+Jumlah pekerjaan pada komponen menghitung ID versi pekerjaan, bukan nama pekerjaan unik seperti katalog utama. Jumlah kemunculan menghitung baris komponen. Hitungan tombol jenis mengikuti kata kunci/filter lain sebelum pilihan jenis; cakupan menghitung versi pekerjaan pada bidang/regulasi terpilih sebelum filter lain dan mengecualikan bidang SMKK. Hanya komponen dengan kelompok MPTK, nama, dan satuan terisi yang ditampilkan. Arsip dipilih eksplisit. Pekerjaan tanpa rincian komponen, termasuk Bina Marga pada snapshot awal, tidak direkayasa menjadi komponen; komponen biaya SMKK tidak masuk. Struktur terekstrak bukan pengesahan teknis. Harga wilayah/periode dan rekap kebutuhan proyek berbasis volume belum termasuk.
+
+Uji SQL/API: `node scripts/test-ahsp-mptk.mjs`; tambahkan `--snapshot` untuk memeriksa snapshot lokal 14 Oktober 2026 dan menulis data pemeriksaan browser di `.next/mptk-test/`. Menggunakan PGlite sementara yang sudah dijelaskan pada pengujian Gabungan frasa, tanpa menyentuh Supabase. Build membersihkan `.next`, sehingga paket uji mungkin perlu diinstal ulang sesudah build. Uji mencakup normalisasi, kode bertumpang tindih/kosong, koefisien per sumber, basis analisis, rumus, filter, cakupan, arsip, kedua pagination, validasi API, dan penolakan akses anon/authenticated.
+
+### Perbaikan kategori dan validasi 15 Oktober 2026
+
+Jalankan migrasi tambahan `202610150002_ahsp_mptk_validation.sql` melalui Supabase SQL Editor setelah migrasi MPTK 01. API membutuhkan fungsi statistik validasi baru sehingga data tanpa perbaikan ini tidak disajikan sebagai hasil yang telah diperiksa.
+
+Penyebab: ekstraksi beberapa tabel PDF menyatukan penanda kelompok dan nomor komponen dalam sel seperti `B 1`, serta nama seperti `Bahan Semen`. Parser lama hanya mengenali sel bernilai tepat `B` atau `C`, sehingga kelompok sebelumnya terbawa ke material/peralatan. Parser kini menangani penanda gabungan tanpa membuang komponen yang berada pada baris yang sama. Judul kelompok dipisahkan dari nama. Baris berisi beberapa satuan/koefisien gabungan ditandai tidak lengkap dan tidak dimasukkan sebagai satu komponen.
+
+Untuk data yang sudah diimpor, view validasi mengoreksi kategori hanya bila penanda A/B/C pada `sourceLine` selaras dengan judul kelompok pada nama. Nama saja, kode saja, atau perkiraan berdasarkan satuan tidak cukup untuk memindahkan kategori. Grup/nama asli dipertahankan untuk audit. Kategori tenaga dengan satuan bukan OH/OJ/OB (atau padanan orang hari/jam/bulan), kategori non-tenaga dengan satuan tenaga, identitas kosong, serta komponen gabungan ditahan dari hasil. Angka penahanan/koreksi mengikuti bidang dan regulasi sebelum filter lain. Data `ahsp_items.components` tidak ditimpa, sehingga sumber dan fingerprint referensi tetap utuh.
+
+Contoh `PC: Portland Cement` benar berada pada Bahan dan bersatuan Buah pada halaman PDF 418 Lampiran IV. Satuan itu dipertahankan, bukan diubah menjadi kg berdasarkan perkiraan. PDF resmi telah dibandingkan SHA-256 dengan inventaris dan halaman aslinya diperiksa. Penanda kategori yang sudah diperbaiki tetap mengikuti status analisis sumber; ini tidak mengesahkan koefisien atau menyelesaikan kejanggalan dokumen.
+
+Audit read-only database terbaru: `node --env-file=.env.local scripts/audit-ahsp-mptk.mjs`. Validasi snapshot baru: `node scripts/test-ahsp-mptk.mjs --snapshot --input=anti-slop/ahsp-mptk/validation-2026-10-15/snapshot.json`. Laporan ringkasan, daftar nama tenaga, dan rincian baris yang ditahan (beserta kode/halaman sumber) ditulis ke `.next/mptk-test/`. Tidak ada perubahan Supabase oleh skrip audit/uji.
+
 Halaman `/ahsp` menampilkan pekerjaan dari SE 47/SE/Dk/2026 dan bidang Umum dari Permen PUPR 8/2023. Data disimpan di PostgreSQL Supabase yang sudah digunakan proyek. Master spreadsheet tidak dijadikan bukti regulasi: data asli, hasil inventarisasi, dan hasil rekonsiliasi disimpan terpisah.
 
 ## Memasang database
@@ -32,6 +62,28 @@ node --env-file=.env.local scripts/ahsp-import.mjs <inventory.json> [manifest-mi
 Workbook menggunakan nama sheet `Master_Items` dan `Master_Fields`. Dimensi worksheet dari berkas ini tidak akurat; pembaca mengabaikan dimensi tersebut sebelum mengiterasi baris. ID bidang dipertahankan sebagai teks karena sebagian ID asal bukan UUID valid. ID item asal dapat dipakai pada beberapa regulasi, sehingga baris sumber diberi identitas tersendiri.
 
 Sesuai cakupan yang disetujui, hanya SE 47/2026 dan bidang Umum Permen 8/2023 yang diimpor. SE 182/2025, SMKK lama, dan SPTJM tidak diimpor. Importer menolak snapshot yang memuat versi di luar cakupan ini. Master asal tetap utuh. Lima kode Umum berulang digabung per kode, semua nomor baris asal dipertahankan, dan statusnya memerlukan tinjauan. Baris master yang belum mendapat padanan tetap tampil dengan status yang menjelaskan keterbatasannya. Pekerjaan resmi yang belum ada dalam master juga ditambahkan ke katalog.
+
+### Arsip SE 182/2025
+
+Pada 14 Oktober 2026 pengguna menambahkan ekspor SIPASTI edisi SE 182/2025. Nama berkas sumber menyebut SE 147/2025, tetapi query ekspor dan seluruh 5.164 baris menyebut SE 182/2025; pengguna mengonfirmasi untuk mengikuti isi JSON. Penambahan ini memperluas cakupan awal di atas khusus untuk arsip. Jumlah item unik: SDA 1.512, Bina Marga 1.133, Cipta Karya/Perumahan 2.519. Ada 3.509 baris yang juga mencantumkan SE 47/2026 dan 1.655 yang hanya mencantumkan edisi 2025. Seluruh item disimpan sebagai identitas edisi 2025 yang terpisah, bukan menimpa atau mengganti metadata item edisi aktif.
+
+Tag **Digantikan oleh SE 47/2026** menjelaskan status regulasinya, bukan pernyataan bahwa setiap pekerjaan dihapus pada edisi terbaru. Tag tampil pada kolom regulasi dan header modal, serta disimpan di `regulation_status`. Data ini hanya master pekerjaan dari SIPASTI: komponen, koefisien, sumber lampiran, dan halaman tidak disalin dari edisi terbaru. Status analisisnya `unavailable`; tag asal `Hanya ada di SIPASTI` tetap terpisah.
+
+Modal arsip tanpa `source_id` tidak memakai fallback PDF SE 47/2026. Lampiran edisi terbaru tidak ditampilkan sebagai rujukan edisi arsip.
+
+Jalankan migrasi `202610140002_ahsp_archived_regulations.sql` melalui Supabase SQL Editor setelah migrasi sebelumnya. Pilihan **SE 182/2025 (arsip)** menampilkan edisi lama; pilihan bawaan **Semua regulasi aktif** tetap mengecualikannya. Pencarian, termasuk Gabungan frasa, statistik, dan pagination memakai cakupan regulasi yang dipilih. Total database, jenis katalog, pilihan filter, serta jumlah tombol bidang mencakup aktif dan arsip; bantuan tombol menjelaskan bahwa hitungan tersebut sebelum filter.
+
+Persiapan/impor data memakai skrip khusus agar rekonsiliasi edisi aktif tidak mengubah tag item lain:
+
+```sh
+node --env-file=.env.local scripts/prepare-ahsp-legacy.mjs <ekspor.json> .next/ahsp-se182-2025/import.sql
+node --env-file=.env.local scripts/prepare-ahsp-legacy.mjs <ekspor.json> .next/ahsp-se182-2025/import.sql --apply
+node scripts/test-ahsp-legacy.mjs
+```
+
+Tanpa `--apply`, skrip hanya membaca daftar bidang dan menulis SQL/laporan persiapan. SQL dapat dijalankan secara atomik melalui SQL Editor setelah migrasi. `--apply` menyimpan snapshot sumber dan menambahkan item secara bertahap melalui Supabase; semua identitas diperiksa sebelum menulis. Tidak ada update/delete pada item lama. Bila jaringan gagal di tengah batch, impor dapat dilanjutkan dengan perintah yang sama tanpa duplikasi. Nomor baris sumber dan SHA-256 dipertahankan, sementara ID deterministik memisahkan edisi arsip dari edisi aktif. Argumen ketiga opsional menyediakan JSON dengan properti `fields` untuk persiapan offline.
+
+Impor telah diterapkan dan diverifikasi langsung pada 14 Oktober 2026: 5.164 item arsip, 6.377 item edisi aktif, total 11.541 item. Impor ulang menemukan 5.164 item yang sudah ada dan tidak menambah duplikasi. `node --env-file=.env.local scripts/test-ahsp-legacy-live.mjs <ekspor.json>` memeriksa identitas, seluruh tag penggantian, status analisis, nomor baris sumber, dan SHA-256. Laporan lokal berada di `anti-slop/ahsp-se182-2025/`; migrasi fungsi katalog/pencarian tetap perlu dijalankan manual agar arsip tampil lewat filter.
 
 Pencocokan memakai bidang dan kode. Nama dan satuan dibandingkan setelah normalisasi tanda, spasi, notasi pangkat, dan beberapa singkatan satuan. Kandidat ganda memerlukan tinjauan. `Cocok` menjelaskan kecocokan identitas pekerjaan, bukan pengesahan seluruh koefisien. Divisi pada Cipta Karya dan Bina Marga mengikuti kelompok kode; sumber yang tidak memakai divisi tidak diberi divisi buatan.
 
@@ -84,7 +136,36 @@ Migrasi `202610130006` memperbaiki timeout pencarian: hasil kecocokan diagregasi
 
 Migrasi `202610130007` menghilangkan konfigurasi per pemanggilan pada pembanding teks agar PostgreSQL dapat melakukan SQL inlining. Fungsi hanya memakai operasi bawaan yang disebut eksplisit dengan namespace `pg_catalog`; tetap immutable, security invoker, dan hanya dapat dijalankan service_role. Perbandingan exact tetap tidak peka kapitalisasi dan mengabaikan spasi di ujung, sedangkan like memakai pencarian substring literal.
 
+### Gabungan frasa
+
+Mode ketiga, **Gabungan frasa**, mencari minimal 2 frasa berbeda dalam satu nama pekerjaan. Contoh: `"Mobilisasi dan Demobilisasi" "Alat Berat" "Excavator"`. Tanda kutip lurus atau melengkung mengelompokkan frasa; kata tanpa tanda kutip dihitung terpisah. Urutan antarfrasa bebas, kata dalam frasa berurutan, kapitalisasi diabaikan, spasi berulang dinormalisasi, dan frasa duplikat dihitung sekali. Kode pekerjaan maupun nama/kode komponen tidak ikut dihitung. Tanda kutip belum ditutup atau kurang dari 2 frasa berbeda ditolak sebelum permintaan database. Like-match dan Exact-match mempertahankan aturan input sebelumnya.
+
+Jalankan `supabase/migrations/202610140001_ahsp_phrase_search.sql` melalui Supabase SQL Editor setelah migrasi AHSP sebelumnya, sebelum memakai mode baru. Migrasi mengganti fungsi baca tanpa mengubah data katalog atau hak akses. API menolak respons fungsi lama untuk mode Gabungan frasa agar hasil Like-match tidak dianggap hasil gabungan.
+
+Database menyaring kecocokan sebelum menghitung total, tipe item, dan pagination. Urutan utama adalah jumlah frasa cocok terbanyak, lalu kode dan ID untuk urutan stabil. Ringkasan per frasa hanya menghitung pekerjaan yang lolos minimal 2 frasa. Filter bidang, divisi, satuan, regulasi, analisis, dan SIPASTI tetap berlaku; pagination memakai filter yang terakhir diterapkan.
+
+Pengujian parser/API/UI: `node scripts/test-ahsp.mjs` dan `node scripts/test-ahsp-search-trigger.mjs`. Pengujian fungsi SQL memakai PostgreSQL sementara dalam memori, tanpa menyentuh Supabase atau menambah dependency aplikasi:
+
+```sh
+npm install --prefix .next/ahsp-sql-test --no-save --package-lock=false @electric-sql/pglite
+node scripts/test-ahsp-phrase-sql.mjs
+```
+
 Total hasil menghitung ID item pekerjaan unik. Ringkasan menghitung jumlah istilah yang mempunyai hasil, kecocokan exact seluruh istilah terhadap item dalam cakupan filter, dan jumlah exact/like untuk setiap istilah. Statistik tidak dibatasi halaman saat ini. Istilah yang bertumpang tindih dapat membuat jumlah baris statistik lebih besar daripada total item unik.
+
+### Satu baris per nama pekerjaan
+
+Migrasi `202610140003_ahsp_unique_work_names.sql` mengelompokkan nama pekerjaan yang sama sebelum pagination. Nama dinormalisasi dengan Unicode NFKC, huruf kecil, trim, dan pemadatan spasi. Perbedaan kode, bidang, satuan, jenis item, atau regulasi tidak menambah baris utama bila nama sama. Nama yang hanya mirip tetap terpisah. Ini menggantikan hitungan per ID pada bagian sebelumnya: total hasil, statistik per istilah, tipe hasil, dan hitungan bidang kini memakai nama unik.
+
+Versi utama dipilih dari versi yang lolos pencarian dan filter, dengan prioritas SE 47/2026, Permen 8/2023, lalu arsip SE 182/2025. Pada edisi yang sama, rincian analisis/sumber yang tersedia diprioritaskan, lalu kode dan ID untuk urutan stabil. Filter regulasi, bidang, satuan, divisi, analisis, atau SIPASTI tetap menentukan versi yang boleh menjadi baris utama. Satuan `bh`, `bh.`, dan `Buah` diperlakukan setara pada filter; penulisan asli tetap disimpan.
+
+Disclosure **Versi dan sumber lainnya** menampilkan semua sumber bernama sama, termasuk arsip, beserta kode, bidang, satuan asli, dan jenisnya. Tombol Buka versi memakai ID asli dan memuat komponen/kalkulator/lampiran versi tersebut. Pengelompokan tidak menyamakan koefisien antarversi, tidak mengubah metadata, dan tidak menghapus data asal. Penyalinan baris utama tetap menggunakan versi yang ditampilkan.
+
+Options menampilkan jumlah pekerjaan unik dan `version_total` secara terpisah. Jumlah per bidang dapat bertumpang tindih karena nama yang sama boleh tercatat pada beberapa bidang. Semua hitungan dihasilkan oleh SQL; API tidak menggantinya dengan jumlah baris fisik. Fungsi lama yang belum mengelompokkan nama ditolak agar duplikat tidak kembali ditampilkan.
+
+Jalankan migrasi 03 melalui Supabase SQL Editor setelah migrasi sebelumnya. View memakai `security_invoker`, helper/index hanya membaca identitas nama/satuan, dan akses tetap terbatas pada service_role. Uji: `node scripts/test-ahsp-name-groups.mjs` (memakai PGlite sementara sesuai petunjuk instalasi sebelumnya), `node scripts/test-ahsp.mjs`, dan `node scripts/test-ahsp-search-trigger.mjs`.
+
+Audit snapshot langsung 14 Oktober 2026 membaca 11.541 versi/sumber, 7.925 nama unik di seluruh katalog, dan 6.209 nama unik pada regulasi aktif. Ada 3.581 kelompok dengan lebih dari satu versi/sumber. Pasangan Papan Informasi Keselamatan Konstruksi pada screenshot tepat terdiri dari Permen 8/2023 (`bh`, tanpa kode, Normatif) dan SE 47/2026 (`Buah`, kode `1.22.(2l)`, Informatif). Snapshot/laporan lokal berada di `anti-slop/ahsp-name-groups/`. Audit read-only: `node --env-file=.env.local scripts/audit-ahsp-name-groups.mjs`; uji seluruh snapshot: `node scripts/test-ahsp-name-groups.mjs anti-slop/ahsp-name-groups/snapshot.json`.
 
 Setiap baris pekerjaan memiliki tombol ikon Salin yang terpisah dari pembuka modal. Clipboard berisi satu baris TSV tanpa header, dengan urutan kolom: kode, nama pekerjaan, bidang, divisi, satuan, jenis item, regulasi, lampiran, halaman PDF. Tab/baris baru di dalam nilai diganti spasi agar hasil tetap menjadi satu baris saat ditempel ke spreadsheet. Ikon centang dan status yang diumumkan pembaca layar menandai keberhasilan; kegagalan clipboard ditampilkan sebagai pesan. Tidak ada perubahan data PostgreSQL.
 

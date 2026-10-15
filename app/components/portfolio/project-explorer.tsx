@@ -1,16 +1,22 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowUpRight, ArrowRight } from '@phosphor-icons/react'
 import { projects } from './data'
 import styles from './portfolio.module.css'
 
+const previews = [
+  { src: '/portfolio/nominatif.webp', width: 1280, height: 720, alt: 'Nominatif menghitung contoh perjalanan Jakarta ke Palembang dengan rincian biaya per pegawai.', caption: 'Nominatif, salah satu aplikasi di Personal Tools.' },
+  { src: '/portfolio/fintrack.webp', width: 430, height: 825, alt: 'Halaman masuk Fintrack dengan pilihan email dan PIN atau akun Google.', caption: 'Halaman masuk Fintrack. Data keuangan memerlukan autentikasi.' },
+]
+
 export function ProjectExplorer() {
   const [selected, setSelected] = useState(0)
   const project = projects[selected]
+  const preview = previews[selected]
   return <div className={styles.explorer}>
-    <div className={styles.explorerHeading}><h2>Jelajahi proyek saya.</h2><a href="#projects" aria-label="Lihat seluruh proyek"><ArrowRight size={24} /></a></div>
     <div className={styles.explorerChoices} role="tablist" aria-label="Pilih proyek" onKeyDown={event => {
       const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End']
       if (!keys.includes(event.key)) return
@@ -19,16 +25,28 @@ export function ProjectExplorer() {
       setSelected(next)
       event.currentTarget.querySelectorAll<HTMLButtonElement>('button')[next]?.focus()
     }}>
-      {projects.map((item, index) => <button type="button" role="tab" key={item.id} id={`preview-tab-${item.id}`} aria-controls="project-preview" aria-selected={selected === index} tabIndex={selected === index ? 0 : -1} onClick={() => setSelected(index)}>{item.title === 'Financial tracking (Fintrack)' ? 'Fintrack' : item.title}</button>)}
+      {projects.map((item, index) => <button type="button" role="tab" key={item.id} id={`preview-tab-${item.id}`} aria-controls="project-preview" aria-selected={selected === index} tabIndex={selected === index ? 0 : -1} onClick={() => setSelected(index)}>{item.id === 'fintrack' ? 'Fintrack' : item.title}</button>)}
     </div>
-    <div id="project-preview" role="tabpanel" aria-labelledby={`preview-tab-${project.id}`} tabIndex={0} className={styles.explorerPanel}>
-      <div key={project.id} className={styles.projectReveal}>
-        <h3>{project.title}</h3><p>{project.desc}</p>
-        <div className={styles.explorerTags}>{project.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
-        {project.href ? <Link href={project.href}>Buka {selected === 1 ? 'Fintrack' : 'menu aplikasi'}<ArrowUpRight size={20} aria-hidden="true" /></Link> : <a href="#projects">Lihat dalam daftar proyek<ArrowRight size={20} aria-hidden="true" /></a>}
+    <div id="project-preview" role="tabpanel" aria-labelledby={`preview-tab-${project.id}`} tabIndex={0}>
+      <div key={project.id} className={`${styles.explorerPanel} ${styles.projectReveal}`}>
+        <div className={styles.explorerCopy}>
+          <h3>{project.title}</h3>
+          <p>{project.desc}</p>
+          <div className={styles.explorerTags}>{project.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
+          {project.href ? <Link className={styles.inlineLink} href={project.href}>{selected === 1 ? 'Buka Fintrack' : 'Menu aplikasi'}<ArrowUpRight size={20} aria-hidden="true" /></Link> : <a className={styles.inlineLink} href="#project-list">Lihat proyek<ArrowRight size={20} aria-hidden="true" /></a>}
+          <p className={styles.explorerNote}>Teknologi portofolio asal. Aplikasi saat ini memakai Next.js dan Supabase.</p>
+        </div>
+        {preview ? <figure className={styles.projectPreview}>
+          <div className={`${styles.previewImage} ${selected === 1 ? styles.portraitPreview : ''}`}>
+            <Image src={preview.src} width={preview.width} height={preview.height} alt={preview.alt} loading={selected === 0 ? 'eager' : 'lazy'} fetchPriority={selected === 0 ? 'high' : 'auto'} sizes="(max-width: 767px) 100vw, 65vw" />
+          </div>
+          <figcaption>{preview.caption}</figcaption>
+        </figure> : <div className={styles.projectDetails}>
+          <p>Teknologi proyek</p>
+          <ul>{project.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
+          <span>Detail proyek tersedia pada daftar portofolio di bawah.</span>
+        </div>}
       </div>
     </div>
-    <p className={styles.explorerNote}>Teknologi portofolio asal. Aplikasi saat ini memakai Next.js dan Supabase.</p>
   </div>
 }
-
