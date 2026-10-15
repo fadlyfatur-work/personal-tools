@@ -74,9 +74,14 @@ def component_table(table):
   values=[clean(c) for c in row]; joined=' '.join(values)
   name=values[ni] if ni<len(values) else ''
   lead=token(joined)
-  if ('tenagakerja' in token(name) and len(name)<30 and not 'jumlah' in token(name)) or (values[0]=='A' and 'tenaga' in lead): group='tenaga'; groups.add(group); continue
-  if token(name)=='bahan' or (values[0]=='B' and 'bahan' in lead): group='bahan'; groups.add(group); continue
-  if token(name) in ('peralatan','alat') or (values[0]=='C' and ('alat' in lead)): group='alat'; groups.add(group); continue
+  section=re.match(r'^([ABC])(?:\s|$)',values[0])
+  heading=re.match(r'^(Tenaga\s+Kerja|Bahan|Peralatan|Alat)(?:\s|$)',name,re.I)
+  if section:
+   group={'A':'tenaga','B':'bahan','C':'alat'}[section[1]]; groups.add(group)
+   if heading: name=re.sub(r'^\s*\*+\)?\s*','',name[heading.end():]).strip()
+   if not name: continue
+  elif token(name) in ('tenagakerja','bahan','peralatan','alat'):
+   group={'tenagakerja':'tenaga','bahan':'bahan','peralatan':'alat','alat':'alat'}[token(name)]; groups.add(group); continue
   if ('hargasatuanpekerjaan' in lead or 'jumlahbiaya' in lead or 'jumlahharga' in lead) and ('d+e' in joined.lower() or values[0]=='F'): has_total=True
   if values[0] in ('D','E','F') or any(x in lead for x in ['jumlahharga','biayaumum','hargasatuanpekerjaan','catatan']):
    group=None if values[0] in ('D','E','F') else group
@@ -96,6 +101,11 @@ def component_table(table):
     if components: components[-1]['name']+=' '+name
     else: incomplete=True
     continue
+   incomplete=True; continue
+  # A merged PDF cell can contain several resources; do not invent their alignment.
+  if (len(unit.split())>1 and unit.lower() not in ('orang hari','orang jam','orang bulan','unit hari')) or re.fullmatch(r'\d+(?:[.,]\d+)?(?:\s+\d+(?:[.,]\d+)?)+',coefficient):
+   incomplete=True; continue
+  if group=='tenaga' and unitkey(unit) not in ('oh','oj','ob'):
    incomplete=True; continue
   value=numeric(coefficient)
   if not coefficient: incomplete=True

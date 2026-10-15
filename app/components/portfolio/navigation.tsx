@@ -10,7 +10,7 @@ export function Navigation() {
   const disclosure = useRef<HTMLDetailsElement>(null)
   function close() { if (disclosure.current) disclosure.current.open = false }
   return <header className={styles.header}><div className={styles.navInner}>
-    <Link href="/" className={styles.brand} aria-label="Fdly.dev — Beranda">Fdly<span>.dev</span></Link>
+    <Link href="/" className={styles.brand} aria-label="Fdly.dev, Beranda">Fdly<span>.dev</span></Link>
     <nav aria-label="Navigasi utama" className={styles.desktopNav}>
       {links.map(link => <a key={link.href} href={link.href}>{link.label}</a>)}
       <Link href="/menu" className={styles.menuLink}>Menu aplikasi</Link>

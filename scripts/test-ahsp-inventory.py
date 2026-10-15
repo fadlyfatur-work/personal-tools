@@ -14,4 +14,21 @@ class InventoryTest(unittest.TestCase):
   self.assertEqual(m['component_table'](Table(rows))['status'],'needs_review')
   rows[4][1]='Semen'
   self.assertEqual(m['component_table'](Table(rows))['status'],'extracted')
+ def test_merged_section_heading(self):
+  rows=[['No','Uraian','Kode','Satuan','Koefisien'],['A','Tenaga Kerja','','',''],['1','Pekerja','L.01','OH','0,2'],['B\n1','Bahan *)\nPC: Portland Cement','','Buah','1'],['C\n1','Peralatan\nExcavator','E.01','Jam','0,5'],['F','Harga Satuan Pekerjaan (D+E)','','','']]
+  result=m['component_table'](Table(rows))
+  self.assertEqual([c['group'] for c in result['components']],['tenaga','bahan','alat'])
+  self.assertEqual(result['components'][1]['name'],'PC: Portland Cement')
+  self.assertEqual(result['components'][1]['unit'],'Buah')
+  self.assertEqual(result['components'][2]['name'],'Excavator')
+ def test_merged_resources_are_not_one_component(self):
+  rows=[['No','Uraian','Kode','Satuan','Koefisien'],['A','Tenaga Kerja','','',''],['1','Pekerja','L.01','OH','0,2'],['B 1 2','Bahan Semen Pasir','M.01 M.02','kg m3','1 2'],['C','Peralatan','','',''],['F','Harga Satuan Pekerjaan (D+E)','','','']]
+  result=m['component_table'](Table(rows))
+  self.assertEqual(result['status'],'needs_review')
+  self.assertEqual(len(result['components']),1)
+ def test_non_labor_unit_not_imported_as_labor(self):
+  rows=[['No','Uraian','Kode','Satuan','Koefisien'],['A','Tenaga Kerja','','',''],['1','Pekerja','L.01','OH','0,2'],['2','Base camp','','m2','12']]
+  result=m['component_table'](Table(rows))
+  self.assertEqual(result['status'],'needs_review')
+  self.assertEqual(len(result['components']),1)
 if __name__=='__main__': unittest.main()

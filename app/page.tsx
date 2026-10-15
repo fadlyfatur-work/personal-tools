@@ -12,9 +12,9 @@ import styles from './components/portfolio/portfolio.module.css'
 const outfit = Outfit({ subsets: ['latin'], display: 'swap' })
 const description = 'Fadly Faturrohman, Fullstack Developer. Membangun aplikasi web dari perencanaan proses bisnis, backend dan frontend hingga deployment.'
 export const metadata: Metadata = {
-  title: 'Fadly Faturrohman — Fullstack Developer', description,
-  openGraph: { title: 'Fadly Faturrohman — Fullstack Developer', description, type: 'website', locale: 'id_ID' },
-  twitter: { card: 'summary', title: 'Fadly Faturrohman — Fullstack Developer', description },
+  title: 'Fadly Faturrohman | Fullstack Developer', description,
+  openGraph: { title: 'Fadly Faturrohman | Fullstack Developer', description, type: 'website', locale: 'id_ID' },
+  twitter: { card: 'summary', title: 'Fadly Faturrohman | Fullstack Developer', description },
 }
 const socialIcons = [GithubLogo, LinkedinLogo, InstagramLogo]
 
@@ -24,25 +24,71 @@ export default function Home() {
     <Navigation />
     <main id="main" className={styles.container}>
       <section className={styles.hero} aria-labelledby="hero-title">
+        <div className={styles.sectionBar}><span>01 / Perkenalan</span><span>Portofolio pengembangan web</span></div>
         <div className={styles.heroTitle}>
-
-          <h1 id="hero-title">Developer.<br /><span>Pengembangan<br className={styles.heroBreak} /> sistem.</span></h1>
-          <p className={styles.heroDescription}>Fadly Faturrohman. Fullstack Developer.</p><a className={styles.primaryButton} href="#projects">Lihat proyek<ArrowDown size={20} aria-hidden="true" /></a>
+          <p className={styles.heroIdentity}>Fadly Faturrohman <span>Fullstack Developer</span></p>
+          <h1 id="hero-title">Dari ide menjadi<br /><span>aplikasi yang berjalan.</span></h1>
+          <p className={styles.heroDescription}>Membangun aplikasi web dari perencanaan proses bisnis, backend dan frontend hingga deployment.</p>
+          <div className={styles.heroActions}>
+            <a className={styles.primaryButton} href="#projects">Lihat proyek<ArrowDown size={18} aria-hidden="true" /></a>
+            <Link className={styles.secondaryButton} href="/menu">Menu aplikasi<ArrowUpRight size={18} aria-hidden="true" /></Link>
+          </div>
         </div>
-        <ProjectExplorer />
       </section>
-      <section id="about" className={`${styles.section} ${styles.about}`} aria-labelledby="about-title">
-        <div className={styles.aboutTitle}><h2 id="about-title">Dari ide hingga<br />aplikasi berjalan.</h2></div>
-        <div><p className={styles.availability}><span aria-hidden="true" />Tersedia untuk proyek baru</p><p className={styles.introName}>Saya Fadly Faturrohman.</p><p className={styles.muted}>Fullstack Developer dengan spesialisasi backend, frontend (UI/UX), dan perencanaan proses bisnis sistem. Saya membangun aplikasi web dari perencanaan hingga deployment.</p><a className={styles.inlineLink} href="#contact">Mari berdiskusi<ArrowUpRight size={20} aria-hidden="true" /></a><p className={styles.lead}>Membangun aplikasi web dari end-to-end — frontend seperti React dan Vue yang interaktif, hingga backend Laravel, Node.js, dan Go yang scalable, juga infrastruktur container dengan Docker.</p><p className={styles.muted}>Kode bersih dan arsitektur terstruktur.</p><div className={styles.socials}>{socials.map((social, index) => { const Icon = socialIcons[index]; return <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer"><Icon size={20} aria-hidden="true" />{social.name}<span className={styles.srOnly}> (tab baru)</span></a> })}</div></div>
-      </section>
+
       <section id="projects" className={styles.section} aria-labelledby="projects-title">
-        <div className={styles.sectionHeading}><h2 id="projects-title">Proyek</h2><p>Eksplorasi sistem, aplikasi, dan infrastruktur.</p></div>
-        <ProjectList />
-        <p className={styles.projectNote}>Teknologi di atas mengikuti versi proyek portofolio asal. Menu aplikasi dan Fintrack di situs ini berjalan dengan Next.js dan Supabase.</p>
+        <div className={styles.sectionBar}><span>02 / Proyek</span><span>Aplikasi, sistem, dan infrastruktur</span></div>
+        <div className={styles.sectionBody}>
+          <div className={styles.sectionHeading}><h2 id="projects-title">Jelajahi <span>proyek saya.</span></h2></div>
+          <ProjectExplorer />
+          <div className={styles.listHeading}><h3>Seluruh proyek</h3><p>Simpan favorit dan atur urutan sesuai kebutuhan Anda.</p></div>
+          <ProjectList />
+          <p className={styles.projectNote}>Teknologi di atas mengikuti versi proyek portofolio asal. Menu aplikasi dan Fintrack di situs ini berjalan dengan Next.js dan Supabase.</p>
+        </div>
       </section>
-      <section className={`${styles.section} ${styles.skillSection}`} aria-labelledby="skills-title"><div><h2 id="skills-title">Teknologi<br />yang saya gunakan.</h2><p className={styles.muted}>Dari antarmuka hingga infrastruktur.</p></div><ul className={styles.skills}>{skills.map(skill => <li key={skill}>{skill}</li>)}</ul></section>
-      <section id="contact" className={`${styles.section} ${styles.contact}`} aria-labelledby="contact-title"><p className={styles.availability}><span aria-hidden="true" />Terbuka untuk full-time dan kontrak</p><h2 id="contact-title">Diskusikan<br />proyek web Anda.</h2><p className={styles.muted}>Punya proyek atau ingin bekerja bersama? Mari mulai percakapan.</p><ContactActions /></section>
+
+      <section id="about" className={styles.section} aria-labelledby="about-title">
+        <div className={styles.sectionBar}><span>03 / Tentang</span><span>Fadly Faturrohman</span></div>
+        <div className={`${styles.sectionBody} ${styles.about}`}>
+          <div className={styles.aboutTitle}>
+            <p className={styles.availability}>Tersedia untuk proyek baru</p>
+            <h2 id="about-title">Dari ide hingga<br /><span>aplikasi berjalan.</span></h2>
+            <a className={styles.inlineLink} href="#contact">Kontak<ArrowUpRight size={20} aria-hidden="true" /></a>
+          </div>
+          <div>
+            <p className={styles.introName}>Saya Fadly Faturrohman.</p>
+            <p className={styles.muted}>Fullstack Developer dengan spesialisasi backend, frontend (UI/UX), dan perencanaan proses bisnis sistem. Saya membangun aplikasi web dari perencanaan hingga deployment.</p>
+            <p className={styles.lead}>Membangun aplikasi web dari end-to-end, frontend seperti React dan Vue yang interaktif, hingga backend Laravel, Node.js, dan Go yang scalable, juga infrastruktur container dengan Docker.</p>
+            <p className={styles.muted}>Kode bersih dan arsitektur terstruktur.</p>
+            <div className={styles.socials}>{socials.map((social, index) => {
+              const Icon = socialIcons[index]
+              return <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer"><Icon size={20} aria-hidden="true" />{social.name}<span className={styles.srOnly}> (tab baru)</span></a>
+            })}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section} aria-labelledby="skills-title">
+        <div className={styles.sectionBar}><span>04 / Teknologi</span><span>Dari antarmuka hingga infrastruktur</span></div>
+        <div className={`${styles.sectionBody} ${styles.skillSection}`}>
+          <h2 id="skills-title">Teknologi yang<br /><span>saya gunakan.</span></h2>
+          <ul className={styles.skills}>{skills.map(skill => <li key={skill}>{skill}</li>)}</ul>
+        </div>
+      </section>
+
+      <section id="contact" className={styles.section} aria-labelledby="contact-title">
+        <div className={styles.sectionBar}><span>05 / Kontak</span><span>Mari bekerja bersama</span></div>
+        <div className={`${styles.sectionBody} ${styles.contact}`}>
+          <p className={styles.availability}>Terbuka untuk full-time dan kontrak</p>
+          <h2 id="contact-title">Diskusikan<br /><span>proyek web Anda.</span></h2>
+          <p className={styles.muted}>Punya proyek atau ingin bekerja bersama? Mari mulai percakapan.</p>
+          <ContactActions />
+        </div>
+      </section>
     </main>
-    <footer className={styles.footer}><div className={styles.container}><span>Fadly Faturrohman</span><div>{socials.map(social => <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer">{social.name}<span className={styles.srOnly}> (tab baru)</span></a>)}<Link href="/menu">Menu aplikasi</Link></div></div></footer>
+    <footer className={styles.footer}><div className={styles.footerInner}>
+      <span>Fadly Faturrohman</span>
+      <div>{socials.map(social => <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer">{social.name}<span className={styles.srOnly}> (tab baru)</span></a>)}<Link href="/menu">Menu aplikasi</Link></div>
+    </div></footer>
   </div>
 }

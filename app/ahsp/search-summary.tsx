@@ -20,16 +20,16 @@ export default function SearchSummary({ stats, total, types, busy = false }: { s
       <summary className={styles.summaryToggle}>Ringkasan pencarian <span>{busy ? 'Memuat…' : `${number.format(total)} hasil`}</span></summary>
       <div className={styles.searchSummary}>
         {busy ? <p role="status">Memperbarui ringkasan pencarian…</p> : <>
-          <p className={styles.summaryTotal}><strong>{number.format(total)}</strong><span>item unik ditemukan</span></p>
-          <p className={styles.summaryComparison}>{stats.found_terms} dari {stats.input_count} istilah memiliki hasil pada {stats.match === 'exact' ? 'Exact-match' : 'Like-match'}.</p>
-          <p className={styles.summaryComparison}>Exact-match: <strong>{number.format(stats.exact_total)}</strong> item dari {number.format(stats.filtered_catalog_total)} item dalam cakupan filter. {stats.exact_found_terms} dari {stats.input_count} istilah cocok persis.</p>
+          <p className={styles.summaryTotal}><strong>{number.format(total)}</strong><span>nama pekerjaan unik ditemukan</span></p>
+          <p className={styles.summaryComparison}>{stats.found_terms} dari {stats.input_count} {stats.match === 'phrases' ? 'frasa' : 'istilah'} memiliki hasil pada {stats.match === 'phrases' ? 'Gabungan frasa' : stats.match === 'exact' ? 'Exact-match' : 'Like-match'}.</p>
+          {stats.match === 'phrases' ? <p className={styles.summaryComparison}>Setiap hasil mengandung minimal 2 frasa berbeda dalam nama pekerjaan. Urutan hasil mengikuti jumlah frasa yang cocok.</p> : <p className={styles.summaryComparison}>Exact-match: <strong>{number.format(stats.exact_total)}</strong> item dari {number.format(stats.filtered_catalog_total)} item dalam cakupan filter. {stats.exact_found_terms} dari {stats.input_count} istilah cocok persis.</p>}
           <details className={styles.termDetails} open={stats.input_count === 1}>
-            <summary>Kecocokan per istilah ({stats.input_count})</summary>
+            <summary>Kecocokan per {stats.match === 'phrases' ? 'frasa' : 'istilah'} ({stats.input_count})</summary>
             <ul className={styles.termList}>{stats.terms.map(term => <li key={term.term}>
               <strong>{term.term}</strong>
-              <dl><div data-active={stats.match === 'exact'}><dt>Exact-match</dt><dd>{number.format(term.exact_count)}</dd></div><div data-active={stats.match === 'like'}><dt>Like-match</dt><dd>{number.format(term.like_count)}</dd></div></dl>
+              <dl>{stats.match !== 'phrases' && <div data-active={stats.match === 'exact'}><dt>Exact-match</dt><dd>{number.format(term.exact_count)}</dd></div>}<div data-active={stats.match !== 'exact'}><dt>{stats.match === 'phrases' ? 'Hasil mengandung frasa' : 'Like-match'}</dt><dd>{number.format(term.like_count)}</dd></div></dl>
             </li>)}</ul>
-            <p className={styles.help}>Satu item bisa cocok dengan beberapa istilah. Total menghitung item pekerjaan unik.</p>
+            <p className={styles.help}>Satu pekerjaan bisa cocok dengan beberapa istilah dan mempunyai beberapa versi. Total menghitung nama pekerjaan unik.</p>
           </details>
           {!!types.length && <div className={styles.summaryTypes}><h3>Jenis item ditemukan</h3><dl>{types.map(type => <div key={type.type}><dt>{ahspTypeLabel(type.type)}</dt><dd>{number.format(type.count)}</dd></div>)}</dl></div>}
         </>}
