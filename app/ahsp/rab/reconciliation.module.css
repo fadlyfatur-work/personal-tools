@@ -1,0 +1,85 @@
+.app .panel,.summary { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:20px; margin-top:20px; }
+.summaryHeading { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px; }
+.summaryHeading span,.app .help,.app small { color:var(--muted); font-size:12px; }
+.app p+p,.app h2+p { margin-top:10px; }
+.recap { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:16px 0; gap:16px; }
+.recap div { min-width:0; }
+.recap dt { font-size:12px; color:var(--muted); }
+.recap dd { font-size:clamp(18px,2vw,25px); font-weight:600; margin:4px 0 0; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.summary>p { font-size:12px; color:var(--muted); }
+.summary strong { color:var(--warning); }
+.app .notice { margin-top:12px; min-height:0; }
+.problem { padding:12px 16px; border-left:3px solid var(--warning); background:var(--warningBg); color:var(--warning); margin:12px 0; overflow-wrap:anywhere; }
+ul.problem { padding-left:32px; }
+.app label { margin-top:12px; }
+.app header>select { width:auto; min-width:9rem; max-width:100%; align-self:flex-start; flex-shrink:0; }
+.app .checkbox,.sheetChoices label { display:flex; flex-direction:row; align-items:flex-start; gap:10px; font-weight:400; }
+.app .checkbox input,.app .sheetChoices input { width:20px; height:20px; min-height:20px; flex-shrink:0; margin-top:2px; }
+.sheetChoices { border:0; padding:0; margin:20px 0; }
+.sheetChoices label { min-height:44px; align-items:center; }
+.sheetChoices legend { font-weight:600; padding:0 6px; }
+.editFields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.editFields label { min-width:0; }
+.app input[type=file] { max-width:100%; padding:12px; }
+.actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:20px; }
+.actions strong { margin-right:auto; overflow-wrap:anywhere; min-width:0; }
+.app button { display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.app .primary { color:var(--actionInk); background:var(--action); }
+.app .primary:hover:not(:disabled) { background:var(--ink); color:var(--surface); }
+.tabs { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; border-bottom:1px solid var(--line); padding-bottom:12px; }
+.app .tabs button[aria-pressed=true] { background:var(--action); color:var(--actionInk); }
+.resultGroup { margin-top:20px; }
+.resultGroup h3 { padding:12px 0; }
+.tableScroll { max-width:100%; overflow:auto; border:1px solid var(--line); border-radius:4px; margin-top:12px; background:var(--surface); }
+.resultGroup table { border-collapse:collapse; width:100%; min-width:780px; text-align:left; }
+.resultGroup th { background:var(--tint); font-size:12px; font-weight:600; }
+.resultGroup th,.resultGroup td { padding:14px; vertical-align:top; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.resultGroup td { max-width:420px; min-width:160px; }
+.resultGroup td:first-child { width:27%; }
+.resultGroup td:nth-child(3) { width:35%; }
+.resultGroup td small { display:block; margin-top:6px; }
+.state { display:block; font-size:12px; margin-top:12px; font-weight:600; }
+.numbers { margin:0; font-variant-numeric:tabular-nums; }
+.numbers div { margin-bottom:10px; }
+.numbers dt { font-size:12px; color:var(--muted); }
+.numbers dd { margin:0; }
+.rowActions { display:flex; flex-direction:column; gap:10px; }
+.rowActions button { width:100%; }
+.recommendation { padding:12px 0; }
+.recommendation+.recommendation { border-top:1px solid var(--line); }
+.recommendation strong,.recommendation small { display:block; }
+.recommendation button { margin-top:10px; }
+.pagination { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin-top:16px; }
+.pagination span { font-size:12px; }
+.empty { padding:32px 16px; background:var(--surface); border:1px solid var(--line); margin-top:16px !important; color:var(--muted); }
+.excluded { margin-top:20px; }
+.excluded ul { padding:0; margin:12px 0 0; list-style:none; }
+.excluded li { display:flex; align-items:start; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid var(--line); }
+.excluded li>div { min-width:0; overflow-wrap:anywhere; }
+.excluded small { display:block; }
+.excluded button { flex-shrink:0; }
+.app .dialog { max-width:850px; }
+.modalHeader { display:flex; gap:16px; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); }
+.modalBody { padding:20px; }
+.modalBody form { margin:16px 0; }
+.modalBody>button { margin-top:16px; }
+.comparison { margin:0 0 16px; }
+.comparison>div { padding:12px 0; border-bottom:1px solid var(--line); }
+.comparison dt { font-size:12px; color:var(--muted); }
+.comparison dd { margin:6px 0 0; font-weight:600; overflow-wrap:anywhere; }
+.comparison small { display:block; margin-top:6px; font-weight:400; }
+.busy { opacity:.7; }
+@media(min-width:1000px) { .recap { grid-template-columns:repeat(6,minmax(0,1fr)); } }
+@media(max-width:600px) { .editFields { grid-template-columns:minmax(0,1fr); } .recap { grid-template-columns:repeat(2,minmax(0,1fr)); } .app .panel,.summary { padding:16px; } .excluded li { flex-direction:column; } .modalBody { padding:16px; } .app .dialog { width:calc(100% - 16px); } }
+@media(max-width:760px) {
+  .app .resultGroup table { display:block; min-width:0; }
+  .resultGroup thead { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); }
+  .resultGroup tbody { display:block; }
+  .resultGroup tr { display:grid; grid-template-columns:minmax(0,1fr); border-bottom:3px solid var(--line); }
+  .app .resultGroup td { display:block; width:auto; min-width:0; max-width:none; padding:14px; }
+  .resultGroup td::before { display:block; content:attr(data-label); color:var(--muted); font-size:12px; font-weight:600; margin-bottom:10px; }
+  .resultGroup .numbers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .resultGroup .numbers div:last-child { grid-column:1/-1; }
+  .resultGroup .rowActions { flex-direction:row; flex-wrap:wrap; }
+  .resultGroup .rowActions button { width:auto; }
+}

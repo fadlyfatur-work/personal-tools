@@ -153,7 +153,7 @@ export default function AhspCatalog() {
       debounceInput.current = key === 'q'
       setUseAdvanced(false)
       setDraftAdvanced(false)
-      setAppliedFilters({ ...initialFilters, q: next.q, regulation: next.regulation, field: next.field })
+      setAppliedFilters({ ...initialFilters, q: next.q, regulation: next.regulation, field: next.field, sipasti: next.sipasti })
     } else {
       setDraftAdvanced(true)
     }
@@ -165,6 +165,15 @@ export default function AhspCatalog() {
     setPage(1)
     setFilters(current => ({ ...current, field, division: '' }))
     setAppliedFilters(current => ({ ...current, field, division: '' }))
+  }
+  const changeMatchStatus = (status: string) => {
+    if (loading) return
+    const sipasti = appliedFilters.sipasti === status ? '' : status
+    beginList()
+    debounceInput.current = false
+    setPage(1)
+    setFilters(current => ({ ...current, sipasti }))
+    setAppliedFilters(current => ({ ...current, sipasti }))
   }
   const viewResults = () => {
     resultsAnchor.current?.scrollIntoView({ block: 'start', behavior: 'auto' })
@@ -180,7 +189,7 @@ export default function AhspCatalog() {
     debounceInput.current = false
     setUseAdvanced(advanced)
     setDraftAdvanced(advanced)
-    setAppliedFilters(advanced ? { ...filters } : { ...initialFilters, q: filters.q, regulation: filters.regulation, field: filters.field })
+    setAppliedFilters(advanced ? { ...filters } : { ...initialFilters, q: filters.q, regulation: filters.regulation, field: filters.field, sipasti: filters.sipasti })
     setPage(1)
     setRetry(n => n + 1)
     setShowAdvanced(false)
@@ -233,6 +242,7 @@ export default function AhspCatalog() {
 
       <div className={styles.context}>
         <Link href="/ahsp/mptk" className={styles.mptkButton}>Rekapitulasi MPTK</Link>
+        <Link href="/ahsp/rab" className={styles.mptkButton}>Pencocokan RAB</Link>
         <span>{options ? `${number.format(options.total)} pekerjaan unik${options.version_total ? ` · ${number.format(options.version_total)} versi/sumber` : ''}` : 'Katalog PostgreSQL'}</span>
         <select aria-label="Tampilan" value={theme} onChange={e => setTheme(e.target.value)}><option value="system">Tema sistem</option><option value="light">Terang</option><option value="dark">Gelap</option></select>
         <button type="button" aria-expanded={showSources} onClick={() => setShowSources(v => !v)}>Sumber dan cakupan data</button>
@@ -274,6 +284,19 @@ export default function AhspCatalog() {
           </div>
           <p className={styles.searchHelp}>Jumlah nama pekerjaan unik per bidang, termasuk arsip, sebelum filter pencarian. Nama yang sama ditampilkan dalam satu baris.</p>
         </fieldset>
+        <fieldset className={styles.sipastiFilters} aria-label="Kecocokan Data">
+          <legend><span className={styles.matchHeading}>Kecocokan Data <button type="button" className={styles.helpButton} popoverTarget="ahsp-match-info" aria-label="Tentang Kecocokan Data"><span aria-hidden="true">?</span></button></span></legend>
+          <div id="ahsp-match-info" popover="auto" className={styles.helpPopover} role="note" aria-labelledby="ahsp-match-info-title">
+            <h3 id="ahsp-match-info-title">Kecocokan Data</h3>
+            <p>Verfied berarti item ada di katalog dan SIPASTI PU berdasarkan kode, bidang, dan regulasi. Status ini tidak menilai kelengkapan analisis.</p>
+            <p>Filter langsung memperbarui hasil. Klik filter aktif lagi untuk menampilkan semua status.</p>
+            <button type="button" popoverTarget="ahsp-match-info" popoverTargetAction="hide">Tutup penjelasan</button>
+          </div>
+          <div className={styles.fieldOptions}>
+            {Object.entries(sipastiLabels).map(([status, label]) => <button key={status} type="button" disabled={loading} aria-pressed={appliedFilters.sipasti === status} onClick={() => changeMatchStatus(status)}>{loading && appliedFilters.sipasti === status && <span className={styles.spinner} aria-hidden="true" />}{label}</button>)}
+            <span className={styles.loadingIndicator} role="status" aria-atomic="true">{loading && <>{!appliedFilters.sipasti && <span className={styles.spinner} aria-hidden="true" />}Memperbarui data…</>}</span>
+          </div>
+        </fieldset>
         {advancedPending && <p className={styles.searchHelp} role="status">Perubahan pencarian lanjutan belum diterapkan. {showAdvanced ? 'Klik Cari' : 'Buka pencarian lanjutan dan klik Cari'} untuk memperbarui hasil.</p>}
         <div className={styles.filterTools}>
           <button type="button" aria-expanded={showAdvanced} aria-controls="ahsp-advanced" onClick={toggleAdvanced}>{showAdvanced ? 'Tutup pencarian lanjutan' : 'Pencarian lanjutan'}{!showAdvanced && useAdvanced && <span className={styles.activeFilter}> Filter aktif</span>}</button>
@@ -290,7 +313,7 @@ export default function AhspCatalog() {
               </div>
               <div className={styles.searchInputRow}>
                 <textarea id="ahsp-multiple" value={filters.multiple} onChange={e => changeFilter('multiple', e.target.value)} placeholder={filters.match === 'phrases' ? '"Mobilisasi dan Demobilisasi" "Alat Berat" "Excavator"' : 'Petugas pengatur lalu lintas\nPeralatan P3K\nRambu petunjuk'} rows={4} maxLength={6000} aria-invalid={!!searchValidation} aria-describedby={`ahsp-search-help ahsp-match-help${searchValidation ? ' ahsp-search-validation' : ''}`} />
-                <button type="button" className={styles.searchSubmit} onClick={() => applySearch(true)}>Cari{searchTerms.length > 1 ? ` ${searchTerms.length} ${filters.match === 'phrases' ? 'frasa' : 'istilah'}` : ''}</button>
+                <button type="button" className={styles.searchSubmit} disabled={loading} onClick={() => applySearch(true)}>{loading && <span className={styles.spinner} aria-hidden="true" />}Cari{searchTerms.length > 1 ? ` ${searchTerms.length} ${filters.match === 'phrases' ? 'frasa' : 'istilah'}` : ''}</button>
               </div>
               <p id="ahsp-search-help" className={styles.searchHelp}>{filters.match === 'phrases' ? 'Gunakan tanda kutip untuk mengelompokkan frasa. Kata tanpa tanda kutip dihitung terpisah. Maksimal 50 frasa.' : <>Pisahkan dengan baris baru, titik koma, atau {'\\'}. Koma menjadi bagian teks pencarian. Maksimal 50 istilah.</>}</p>
               <p id="ahsp-match-help" className={styles.searchHelp}>{filters.match === 'phrases' ? 'Menampilkan pekerjaan yang namanya mengandung minimal 2 frasa berbeda, tanpa membedakan huruf besar dan kecil. Kecocokan terbanyak ditampilkan lebih dulu.' : filters.match === 'exact' ? 'Nama atau kode harus cocok seluruhnya, tanpa membedakan huruf besar dan kecil.' : 'Mencari sebagian nama atau kode pekerjaan dan komponen.'}{searchTerms.length > 0 && ` ${searchTerms.length} ${filters.match === 'phrases' ? 'frasa' : 'istilah'}.`}</p>
@@ -313,23 +336,16 @@ export default function AhspCatalog() {
             </label>
             </div>
           </div>
-          <fieldset className={styles.sipastiFilters}>
-            <legend>Kecocokan dengan SIPASTI PU</legend>
-            <div className={styles.fieldOptions}>
-              {Object.entries(sipastiLabels).map(([status, label]) => <button key={status} type="button" aria-pressed={filters.sipasti === status} onClick={() => changeFilter('sipasti', filters.sipasti === status ? '' : status)}>{label}</button>)}
-            </div>
-            <p className={styles.searchHelp}>Verfied berarti item ada di kedua sumber berdasarkan kode, bidang, dan regulasi. Status ini tidak menilai kelengkapan analisis. Klik filter aktif lagi untuk menampilkan semua status, lalu klik Cari.</p>
-          </fieldset>
         </section>}
       </form>
 
       <section ref={resultsAnchor} tabIndex={-1} className={styles.resultsArea} aria-label="Daftar pekerjaan" aria-busy={loading}>
-        <div className={styles.listHeading}><div className={styles.listTitle}><h2>Item pekerjaan</h2>{useAdvanced && <button type="button" className={styles.editSearch} onClick={editSearch}>Ubah pencarian</button>}</div><span aria-live="polite">{loading ? 'Memuat katalog…' : error ? 'Katalog belum tersedia' : `${number.format(total)} hasil`}</span></div>
+        <div className={styles.listHeading}><div className={styles.listTitle}><h2>Item pekerjaan</h2>{useAdvanced && <button type="button" className={styles.editSearch} onClick={editSearch}>Ubah pencarian</button>}</div><span className={styles.loadingIndicator} role="status" aria-atomic="true">{loading && <span className={styles.spinner} aria-hidden="true" />}{loading ? 'Memuat katalog…' : error ? 'Katalog belum tersedia' : `${number.format(total)} hasil`}</span></div>
         <div className={styles.resultsLayout} data-summary={!error && useAdvanced && !!searchStats?.input_count}>
         {!error && useAdvanced && searchStats && searchStats.input_count > 0 && <SearchSummary stats={searchStats} total={total} types={matchedTypes} busy={loading} />}
         <div className={styles.catalog}>
         {error ? <div className={styles.notice} role="alert"><p>{error}</p><button type="button" onClick={() => { beginList(); setRetry(n => n + 1) }}>Coba lagi</button></div>
-          : loading && items.length === 0 ? <p className={styles.empty} role="status">Memuat pekerjaan dari PostgreSQL…</p>
+          : loading && items.length === 0 ? <p className={styles.empty}><span className={styles.loadingIndicator}><span className={styles.spinner} aria-hidden="true" />Memuat item pekerjaan…</span></p>
           : items.length === 0 ? <div className={styles.empty}><p>Tidak ada pekerjaan sesuai filter.</p><button type="button" onClick={resetFilters}>Tampilkan semua pekerjaan</button></div>
           : <><div className={styles.tableHeading} aria-hidden="true"><span>Kode / bidang</span><span>Pekerjaan / divisi</span><span>Satuan</span><span>Sumber regulasi</span><span>Salin</span></div>
             <ul className={styles.itemList}>{items.map(item => <li key={item.id}>
@@ -368,7 +384,7 @@ export default function AhspCatalog() {
 
     <dialog ref={dialog} className={styles.dialog} aria-labelledby="ahsp-dialog-title" onClose={() => { setSelected(null); setDetail(null) }} onClick={e => { if (e.target === e.currentTarget) { const rect = e.currentTarget.getBoundingClientRect(); if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) close() } }}>
       <div className={styles.modalHeader}><div><span className={styles.eyebrow}>{selected?.code} / {selected?.field}</span><h2 id="ahsp-dialog-title">{selected?.name}</h2><p>{selected?.regulation} / Satuan {selected?.unit || 'belum tersedia'}</p>{selected?.regulation === AHSP_ARCHIVED_REGULATION && <p className={styles.archiveTag}>{AHSP_ARCHIVE_NOTICE}. Data ini merupakan arsip regulasi.</p>}</div><button type="button" autoFocus onClick={close} className={styles.close}>Tutup</button></div>
-      {!detail && !detailError && <p className={styles.empty} role="status">Memuat komponen dan lampiran…</p>}
+      {!detail && !detailError && <p className={styles.empty} role="status"><span className={styles.loadingIndicator}><span className={styles.spinner} aria-hidden="true" />Memuat komponen dan lampiran…</span></p>}
       {detailError && <div className={styles.notice} role="alert"><p>{detailError}</p><button type="button" onClick={() => { setDetailError(''); setDetailRetry(n => n + 1) }}>Muat ulang analisis</button></div>}
       {detail && <>
         {reference && <section className={styles.referencePanel} aria-label="Rujukan analisis">

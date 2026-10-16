@@ -144,11 +144,18 @@
 .inlineLink:hover svg, .secondaryButton:hover svg { transform: translate(2px, -2px); }
 .primaryButton:hover svg { transform: translateY(2px); }
 @media (prefers-reduced-motion: no-preference) {
+  .portfolio [data-reveal-pending] { opacity: 0; transform: translate3d(0, 24px, 0); filter: blur(6px); }
+  .portfolio [data-reveal-pending][data-scroll-reveal=scale] { transform: translate3d(0, 20px, 0) scale(.975); filter: blur(4px); }
+  .portfolio [data-reveal-pending]:focus-within { opacity: 1; transform: none; filter: none; }
   .heroTitle { animation: enter 500ms cubic-bezier(.16,1,.3,1); }
   .projectReveal { animation: enter 260ms cubic-bezier(.16,1,.3,1); }
   .mobileNav[open] nav { animation: enter 180ms cubic-bezier(.16,1,.3,1); }
 }
 @keyframes enter { from { opacity: .5; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) and (max-width: 767px) {
+  .portfolio [data-reveal-pending] { transform: translate3d(0, 16px, 0); filter: blur(3px); }
+  .portfolio [data-reveal-pending][data-scroll-reveal=scale] { transform: translate3d(0, 16px, 0) scale(.985); filter: blur(3px); }
+}
 @media (min-width: 768px) and (max-width: 1100px) {
   .container, .navInner, .footerInner { width: calc(100% - 48px); }
   .sectionBody { padding-inline: 28px; }

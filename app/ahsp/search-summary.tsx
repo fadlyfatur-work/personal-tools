@@ -19,7 +19,7 @@ export default function SearchSummary({ stats, total, types, busy = false }: { s
     <details open={open} onToggle={e => { if (e.target === e.currentTarget) setOpen(e.currentTarget.open) }}>
       <summary className={styles.summaryToggle}>Ringkasan pencarian <span>{busy ? 'Memuat…' : `${number.format(total)} hasil`}</span></summary>
       <div className={styles.searchSummary}>
-        {busy ? <p role="status">Memperbarui ringkasan pencarian…</p> : <>
+        {busy ? <p className={styles.loadingIndicator} role="status"><span className={styles.spinner} aria-hidden="true" />Memperbarui ringkasan pencarian…</p> : <>
           <p className={styles.summaryTotal}><strong>{number.format(total)}</strong><span>nama pekerjaan unik ditemukan</span></p>
           <p className={styles.summaryComparison}>{stats.found_terms} dari {stats.input_count} {stats.match === 'phrases' ? 'frasa' : 'istilah'} memiliki hasil pada {stats.match === 'phrases' ? 'Gabungan frasa' : stats.match === 'exact' ? 'Exact-match' : 'Like-match'}.</p>
           {stats.match === 'phrases' ? <p className={styles.summaryComparison}>Setiap hasil mengandung minimal 2 frasa berbeda dalam nama pekerjaan. Urutan hasil mengikuti jumlah frasa yang cocok.</p> : <p className={styles.summaryComparison}>Exact-match: <strong>{number.format(stats.exact_total)}</strong> item dari {number.format(stats.filtered_catalog_total)} item dalam cakupan filter. {stats.exact_found_terms} dari {stats.input_count} istilah cocok persis.</p>}

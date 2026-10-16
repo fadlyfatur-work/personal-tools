@@ -1,0 +1,39 @@
+.titleBar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; padding: 14px 24px; border-bottom: 1px solid var(--line); }
+.titleBar h1 { font-size: 24px; font-weight: 550; line-height: 1.2; letter-spacing: -.03em; }
+.count { color: var(--muted); font: 12px/1.5 var(--font-geist-mono), monospace; white-space: nowrap; }
+.catalogArea { padding: 16px 24px 24px; }
+.menu .catalog { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); list-style: none; padding: 0; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.catalog > li { min-width: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.catalog > li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.toolLink { display: grid; grid-template-columns: 36px minmax(0, 1fr) 20px; align-items: center; gap: 14px; min-height: 104px; height: 100%; padding: 16px 20px; transition: background 160ms, transform 100ms; }
+.toolLink:hover, .toolLink:focus-visible { background: var(--surface); }
+.toolLink:active { transform: scale(.99); }
+.toolIcon { display: grid; place-items: center; width: 36px; height: 36px; color: var(--accent); border: 1px solid var(--line); border-radius: 3px; }
+.toolIcon svg { width: 22px; height: 22px; }
+.toolCopy h2 { font-size: 20px; font-weight: 500; line-height: 1.25; letter-spacing: -.025em; }
+.toolCopy p { color: var(--muted); font-size: 14px; line-height: 1.5; margin-top: 4px; }
+.open { color: var(--accent); transition: transform 180ms cubic-bezier(.16, 1, .3, 1); }
+.toolLink:hover .open { transform: translate(2px, -2px); }
+.footer { width: min(1280px, calc(100% - 96px)); margin-inline: auto; padding: 8px 24px; border-inline: 1px solid var(--line); border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.footer a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.footer a:hover { color: var(--accent); }
+@media (min-width: 768px) and (max-width: 1100px) {
+  .footer { width: calc(100% - 48px); }
+  .toolLink { padding: 14px 16px; gap: 12px; }
+}
+@media (max-width: 767px) {
+  .titleBar { min-height: 56px; padding: 12px 16px; }
+  .titleBar h1 { font-size: 22px; }
+  .catalogArea { padding: 12px; }
+  .menu .catalog { grid-template-columns: 1fr; }
+  .toolLink { grid-template-columns: 32px minmax(0, 1fr) 18px; gap: 10px; padding: 12px; min-height: 84px; }
+  .toolIcon { width: 32px; height: 32px; }
+  .toolIcon svg { width: 20px; height: 20px; }
+  .toolCopy h2 { font-size: 17px; }
+  .toolCopy p { font-size: 13px; line-height: 1.45; }
+  .open { width: 18px; height: 18px; }
+  .footer { width: calc(100% - 32px); padding: 4px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toolLink:active, .toolLink:hover .open { transform: none; }
+}
