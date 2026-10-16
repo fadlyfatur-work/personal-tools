@@ -20,7 +20,7 @@ export default function InitialPreloader({ pending, onExit }: { pending: boolean
 
   return <div className={styles.preloader} data-ready={!pending}>
     <div className={styles.preloaderContent} role="status" aria-live="polite" aria-atomic="true">
-      <div className={styles.loaderMark} aria-hidden="true"><span /><span /><span /></div>
+      <div className={styles.loaderMark} aria-hidden="true"><span className={styles.spinner} /></div>
       <p className={styles.loaderTitle}>Katalog AHSP</p>
       <p className={styles.loaderStatus}>{pending ? 'Memuat item pekerjaan…' : 'Menampilkan halaman…'}</p>
       <p className={styles.loaderHelp}>Menyiapkan daftar item dan sumber regulasi.</p>

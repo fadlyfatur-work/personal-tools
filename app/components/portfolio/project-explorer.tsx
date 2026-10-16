@@ -16,7 +16,7 @@ export function ProjectExplorer() {
   const [selected, setSelected] = useState(0)
   const project = projects[selected]
   const preview = previews[selected]
-  return <div className={styles.explorer}>
+  return <div className={styles.explorer} data-scroll-reveal="scale">
     <div className={styles.explorerChoices} role="tablist" aria-label="Pilih proyek" onKeyDown={event => {
       const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End']
       if (!keys.includes(event.key)) return

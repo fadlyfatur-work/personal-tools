@@ -47,7 +47,7 @@ export function ProjectList() {
       <ul id="project-list" className={styles.projectList}>{visible.map(id => {
         const project = projects.find(item => item.id === id)!
         const index = order.indexOf(id)
-        return <li key={id} className={styles.project} data-dragging={dragged === id} draggable={ready && reordering}
+        return <li key={id} className={styles.project} data-scroll-reveal data-reveal-delay={index % 3 * 60} data-dragging={dragged === id} draggable={ready && reordering}
           onDragStart={event => { draggedId.current = id; setDragged(id); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', id) }}
           onDragOver={event => { if (reordering && draggedId.current) event.preventDefault() }}
           onDrop={event => { event.preventDefault(); if (reordering && draggedId.current) move(draggedId.current, index); draggedId.current = null; setDragged(null) }}
