@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tan
 import { ArrowClockwise, BellRinging, WarningCircle, X } from '@phosphor-icons/react'
 import TransactionForm from './transaction-form'
 import { TransactionSheet } from './transaction-sheet'
-import { fetchFintrackBootstrap, fintrackKeys } from '@/lib/fintrackClient'
+import { fetchFintrackBootstrap, fintrackActivityOptions, fintrackGoalsOptions, fintrackKeys } from '@/lib/fintrackClient'
 import { fintrackRequest } from '@/lib/fintrackRequest'
 import type { Account, Category, FintrackBootstrap, FintrackUser, Transaction } from '@/types/fintrack'
 
@@ -133,6 +133,24 @@ function FintrackState({ children }: { children: React.ReactNode }) {
   const [loaderVisible, setLoaderVisible] = useState(false)
   const [composer, setComposer] = useState<{ open: boolean; editing: Transaction | null }>({ open: false, editing: null })
   const [budgetNotice, setBudgetNotice] = useState<{ title: string; message: string; over: boolean } | null>(null)
+
+  const warmUserId = query.data?.user.id
+  const warmMonth = query.data?.report.month
+  useEffect(() => {
+    if (pathname !== '/fintrack' || !warmUserId || !warmMonth || query.isError) return
+    const timer = window.setTimeout(() => {
+      for (const route of ['/fintrack/activity', '/fintrack/goals', '/fintrack/manage', '/fintrack/settings']) router.prefetch(route)
+      void queryClient.prefetchQuery(fintrackGoalsOptions())
+      void (async () => {
+        for (const details of ['0', '1']) {
+          if (queryClient.getQueryData<FintrackBootstrap>(fintrackKeys.bootstrap)?.user.id !== warmUserId) return
+          const params = new URLSearchParams({ month: warmMonth, details, page: '1', include_transfers: details === '0' ? '1' : '0' })
+          await queryClient.prefetchQuery(fintrackActivityOptions(warmUserId, params.toString()))
+        }
+      })()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [pathname, warmUserId, warmMonth, query.isError, queryClient, router])
 
   useEffect(() => {
     const error = query.error as (Error & { status?: number }) | null

@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions -- Playwright CLI evaluates the function expression. */
 async page => {
+  const setMode = async mode => {
+    const button = page.getByRole('button', { name: mode === 'dark' ? 'Aktifkan mode gelap' : 'Aktifkan mode terang', exact: true });
+    if (await button.count()) await button.click();
+  };
   const results = [];
   const check = (value, label) => { if (!value) throw new Error(label); results.push(label); };
   const errors = [];
@@ -7,7 +11,7 @@ async page => {
   const origin = new URL(page.url()).origin;
   await page.goto(origin + '/ahsp/rab');
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByLabel('Tampilan', { exact: true }).selectOption('dark');
+  await setMode('dark');
   await page.getByLabel('Dokumen Excel').setInputFiles('C:/Users/User/Downloads/PEMERIKSAAN/DKH KALTENG.xlsx');
   const group = page.getByRole('group', { name: 'Table 7', exact: true });
   await group.getByRole('heading', { name: 'Periksa hasil pembacaan', exact: true }).waitFor();
@@ -69,7 +73,7 @@ async page => {
   for (const width of [1440, 1024, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     for (const theme of ['light', 'dark', 'system']) {
-      await page.getByLabel('Tampilan', { exact: true }).selectOption(theme);
+      await setMode(theme);
       check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Page fits ' + width + ' ' + theme);
     }
     await volume.click();
@@ -87,7 +91,7 @@ async page => {
   check(await picker.evaluate(el => getComputedStyle(el).transitionDuration.split(',').every(value => parseFloat(value) === 0)), 'Reduced motion disables picker transitions');
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByLabel('Tampilan', { exact: true }).selectOption('dark');
+  await setMode('dark');
   await group.scrollIntoViewIfNeeded();
   await page.screenshot({ path: '.next/rab-ui-audit/desktop-after.png', fullPage: true });
   for (const [file, sheet, count] of [['DKH JABAR.xlsx', 'Table 3', 24], ['DKH JATIM.xlsx', 'Table 2', 23], ['DKH BANTEN.xlsx', 'Table 1', 43], ['1. Daftar Kuantitas dan Harga - R T.xlsx', 'Table 1', 25], ['DKH_Rehabilitasi_Jalan_HOS_Cokroaminoto.xlsx', 'DKH', 51]]) {

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 }
 
 const features = [
-  { href: '/ahsp', title: 'Katalog AHSP 2026', desc: 'Telusuri pekerjaan, komponen analisis, kalkulator, dan status rekonsiliasi.', icon: <Calculator size={32} aria-hidden="true" /> },
+  { href: '/ahsp', title: 'Katalog AHSP', desc: 'Telusuri pekerjaan, komponen analisis, kalkulator, dan status rekonsiliasi.', icon: <Calculator size={32} aria-hidden="true" /> },
   { href: '/fintrack', title: 'Fintrack', desc: 'Kelola dompet & transaksi. Login PIN 6 digit.', icon: <Wallet size={32} aria-hidden="true" /> },
   { href: '/paste', title: 'Paste Text', desc: 'Bagikan teks dengan kode singkat.', icon: <ClipboardText size={32} aria-hidden="true" /> },
   { href: '/nominatif', title: 'Nominatif Perjalanan Dinas', desc: 'Hitung rincian biaya sesuai aturan dan ekspor Excel.', icon: <FileText size={32} aria-hidden="true" /> },

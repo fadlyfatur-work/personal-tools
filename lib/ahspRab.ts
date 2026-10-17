@@ -15,14 +15,44 @@ export type RabRow = {
   raw: Record<string, string>; refs: Record<string, string>; issues: string[]; reviewed: boolean;
   excluded: boolean; exclusion: string; status: 'pending' | 'review' | 'missing' | 'matched';
   candidate: RabCandidate | null; candidates: RabCandidate[]; manual: boolean; resolution: string;
-  history: string[];
+  history: string[]; noMatch?: boolean;
 }
 export const rabText = (value: string) => value.normalize('NFKC').toLocaleLowerCase('id-ID').replace(/\s+/g, ' ').trim()
+const rabUnitAliases = new Map([
+  ['lumsum', 'ls'], ['lumpsum', 'ls'], ['lumsun', 'ls'],
+  ['meterkubik', 'm3'], ['meterpersegi', 'm2'],
+  ['m1', 'm'], ["m'", 'm'], ['meter', 'm'], ['meterpanjang', 'm'],
+  ['kilogram', 'kg'], ['bh', 'buah'],
+  ['org-bln', 'ob'], ['org/bln', 'ob'], ['orangbulan', 'ob'], ['orang-bulan', 'ob'],
+  ['orang', 'org'], ['psg', 'pasang'],
+])
 export const rabUnit = (value: string) => {
   const unit = rabText(value).replace(/[.\s]/g, '')
-  return ({ bh: 'buah', buah: 'buah', ls: 'ls', 'm1': 'm', "m'": 'm', 'org-bln': 'ob', 'org/bln': 'ob', 'orangbulan': 'ob', 'psg': 'pasang' } as Record<string, string>)[unit] ?? unit
+  return rabUnitAliases.get(unit) ?? unit
 }
 export const rabPrimary = (candidate: RabCandidate) => (AHSP_ACTIVE_REGULATIONS as readonly string[]).includes(candidate.regulation)
+export const rabPercent = (n: number) => n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+export const rabMoney = (n: number) => n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+export const rabRowKey = (row: Pick<RabRow, 'id' | 'name' | 'code'>) => JSON.stringify(!row.name.trim() || row.name === 'Uraian belum terbaca' ? [row.name, row.code, row.id] : [row.name, row.code])
+export function groupRabRows(rows: RabRow[]) {
+  const groups = new Map<string, RabRow[]>()
+  for (const row of rows) if (!row.excluded) {
+    const key = rabRowKey(row)
+    const group = groups.get(key)
+    if (group) group.push(row)
+    else groups.set(key, [row])
+  }
+  return [...groups].map(([key, members]) => {
+    const decisions = new Set(members.map(row => JSON.stringify([row.status, row.candidate?.id ?? null, !!row.noMatch])))
+    const mixed = decisions.size > 1
+    const row = members.find(row => !row.reviewed) ?? members.find(row => row.status !== 'matched') ?? members[0]
+    return { key, members, row, mixed, matched: !mixed && row.status === 'matched' }
+  })
+}
+export function updateRabGroup(rows: RabRow[], target: RabRow, change: (row: RabRow) => RabRow) {
+  const key = rabRowKey(target)
+  return rows.map(row => !row.excluded && rabRowKey(row) === key ? change(row) : row)
+}
 const candidateNames = new WeakMap<RabCandidate, string>()
 const candidateName = (candidate: RabCandidate) => {
   let text = candidateNames.get(candidate)
@@ -35,7 +65,7 @@ export function rabNumber(cell?: RabCell): { value: number | null; issue: string
   if (cell.error) return { value: null, issue: 'Sel berisi kesalahan Excel.' }
   if (cell.value !== null && Number.isFinite(cell.value)) return { value: cell.value, issue: '' }
   const text = cell.text.trim().replace(/^Rp\.?\s*/i, '').replace(/\u00a0/g, '')
-  if (!text || /^[-–—]$/.test(text)) return { value: null, issue: cell.formula ? 'Hasil tersimpan rumus belum tersedia.' : '' }
+  if (!text || /^[-–-]$/.test(text)) return { value: null, issue: cell.formula ? 'Hasil tersimpan rumus belum tersedia.' : '' }
   if (/[\r\n]/.test(text)) return { value: null, issue: 'Beberapa angka berada dalam satu sel.' }
   let cleaned = text
   if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(text)) cleaned = text.replace(/\./g, '').replace(',', '.')
@@ -50,6 +80,7 @@ export const rabColumn = (index: number): string => index > 26 ? rabColumn(Math.
 export const rabColumnIndex = (column: string) => [...column].reduce((n, char) => n * 26 + char.charCodeAt(0) - 64, 0)
 const heading = (text: string) => /^(divisi\b|pekerjaan (persiapan|pelaksanaan|pembantu|penerapan smkk)$|apk,? antara|apd,? antara)/i.test(text.trim())
 const subtotal = (text: string) => /^(sub\s*jumlah|jumlah\b|total(?:\s+(seluruh|harga|divisi)\b|\s*$)|ppn\b|###|catatan\s*:)/i.test(text.trim())
+const hasRabPrice = (value: number | null, text = '') => value !== null || /^\s*(?:Rp\.?\s*)?[+-]?\d[\d.,]*\s*$/i.test(text)
 
 export function detectRabMapping(sheet: Pick<RabSheet, 'cells' | 'columns' | 'merges' | 'lastRow'>): RabMapping {
   const mapping: RabMapping = { name: '', code: '', unit: '', volume: '', price: '', total: '', start: 1 }
@@ -83,6 +114,8 @@ export function detectRabMapping(sheet: Pick<RabSheet, 'cells' | 'columns' | 'me
     const col = rabColumn(rabColumnIndex(mapping.name) + 1)
     if (sheet.columns.includes(col)) mapping.unit = col
   }
+  const columnNumbers = sheet.columns.map(col => sheet.cells[`${col}${mapping.start}`]?.text.trim() ?? '').filter(Boolean)
+  if (header && columnNumbers.length >= 4 && columnNumbers.every((text, index) => text === String(index + 1))) mapping.start++
   return mapping
 }
 
@@ -115,7 +148,8 @@ export function extractRabRows(sheet: RabSheet, mapping: RabMapping): RabRow[] {
       if (parsed.issue) issues.push(`${key === 'volume' ? 'Volume' : key === 'price' ? 'Harga satuan' : 'Total'}: ${parsed.issue}`)
       return parsed.value
     })
-    const excluded = subtotal(name) || heading(name)
+    const priced = hasRabPrice(values[1], raw.price)
+    const excluded = !priced && (subtotal(name) || heading(name))
     return { id: `${sheet.name}:${source}:${row}${suffix}`, sheet: sheet.name, row, source, originalName: name, name, code, unit,
       volume: values[0], price: values[1], total: values[2], raw, refs, issues: [...new Set(issues)], reviewed: issues.length === 0,
       excluded, exclusion: excluded ? 'Judul kelompok, subtotal, atau catatan.' : '', status: 'pending', candidate: null, candidates: [], manual: false, resolution: '', history: [] }
@@ -144,7 +178,8 @@ export function extractRabRows(sheet: RabSheet, mapping: RabMapping): RabRow[] {
     const item = read(row, name, `${mapping.name}${row}`)
     const helper = /^b$/i.test(name) && /^c$/i.test(item.unit) && /^a$/i.test(item.code)
     const hasFacts = Boolean(item.unit && item.unit !== '-') || [item.volume, item.price, item.total].some(v => v !== null)
-    if (!item.excluded && (!hasFacts || helper)) { item.excluded = true; item.reviewed = helper; item.exclusion = helper ? 'Baris penunjuk kolom Excel.' : 'Tidak memiliki satuan atau angka pendukung; periksa apakah judul atau pekerjaan, termasuk kelompok berkode.' }
+    const priced = hasRabPrice(item.price, item.raw.price)
+    if (!item.excluded && !priced && (!hasFacts || helper)) { item.excluded = true; item.reviewed = helper; item.exclusion = helper ? 'Baris penunjuk kolom Excel.' : 'Tidak memiliki satuan atau angka pendukung; periksa apakah judul atau pekerjaan, termasuk kelompok berkode.' }
     result.push(item)
   }
   // Retain numeric rows whose description was lost in a merge or column mapping.
@@ -154,7 +189,9 @@ export function extractRabRows(sheet: RabSheet, mapping: RabMapping): RabRow[] {
     const code = sheet.cells[`${mapping.code}${row}`]?.text ?? ''
     const coded = code.length < 60 && /[.()]/.test(code) && /\d/.test(code) && !/\s[a-z]{3,}/i.test(code)
     const hasUnit = unit && /[a-zA-Z]/.test(unit) && !subtotal(unit) && unit.length <= 40
-    if ((!hasUnit && !coded) || !['volume', 'price', 'total'].some(key => rabNumber(sheet.cells[`${mapping[key as keyof RabMapping]}${row}`]).value !== null)) continue
+    const priceCell = sheet.cells[`${mapping.price}${row}`]
+    const hasPrice = hasRabPrice(rabNumber(priceCell).value, priceCell?.text)
+    if ((!hasPrice && !hasUnit && !coded) || !['volume', 'price', 'total'].some(key => rabNumber(sheet.cells[`${mapping[key as keyof RabMapping]}${row}`]).value !== null)) continue
     const item = read(row, 'Uraian belum terbaca', `${mapping.name}${row}`)
     item.reviewed = false; item.issues.push('Uraian pekerjaan belum terbaca. Perbaiki pemetaan atau isi uraian.'); result.push(item)
   }
@@ -186,7 +223,7 @@ export function rabSuggestions(name: string, catalog: RabCandidate[], mode: 'lik
   return (primaryExact ? matches.filter(item => rabPrimary(item.candidate)) : matches).sort((a, b) => Number(b.exact) - Number(a.exact) || Number(rabPrimary(b.candidate)) - Number(rabPrimary(a.candidate)) || b.count - a.count || regulationRank(a.candidate) - regulationRank(b.candidate) || a.candidate.name.localeCompare(b.candidate.name, 'id') || a.candidate.id.localeCompare(b.candidate.id)).map(item => item.candidate)
 }
 export function matchRabRow(row: RabRow, catalog: RabCandidate[]): RabRow {
-  if (row.excluded || row.manual) return row
+  if (row.excluded || row.manual || row.noMatch) return row
   const byLike = rabSuggestions(row.name, catalog, 'like', '', row.unit)
   const candidates = byLike.length ? byLike : rabSuggestions(row.name, catalog, 'phrases', '', row.unit)
   const exact = candidates.filter(candidate => rabText(candidate.name) === rabText(row.name) && rabDifferences(row, candidate).length === 0)
@@ -199,11 +236,18 @@ export function rabRecap(rows: RabRow[]) {
   const count = (fn: (row: RabRow) => boolean) => active.filter(fn).length
   const primary = count(row => row.status === 'matched' && !!row.candidate && rabPrimary(row.candidate))
   const additional = count(row => row.status === 'matched' && !!row.candidate && !rabPrimary(row.candidate))
-  return { total: active.length, primary, additional, review: count(row => row.status === 'review'), missing: count(row => row.status === 'missing'), pending: count(row => row.status === 'pending'), excluded: rows.length - active.length, excludedReview: rows.filter(row => row.excluded && !row.reviewed).length, issues: active.filter(row => !row.reviewed).length,
+  return { total: active.length, primary, additional, review: count(row => row.status === 'review'), missing: count(row => row.status === 'missing'), checkedMissing: count(row => !!row.noMatch), pending: count(row => row.status === 'pending'), excluded: rows.length - active.length, excludedReview: rows.filter(row => row.excluded && !row.reviewed).length, issues: active.filter(row => !row.reviewed && !row.noMatch).length,
     percent: active.length ? primary / active.length * 100 : 0,
     additionalPercent: active.length ? additional / active.length * 100 : 0,
     amount: active.reduce((sum, row) => sum + (row.total ?? 0), 0), missingAmounts: count(row => row.total === null),
   }
+}
+export function confirmRabNoMatch(row: RabRow): RabRow {
+  return { ...row, candidate: null, status: 'missing', noMatch: true, manual: true, resolution: '', history: [...row.history, `${new Date().toISOString()}: diperiksa; tidak ada kecocokan, dilewati.`] }
+}
+export function includeRabRows(rows: RabRow[], ids: string[], catalog: RabCandidate[]): RabRow[] {
+  const selected = new Set(ids)
+  return rows.map(row => row.excluded && selected.has(row.id) ? matchRabRow({ ...row, excluded: false, exclusion: '', noMatch: false, candidate: null, candidates: [], manual: false, status: 'pending', resolution: '', history: [...row.history, `${new Date().toISOString()}: pengecualian dibatalkan; dimasukkan ke daftar pekerjaan.`] }, catalog) : row)
 }
 export function rabAmountWarning(row: Pick<RabRow, 'volume' | 'price' | 'total'>) {
   if (row.volume === null || row.price === null || row.total === null) return 'Data angka belum lengkap.'

@@ -38,25 +38,20 @@ for sid,field in [('10901','Sumber Daya Air'),('10904','Cipta Karya / Perumahan'
    if len(targets[key])>1: status='perlu_ditinjau'; notes.append('Kode dipakai oleh beberapa baris master; perlu memastikan varian yang digunakan.')
    item.update(name=title,unit=unit,division=m['divisions'](field,h['code']),source_id=sid,page_from=pi+1,page_to=pi+1,printed_page=printed[1] if printed else '',source_text=f'Halaman PDF {pi+1}\n'+text,components=component['components'],analysis_status=component['status'],output_quantity=m['numeric'](quantity[1]),overhead_min=float(overhead[1]) if overhead else None,overhead_max=float(overhead[2]) if overhead else None,reconciliation_status=status,reconciliation_notes=notes+['Padanan ditemukan pada judul dan tabel analisis; tipe normatif/informatif belum teridentifikasi pada daftar isi.'])
    for row in item['master_rows']: raw[row].update(status=status,notes=notes)
-# Match unresolved BM codes to the visible native item headings. Do not invent scanned coefficients.
+# Resolve by the payment code in the analysis heading, including prior TOC mappings.
 doc=pymupdf.open(root/'10903.pdf')
-targets=[i for i in data['items'] if i['field']=='Bina Marga' and i['source_id'] is None and i['code']]
-matches=collections.defaultdict(list); headings=[]
-for pi,page in enumerate(doc):
- if pi<30: continue
- hs=m['headings'](page,'Bina Marga')
- for h in hs:
-  headings.append(pi)
-  for item in targets:
-   if re.search(r'(?<![\d.])'+re.escape(ck(item['code']))+r'\)?(?:$|[^a-z\d.])',ck(h['text'])):
-    matches[item['id']].append(pi)
+native=runpy.run_path(str(pathlib.Path(__file__).with_name('ahsp-bm-pages.py')))['analysis_pages'](doc)
+targets=[i for i in data['items'] if i['field']=='Bina Marga' and i['source_id'] in (None,'10903') and i['code'] and not i['components']]
+changed=0
 for item in targets:
- found=matches[item['id']]
- if len(found)!=1: continue
- pi=found[0]; next_page=min((p for p in headings if p>pi),default=pi+3); end=min(next_page-1,pi+5,len(doc)-1)
- item.update(source_id='10903',page_from=pi+1,page_to=end+1,source_text='\n\n'.join(f'Halaman PDF {p+1}\n'+doc[p].get_text(sort=True) for p in range(pi,end+1)),reconciliation_status='perlu_ditinjau',reconciliation_notes=['Kode ditemukan pada judul analisis Bina Marga. Satuan dan komponen pada gambar belum diekstrak; data nama dan satuan masih berasal dari master.'])
+ found=native.get(ck(item['code']))
+ if not found or re.search(r'^\s*[A-J]\.\d+\s+.*\('+re.escape(ck(item['code']))+r'\)\s*$',item['source_text'],re.I|re.M): continue
+ start,end,text=found
+ printed=re.search(r'^\s*-\s*(\d+)\s*-\s*$',text,re.M)
+ item.update(source_id='10903',page_from=start,page_to=end,printed_page=printed[1] if printed else '',source_text=text,reconciliation_status='perlu_ditinjau',reconciliation_notes=['Kode ditemukan pada judul analisis Bina Marga. Periksa rincian terhadap tabel analisis pada lampiran.'])
  for row in item['master_rows']: raw[row].update(status='perlu_ditinjau',notes=item['reconciliation_notes'])
-print('BM REFERENCES',sum(bool(matches[i['id']]) for i in targets),flush=True)
+ changed+=1
+print('BM REFERENCES REPAIRED',changed,flush=True)
 report=data['report']; report.update(items=len(data['items']),reconciliation=dict(collections.Counter(i['reconciliation_status'] for i in data['items'])),analysis=dict(collections.Counter(i['analysis_status'] for i in data['items'])))
 args.inventory.write_text(json.dumps(data,ensure_ascii=False,default=str),encoding='utf-8')
 print(json.dumps(report,ensure_ascii=True),flush=True)

@@ -6,6 +6,8 @@ import { AHSP_CATALOG_REGULATIONS, AHSP_ARCHIVED_REGULATION } from '@/lib/ahsp'
 import { mptkGroups, type MptkComponent, type MptkResponse } from '@/lib/ahspMptk'
 import base from '../catalog.module.css'
 import styles from './catalog.module.css'
+import swiss from '../swiss-red.module.css'
+import AppearancePicker, { useAhspAppearance } from '../appearance'
 
 const number = new Intl.NumberFormat('id-ID', { maximumSignificantDigits: 12 })
 const initialFilters = { q: '', group: '', field: '', unit: '', regulation: '', analysis: '' }
@@ -19,7 +21,7 @@ async function readCatalog(params: URLSearchParams, signal: AbortSignal): Promis
 }
 
 export default function MptkCatalog() {
-  const [theme, setTheme] = useState('system')
+  const appearance = useAhspAppearance()
   const [draft, setDraft] = useState(initialFilters)
   const [filters, setFilters] = useState(initialFilters)
   const [page, setPage] = useState(1)
@@ -85,15 +87,15 @@ export default function MptkCatalog() {
   const usagePages = Math.max(1, Math.ceil((detail?.usage_total ?? selected?.occurrence_count ?? 0) / 30))
   const totalGroups = data?.groups.reduce((total, group) => total + group.count, 0) ?? 0
 
-  return <main className={base.page} data-theme={theme}>
+  return <main className={`${base.page} ${swiss.page}`} data-theme={appearance.mode} data-palette={appearance.palette}>
     <div className={base.container}>
-      <header className={base.header}>
-        <div><Link className={base.back} href="/ahsp">Katalog AHSP</Link>
-          <h1>Rekapitulasi MPTK</h1><p>Cari tenaga kerja, material, dan peralatan beserta pekerjaan yang menggunakannya.</p></div>
-        <label>Tampilan<select value={theme} onChange={e => setTheme(e.target.value)}><option value="system">Tema sistem</option><option value="light">Terang</option><option value="dark">Gelap</option></select></label>
+      <header className={base.header} data-ahsp-header>
+        <Link className={base.back} href="/ahsp">Katalog AHSP</Link>
+        <AppearancePicker appearance={appearance} />
+        <div data-ahsp-heading><h1>Rekapitulasi MPTK</h1><p>Cari tenaga kerja, material, dan peralatan beserta pekerjaan yang menggunakannya.</p></div>
       </header>
 
-      <form className={base.filters} aria-label="Pencarian komponen MPTK" onSubmit={e => { e.preventDefault(); applyFilters(draft) }}>
+      <form className={base.filters} data-ahsp-panel data-ahsp-form aria-label="Pencarian komponen MPTK" onSubmit={e => { e.preventDefault(); applyFilters(draft) }}>
         <div className={styles.search}>
           <label htmlFor="mptk-search">Nama atau kode komponen<input id="mptk-search" type="search" value={draft.q} onChange={e => setDraft(current => ({ ...current, q: e.target.value }))} maxLength={240} placeholder="Contoh: Semen Portland, Pekerja, L.01" /></label>
           <button type="submit" className={styles.searchButton}>Cari komponen</button>
@@ -124,7 +126,7 @@ export default function MptkCatalog() {
         <p>Rincian Bina Marga dan arsip SIPASTI belum lengkap. Struktur terekstrak menandai hasil pemeriksaan ekstraksi, bukan pengesahan teknis. Koefisien mengikuti masing-masing pekerjaan dan basis analisis. Harga dasar serta kebutuhan total proyek belum termasuk.</p>
       </details>
 
-      <section className={styles.results} aria-label="Daftar komponen" aria-busy={loading}>
+      <section className={styles.results} data-ahsp-panel data-ahsp-results aria-label="Daftar komponen" aria-busy={loading}>
         <div className={base.listHeading}><h2>Komponen MPTK</h2><span role="status">{loading ? 'Memuat komponen…' : error ? 'Katalog belum tersedia' : `${number.format(data?.total ?? 0)} komponen`}</span></div>
         {error ? <div className={base.notice} role="alert"><p>{error}</p><button type="button" onClick={() => { setLoading(true); setError(''); setRetry(n => n + 1) }}>Coba lagi</button></div>
           : loading ? <p className={base.empty}>Memuat katalog komponen…</p>

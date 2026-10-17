@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, Copy, WarningCircle } from '@phosphor-icons/react'
 import { AHSP_CATALOG_REGULATIONS, AHSP_ARCHIVED_REGULATION, AHSP_ARCHIVE_NOTICE, ahspPhraseSearchError, sipastiLabels, calculateAhsp, parseAhspNumber, parseAhspSearch, ahspTypeLabel, formatAhspItemCopy, type AhspSearchStats, type AhspTypeCount, type AhspItem, type AhspSummary, type AhspOptions, type AhspSource } from '@/lib/ahsp'
 import styles from './catalog.module.css'
+import swiss from './swiss-red.module.css'
+import AppearancePicker, { useAhspAppearance } from './appearance'
 import ManualAnalysis from './manual-analysis'
 import SourcePages from './source-pages'
 import SearchSummary from './search-summary'
@@ -19,7 +21,7 @@ const initialFilters = { q: '', multiple: '', field: '', division: '', unit: '',
 const fieldOrder = ['Umum', 'Sumber Daya Air', 'Bina Marga', 'Cipta Karya / Perumahan', 'SMKK']
 
 export default function AhspCatalog() {
-  const [theme, setTheme] = useState('system')
+  const appearance = useAhspAppearance()
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [useAdvanced, setUseAdvanced] = useState(false)
   const [draftAdvanced, setDraftAdvanced] = useState(false)
@@ -231,23 +233,23 @@ export default function AhspCatalog() {
     return rank(a) - rank(b) || a.localeCompare(b, 'id-ID')
   })
 
-  return <main className={styles.page} data-theme={theme}>
+  return <main className={`${styles.page} ${swiss.page}`} data-theme={appearance.mode} data-palette={appearance.palette}>
     {preloading && <InitialPreloader pending={!firstLoadComplete} onExit={setPreloading} />}
     <div className={styles.container} inert={preloading} aria-busy={preloading}>
-      <header className={styles.header}>
-        <div><Link href="/menu" className={styles.back}>Personal Tools / Menu</Link>
-          <h1>Katalog AHSP</h1><p>Item pekerjaan, komponen analisis, dan perhitungan biaya.</p></div>
-        <div className={styles.regulation}><span>Regulasi aktif dan arsip</span><strong>Edisi 2026</strong><span>SE 47/2026 dan Permen PUPR 8/2023</span><span>Arsip SE 182/2025</span></div>
+      <header className={styles.header} data-ahsp-header>
+        <Link href="/menu" className={styles.back}>Personal Tools / Menu</Link>
+        <AppearancePicker appearance={appearance} />
+        <div data-ahsp-heading><h1>Katalog AHSP</h1><p>Item pekerjaan, komponen analisis, dan perhitungan biaya.</p></div>
+        <div className={styles.regulation} data-ahsp-regulation><span>Regulasi aktif dan arsip</span><strong>Edisi 2026</strong><span>SE 47/2026 dan Permen PUPR 8/2023</span><span>Arsip SE 182/2025</span></div>
       </header>
 
-      <div className={styles.context}>
-        <Link href="/ahsp/mptk" className={styles.mptkButton}>Rekapitulasi MPTK</Link>
-        <Link href="/ahsp/rab" className={styles.mptkButton}>Pencocokan RAB</Link>
+      <div className={styles.context} data-ahsp-navigation>
+        <Link href="/ahsp/mptk" className={styles.mptkButton} data-ahsp-nav>Rekapitulasi MPTK</Link>
+        <Link href="/ahsp/rab" className={styles.mptkButton} data-ahsp-nav>Pencocokan RAB</Link>
         <span>{options ? `${number.format(options.total)} pekerjaan unik${options.version_total ? ` · ${number.format(options.version_total)} versi/sumber` : ''}` : 'Katalog PostgreSQL'}</span>
-        <select aria-label="Tampilan" value={theme} onChange={e => setTheme(e.target.value)}><option value="system">Tema sistem</option><option value="light">Terang</option><option value="dark">Gelap</option></select>
         <button type="button" aria-expanded={showSources} onClick={() => setShowSources(v => !v)}>Sumber dan cakupan data</button>
       </div>
-      {showSources && <section className={styles.sources} aria-label="Sumber dan cakupan">
+      {showSources && <section className={styles.sources} data-ahsp-panel aria-label="Sumber dan cakupan">
         <h2>Dokumen dan hasil inventarisasi</h2>
         <p>Katalog memuat SE 47/2026 serta bidang Umum dan SMKK dari Permen 8/2023. SE 182/2025 tersedia sebagai arsip dari ekspor SIPASTI dan sudah digantikan oleh SE 47/2026. Pilih regulasi arsip untuk melihatnya. Rincian komponen dan halaman lampiran edisi arsip belum tersedia.</p>
         {checkedAt && <p>Dokumen diperiksa: {new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeZone: 'Asia/Jakarta' }).format(new Date(checkedAt))}.</p>}
@@ -258,7 +260,7 @@ export default function AhspCatalog() {
       </section>}
 
       <div className={styles.workspace}>
-      <form ref={searchAnchor} className={styles.filters} onSubmit={e => { e.preventDefault(); applySearch() }} aria-label="Filter katalog">
+      <form ref={searchAnchor} className={styles.filters} data-ahsp-panel data-ahsp-form onSubmit={e => { e.preventDefault(); applySearch() }} aria-label="Filter katalog">
         <div className={styles.basicFilters}>
           <label>
             Cari satu item
@@ -343,16 +345,16 @@ export default function AhspCatalog() {
         <div className={styles.listHeading}><div className={styles.listTitle}><h2>Item pekerjaan</h2>{useAdvanced && <button type="button" className={styles.editSearch} onClick={editSearch}>Ubah pencarian</button>}</div><span className={styles.loadingIndicator} role="status" aria-atomic="true">{loading && <span className={styles.spinner} aria-hidden="true" />}{loading ? 'Memuat katalog…' : error ? 'Katalog belum tersedia' : `${number.format(total)} hasil`}</span></div>
         <div className={styles.resultsLayout} data-summary={!error && useAdvanced && !!searchStats?.input_count}>
         {!error && useAdvanced && searchStats && searchStats.input_count > 0 && <SearchSummary stats={searchStats} total={total} types={matchedTypes} busy={loading} />}
-        <div className={styles.catalog}>
+        <div className={styles.catalog} data-ahsp-panel data-ahsp-results>
         {error ? <div className={styles.notice} role="alert"><p>{error}</p><button type="button" onClick={() => { beginList(); setRetry(n => n + 1) }}>Coba lagi</button></div>
           : loading && items.length === 0 ? <p className={styles.empty}><span className={styles.loadingIndicator}><span className={styles.spinner} aria-hidden="true" />Memuat item pekerjaan…</span></p>
           : items.length === 0 ? <div className={styles.empty}><p>Tidak ada pekerjaan sesuai filter.</p><button type="button" onClick={resetFilters}>Tampilkan semua pekerjaan</button></div>
           : <><div className={styles.tableHeading} aria-hidden="true"><span>Kode / bidang</span><span>Pekerjaan / divisi</span><span>Satuan</span><span>Sumber regulasi</span><span>Salin</span></div>
             <ul className={styles.itemList}>{items.map(item => <li key={item.id}>
               <div className={styles.item}>
-                <button type="button" className={styles.openItem} onClick={() => openItem(item)} aria-label={`Buka analisis ${item.code}: ${item.name}`} />
-                <span className={styles.code}>{item.code ? <button type="button" className={styles.textCopy} onClick={() => copyText(item.code, `Kode ${item.code}`)} aria-label={`Salin kode ${item.code}`} title="Salin kode">{item.code}</button> : <strong>Tanpa kode</strong>}<small>{item.field}</small></span>
-                <div className={styles.name}><button type="button" className={styles.textCopy} onClick={() => copyText(item.name, `Nama ${item.code || item.name}`)} aria-label={`Salin nama ${item.name}`} title="Salin nama pekerjaan">{item.name}</button>{item.sipasti_status && <small className={styles.sipastiTag} title="Status keberadaan item pada katalog dan ekspor SIPASTI PU">{sipastiLabels[item.sipasti_status]}</small>}{item.analysis_reference && <button type="button" className={styles.referenceLink} onClick={() => openItem(item)}>Analisis mengacu {item.analysis_reference.target_regulation} · {item.analysis_reference.target_code}{item.analysis_reference.status !== 'verified' && ' · Perlu ditinjau'}</button>}<small>{item.division || 'Tanpa klasifikasi divisi'}{` / ${ahspTypeLabel(item.ahsp_type)}`}</small>{!!item.matched_components?.length && <small className={styles.matches}>Komponen cocok: {item.matched_components.slice(0, 4).join('; ')}{item.matched_components.length > 4 && `; +${item.matched_components.length - 4} lainnya`}</small>}
+                <button type="button" className={styles.openItem} data-ahsp-open onClick={() => openItem(item)} aria-label={`Buka analisis ${item.code}: ${item.name}`} />
+                <span className={styles.code}>{item.code ? <button type="button" className={styles.textCopy} data-ahsp-copy onClick={() => copyText(item.code, `Kode ${item.code}`)} aria-label={`Salin kode ${item.code}`} title="Salin kode">{item.code}</button> : <strong>Tanpa kode</strong>}<small>{item.field}</small></span>
+                <div className={styles.name}><button type="button" className={styles.textCopy} data-ahsp-copy onClick={() => copyText(item.name, `Nama ${item.code || item.name}`)} aria-label={`Salin nama ${item.name}`} title="Salin nama pekerjaan">{item.name}</button>{item.sipasti_status && <small className={styles.sipastiTag} title="Status keberadaan item pada katalog dan ekspor SIPASTI PU">{sipastiLabels[item.sipasti_status]}</small>}{item.analysis_reference && <button type="button" className={styles.referenceLink} onClick={() => openItem(item)}>Analisis mengacu {item.analysis_reference.target_regulation} · {item.analysis_reference.target_code}{item.analysis_reference.status !== 'verified' && ' · Perlu ditinjau'}</button>}<small>{item.division || 'Tanpa klasifikasi divisi'}{` / ${ahspTypeLabel(item.ahsp_type)}`}</small>{!!item.matched_components?.length && <small className={styles.matches}>Komponen cocok: {item.matched_components.slice(0, 4).join('; ')}{item.matched_components.length > 4 && `; +${item.matched_components.length - 4} lainnya`}</small>}
                   {item.versions && item.versions.length > 1 && <details className={styles.versions}>
                     <summary>Versi dan sumber lainnya ({item.versions.length - 1})</summary>
                     <ul className={styles.versionList}>{item.versions.map(version => <li key={version.id}>
@@ -366,7 +368,7 @@ export default function AhspCatalog() {
                 <span className={styles.unit}>{item.unit || 'Belum tersedia'}</span>
                 <span className={styles.state}><span>{item.regulation}</span>{item.regulation === AHSP_ARCHIVED_REGULATION && <small className={styles.archiveTag}>{AHSP_ARCHIVE_NOTICE}</small>}<small>{options?.sources.find(s => s.id === item.source_id)?.annex || 'Halaman belum terpetakan'}{item.page_from && ` / Hal. ${item.page_from}${item.page_to && item.page_to !== item.page_from ? `–${item.page_to}` : ''}`}</small>{item.analysis_reference && <small>Acuan analisis: {item.analysis_reference.target_regulation}</small>}</span>
               </div>
-              <button type="button" className={styles.copyButton} onClick={() => copyItem(item)} aria-label={`Salin data ${item.code}: ${item.name}`} title={copiedId === item.id ? 'Data tersalin' : 'Salin data item'}>{copiedId === item.id ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}</button>
+              <button type="button" className={styles.copyButton} data-ahsp-icon onClick={() => copyItem(item)} aria-label={`Salin data ${item.code}: ${item.name}`} title={copiedId === item.id ? 'Data tersalin' : 'Salin data item'}>{copiedId === item.id ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}</button>
             </li>)}</ul></>}
         {!error && !loading && total > 0 && <nav className={styles.pagination} aria-label="Halaman katalog"><button type="button" disabled={page <= 1} onClick={() => { beginList(); setPage(p => p - 1) }}>Sebelumnya</button><span>Halaman {page} dari {pages}</span><button type="button" disabled={page >= pages} onClick={() => { beginList(); setPage(p => p + 1) }}>Berikutnya</button></nav>}
         </div>

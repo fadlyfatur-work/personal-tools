@@ -14,6 +14,7 @@ import TransactionForm from '../components/transaction-form'
 import { formatRupiah } from '../components/account-card'
 import { useFintrack } from '../components/fintrack-provider'
 import { fintrackRequest } from '@/lib/fintrackRequest'
+import { fintrackGoalsOptions } from '@/lib/fintrackClient'
 import { goalProgress } from '@/lib/fintrackGoals'
 import type { Goal, GoalItem, Transaction } from '@/types/fintrack'
 
@@ -30,12 +31,7 @@ export default function GoalsPage() {
   const [panel, setPanel] = useState<Panel | null>(null)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
-  const query = useQuery<Goal[]>({ queryKey: ['fintrack', 'goals'], enabled: Boolean(user), queryFn: async () => {
-    const response = await fintrackRequest('/api/fintrack/goals', { cache: 'no-store' })
-    const body = await response.json()
-    if (!response.ok) throw new Error(body.error || 'Tujuan gagal dimuat')
-    return body.data
-  } })
+  const query = useQuery({ ...fintrackGoalsOptions(), enabled: Boolean(user) })
 
   async function write(url: string, method: string, payload: unknown) {
     const response = await fintrackRequest(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })

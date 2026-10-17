@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions -- Playwright CLI evaluates the function expression. */
 async page => {
+  const setMode = async mode => {
+    const button = page.getByRole('button', { name: mode === 'dark' ? 'Aktifkan mode gelap' : 'Aktifkan mode terang', exact: true });
+    if (await button.count()) await button.click();
+  };
   const checks = [];
   const check = (value, name) => { if (!value) throw new Error(name); checks.push(name); };
   const errors = [];
@@ -90,7 +94,7 @@ async page => {
     for (const width of [320, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const theme of ['light', 'dark']) {
-        await page.getByRole('combobox', { name: 'Tampilan', exact: true }).selectOption(theme);
+        await setMode(theme);
         check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'No horizontal overflow at ' + width + ' ' + theme);
         const box = await input.boundingBox();
         const action = await advanced.getByRole('button', { name: 'Cari 2 istilah', exact: true }).boundingBox();

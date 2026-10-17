@@ -11,7 +11,7 @@ import { Header } from '../components/header'
 import { BottomNav } from '../components/bottom-nav'
 import { formatRupiah } from '../components/account-card'
 import { useFintrack } from '../components/fintrack-provider'
-import { fintrackRequest } from '@/lib/fintrackRequest'
+import { fintrackActivityOptions } from '@/lib/fintrackClient'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { FintrackReport, ReportSlice } from '@/types/fintrack'
 
@@ -100,19 +100,13 @@ function ActivityContent({ initialMonth, initialCategory, initialSubcategory }: 
     if (searchTerm) params.set('q', searchTerm)
   }
   const queryString = params.toString()
-  const reportQuery = useQuery<FintrackReport>({
-    queryKey: ['fintrack', 'activity', user?.id, queryString],
+  const reportQuery = useQuery({
+    ...fintrackActivityOptions(user?.id, queryString),
     enabled: Boolean(user && data),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    queryFn: async () => {
-      const response = await fintrackRequest(`/api/fintrack/reports?${queryString}`)
-      const body = await response.json()
-      if (!response.ok) throw new Error(body.error || 'Aktivitas belum bisa dimuat. Coba lagi.')
-      return body.data
-    },
   })
   if (loading || !data || !user) return <p role="status">Memuat aktivitas…</p>
   const report = reportQuery.data

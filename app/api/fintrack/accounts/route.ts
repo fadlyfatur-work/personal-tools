@@ -50,13 +50,13 @@ export async function POST(req: NextRequest) {
   if (!validProvider(parsed.data.provider_code, parsed.data.kind)) return NextResponse.json({ error: 'Penyedia tidak sesuai jenis dompet' }, { status: 400 })
   const planId = await getOwnedPlanId(auth.identity.id)
   if (!planId) return NextResponse.json({ error: 'Rencana pribadi belum tersedia' }, { status: 409 })
-    const classification = parsed.data.kind === 'debt' ? 'liability' : 'asset'
+  const classification = parsed.data.kind === 'debt' ? 'liability' : 'asset'
   const netWorthIncludes = parsed.data.kind === 'debt' ? false : true
   const { data: lastAccount } = await supabaseAdmin.from('fintrack_accounts').select('sort_order').eq('plan_id', planId).eq('archived', false).order('sort_order', { ascending: false }).limit(1).maybeSingle()
   const { data, error } = await supabaseAdmin.from('fintrack_accounts').insert({
     plan_id: planId,
     name: parsed.data.name,
-    provider_code: parsed.data.provider_code || null,
+    ...(parsed.data.provider_code ? { provider_code: parsed.data.provider_code } : {}),
     kind: parsed.data.kind,
     classification,
     initial_balance: parsed.data.initial_balance,
@@ -66,6 +66,6 @@ export async function POST(req: NextRequest) {
     created_by: auth.identity.id,
   }).select().single()
 
-  if (error) return NextResponse.json({ error: 'Gagal membuat dompet' }, { status: 500 })
+  if (error) return NextResponse.json({ error: ['42703', 'PGRST204'].includes(error.code) && error.message.includes('provider_code') ? 'Pilihan penyedia belum tersedia. Terapkan migrasi 202610130010_fintrack_wallet_provider.sql terlebih dahulu.' : 'Gagal membuat dompet' }, { status: 500 })
   return NextResponse.json({ data: { ...data, access_role: 'owner', can_manage: true } }, { status: 201 })
 }

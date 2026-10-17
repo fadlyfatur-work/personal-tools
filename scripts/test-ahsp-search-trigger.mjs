@@ -40,6 +40,8 @@ const imports = {
   '@phosphor-icons/react': { Check: () => null, Copy: () => null, WarningCircle: () => null },
   '@/lib/ahsp': core.exports,
   './catalog.module.css': { default: new Proxy({}, { get: (_, key) => key }) },
+  './swiss-red.module.css': { default: new Proxy({}, { get: (_, key) => key }) },
+  './appearance': { default: function AppearancePicker() {}, useAhspAppearance: () => ({ palette: 'swiss-red', mode: 'system', change() {} }) },
   './manual-analysis': dummy, './source-pages': dummy, './search-summary': dummy, './initial-preloader': { default: function InitialPreloader() {} },
 }
 const catalogModule = { exports: {} }

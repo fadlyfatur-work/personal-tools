@@ -4,6 +4,8 @@ Arah yang disetujui adalah aplikasi keuangan pribadi berbahasa Indonesia dengan 
 
 ## Implementasi
 
+Setelah bootstrap Beranda siap, provider melakukan prefetch rute Aktivitas, Goals, Kelola, dan Pengaturan. Data Goals dan halaman pertama Aktivitas periode berjalan dimuat di latar belakang, disusul detail Laporan. Query options yang sama dipakai halaman tujuan dan composer agar cache serta request berjalan dapat digunakan bersama. Data awal ini segar selama lima menit; periode lain, halaman transaksi selanjutnya, dan filter khusus dimuat sesuai permintaan. Prefetch tidak menahan rendering Beranda. Invalidation setelah perubahan data tetap berlaku. Pemeriksaan browser sintetis membuktikan Beranda tampil saat request latar belakang ditahan dan perpindahan ke Aktivitas/Laporan/Goals tidak mengirim request tambahan setelah cache siap.
+
 `app/fintrack/revamp.css` dimuat setelah gaya FinTrack sebelumnya. Kekayaan bersih menjadi fokus dashboard. Kartu dompet menggunakan gradien terbatas dan ikon penyedia lokal. Navigasi mengambang serta padding konten memperhitungkan safe area.
 
 Kanvas terpusat memakai `--ft-mobile-width: 430px` dengan lebar `min(100%, var(--ft-mobile-width))` pada ponsel, tablet, dan desktop. Dashboard tetap satu kolom dan dompet tetap carousel. Navigasi dibatasi 402px dan dialog 430px. Tipografi responsif mengikuti kontainer melalui `cqw`; penyesuaian layar di bawah 360px tetap berlaku. Warna teks dan permukaan berubah bersamaan saat tema diganti; transisi kontrol dibatasi pada transform dan opacity selama 150ms.

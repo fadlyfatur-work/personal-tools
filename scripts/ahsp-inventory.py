@@ -3,7 +3,7 @@
 Usage: python scripts/ahsp-inventory.py --corpus DIR --master FILE --output FILE
 Requires openpyxl and pymupdf. Does not modify the workbook or the database.
 """
-import argparse, collections, datetime, hashlib, json, pathlib, re, unicodedata, uuid
+import argparse, collections, datetime, hashlib, json, pathlib, re, runpy, unicodedata, uuid
 import openpyxl
 import pymupdf
 
@@ -118,6 +118,7 @@ def inventory(corpus):
  items=[]; sources=[]; by_field_code=collections.defaultdict(list)
  for sid,annex,field in SOURCES:
   path=corpus/f'{sid}.pdf'; doc=pymupdf.open(path)
+  bm_native=runpy.run_path(str(pathlib.Path(__file__).with_name('ahsp-bm-pages.py')))['analysis_pages'](doc) if field=='Bina Marga' else {}
   sources.append({'id':sid,'title':f'SE 47/2026 - {annex}','annex':annex,'url':f'https://binakonstruksi.pu.go.id/?download_id={sid}&sdm_process_download=1','sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'page_count':len(doc),'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'regulation':'SE 47/2026','assets':[]})
   if field not in ('Sumber Daya Air','Bina Marga','Cipta Karya / Perumahan'): continue
   bm_refs=collections.defaultdict(list); found=[]; analysis=collections.defaultdict(list)
@@ -158,6 +159,8 @@ def inventory(corpus):
     page=refs[0] if len(refs)==1 else f['catalogue_page']
     next_refs=sorted(p for v in bm_refs.values() for p in v if p>page)
     end=min(next_refs[0]-1 if next_refs else page+2,page+5,len(doc)-1) if refs else page
+    native=bm_native.get(codekey(f['code']))
+    if native: page,end=native[0]-1,native[1]-1
     component=None
    elif len(candidates)==1:
     page,component=candidates[0]; end=page
@@ -167,7 +170,7 @@ def inventory(corpus):
    overhead=re.search(r'(\d+)\s*%\s*[-–]\s*(\d+)\s*%',text)
    item={ 'id':identity(field,*key),'code':f['code'],'name':f['name'],'unit':f['unit'],'field':field,'division':divisions(field,f['code']),'regulation':'SE 47/2026','ahsp_type':f['ahsp_type'],'regulation_status':f['regulation_status'],'source_id':sid,'page_from':page+1,'page_to':end+1,'printed_page':printed[1] if printed else '', 'analysis_status':component['status'] if component else 'unavailable','components':component['components'] if component else [],'source_text':text,'overhead_min':float(overhead[1]) if overhead else None,'overhead_max':float(overhead[2]) if overhead else None,'output_quantity':quantity(f['name'],f['unit']), 'reconciliation_status':'hanya_regulasi','reconciliation_notes':[], 'master_rows':[] }
    if len(candidates)>1: item['reconciliation_notes'].append('Lebih dari satu tabel analisis memiliki kode yang sama; perlu memilih varian yang tepat.')
-   if field=='Bina Marga': item['reconciliation_notes'].append('Daftar pekerjaan dapat dibaca; rincian koefisien dalam tabel gambar perlu OCR dan pemeriksaan terhadap lampiran.')
+   if field=='Bina Marga': item['reconciliation_notes'].append('Periksa rincian terhadap tabel analisis pada lampiran; daftar isi bukan sumber komponen.')
    items.append(item); by_field_code[(field,codekey(f['code']))].append(item)
   print('DONE',sid,'official',len(seen),'analysis tables',sum(len(v) for v in analysis.values()),flush=True)
  return items,sources,by_field_code
