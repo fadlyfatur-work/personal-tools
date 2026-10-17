@@ -4,6 +4,21 @@ class Table:
  def __init__(self,rows): self.rows=rows; self.bbox=(0,0,100,100)
  def extract(self): return self.rows
 class InventoryTest(unittest.TestCase):
+ def test_native_bm_payment_code_mapping(self):
+  resolver=runpy.run_path(str(pathlib.Path(__file__).with_name('ahsp-bm-pages.py')))['analysis_pages']
+  class Page:
+   def __init__(self,text): self.text=text
+   def get_text(self,sort=True): return self.text
+  doc=[Page('') for _ in range(34)]
+  doc[3]=Page('B.1 2.1.(1) Daftar isi')
+  doc[30]=Page('B.1 Galian (2.1.(1))\nASUMSI')
+  doc[31]=Page('A. TENAGA\n1. Pekerja L01 Jam 1 1 1')
+  doc[32]=Page('Akhir tabel\nB.2 Batu (2.2.(1))')
+  mapped=resolver(doc)
+  self.assertEqual(mapped['2.1.(1)'][:2],(31,33))
+  self.assertIn('Akhir tabel',mapped['2.1.(1)'][2])
+  doc[33]=Page('B.2 Batu varian lain (2.2.(1))')
+  self.assertNotIn('2.2.(1)',resolver(doc))
  def test_output_basis(self):
   self.assertEqual(m['quantity']('Pemasangan 10 m3 beton','m3'),10)
   self.assertEqual(m['quantity']('Pengecoran pakai pompa T = 50 m','m3'),1)

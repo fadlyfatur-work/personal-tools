@@ -20,7 +20,7 @@
 .coefficients small { color:var(--muted); font-size:.75rem; }
 .identity>span,.identity>small,.count>span,.count>small { font-size:.8125rem; color:var(--muted); }
 .count { flex-shrink:0; text-align:right; }
-.count .disclosure { color:var(--action); text-decoration:underline; text-underline-offset:3px; }
+.count .disclosure { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
 .modal { max-width:1000px; }
 .modalHeader { position:sticky; top:0; z-index:1; background:var(--surface); }
 .modalHeader>button { flex-shrink:0; }

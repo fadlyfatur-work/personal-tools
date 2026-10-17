@@ -32,11 +32,11 @@ export default function ManagePage() {
   const displayedAccounts = useMemo(() => autoSort ? [...accounts].sort((a, b) => Number(b.current_balance) - Number(a.current_balance) || a.name.localeCompare(b.name)) : accounts, [accounts, autoSort])
 
   async function createWallet(event: React.FormEvent) {
-    event.preventDefault(); setMessage(null); beginTask('wallet-create', 'Membuat dompet')
+    event.preventDefault(); setMessage(null); beginTask('wallet-create', editingWallet ? 'Memperbarui dompet' : 'Membuat dompet')
     try {
-      const response = await fintrackRequest(editingWallet ? `/api/fintrack/accounts/${editingWallet.id}` : '/api/fintrack/accounts', { method: editingWallet ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingWallet ? { name: walletForm.name, provider_code: walletForm.provider_code || null } : { ...walletForm, provider_code: walletForm.provider_code || null, initial_balance: Number(walletForm.initial_balance || 0) }) })
+      const response = await fintrackRequest(editingWallet ? `/api/fintrack/accounts/${editingWallet.id}` : '/api/fintrack/accounts', { method: editingWallet ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editingWallet ? { name: walletForm.name, ...((walletForm.provider_code || null) !== (editingWallet.provider_code || null) ? { provider_code: walletForm.provider_code || null } : {}) } : { ...walletForm, provider_code: walletForm.provider_code || null, initial_balance: Number(walletForm.initial_balance || 0) }) })
       const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.error || 'Dompet gagal dibuat')
-      setAccounts((current) => editingWallet ? current.map(item => item.id === editingWallet.id ? { ...item, ...body.data } : item) : [...current, body.data]); setEditingWallet(null); setWalletForm({ name: '', kind: 'bank', initial_balance: '', provider_code: '' }); setWalletFormOpen(false); setMessage({ kind: 'success', text: 'Dompet berhasil dibuat.' })
+      setAccounts((current) => editingWallet ? current.map(item => item.id === editingWallet.id ? { ...item, ...body.data } : item) : [...current, body.data]); setEditingWallet(null); setWalletForm({ name: '', kind: 'bank', initial_balance: '', provider_code: '' }); setWalletFormOpen(false); setMessage({ kind: 'success', text: editingWallet ? 'Dompet berhasil diperbarui.' : 'Dompet berhasil dibuat.' })
     } catch (error) { setMessage({ kind: 'error', text: error instanceof Error ? error.message : 'Dompet gagal dibuat' }) } finally { endTask('wallet-create') }
   }
 

@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Account, Category, Goal, Transaction, TransactionType } from '@/types/fintrack'
+import type { Account, Category, Transaction, TransactionType } from '@/types/fintrack'
 import { useQuery } from '@tanstack/react-query'
 import { fintrackRequest } from '@/lib/fintrackRequest'
+import { fintrackGoalsOptions } from '@/lib/fintrackClient'
 import { useFintrack } from './fintrack-provider'
 import { suggestTransactionNotes } from '@/lib/fintrackOrdering'
 import { categoryLabel, sortCategoryTree } from '@/lib/fintrackCategories'
@@ -41,12 +42,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
   const [date, setDate] = useState(editing?.transaction_date || new Date().toISOString().slice(0, 10))
   const [message, setMessage] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
   const [saving, setSaving] = useState(false)
-  const goalsQuery = useQuery<Goal[]>({ queryKey: ['fintrack', 'goals'], queryFn: async () => {
-    const response = await fintrackRequest('/api/fintrack/goals', { cache: 'no-store' })
-    const body = await response.json()
-    if (!response.ok) throw new Error(body.error || 'Tujuan gagal dimuat')
-    return body.data
-  }, enabled: type === 'expense' && Boolean(from) })
+  const goalsQuery = useQuery({ ...fintrackGoalsOptions(), enabled: type === 'expense' && Boolean(from) })
   const selectedGoal = goalsQuery.data?.find(goal => goal.account_id === from)
 
   function changeType(nextType: TransactionType) {

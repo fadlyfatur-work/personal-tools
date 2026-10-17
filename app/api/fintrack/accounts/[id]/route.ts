@@ -29,7 +29,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!account || !validProvider(parsed.data.provider_code, account.kind)) return NextResponse.json({ error: 'Penyedia tidak sesuai jenis dompet' }, { status: 400 })
   }
   const { data, error } = await supabaseAdmin.from('fintrack_accounts').update({ ...parsed.data, updated_at: new Date().toISOString() }).eq('id', id).select().single()
-  if (error) return NextResponse.json({ error: 'Gagal mengubah dompet' }, { status: 500 })
+  if (error) return NextResponse.json({ error: ['42703', 'PGRST204'].includes(error.code) && error.message.includes('provider_code') ? 'Pilihan penyedia belum tersedia. Terapkan migrasi 202610130010_fintrack_wallet_provider.sql terlebih dahulu.' : 'Gagal mengubah dompet' }, { status: 500 })
   return NextResponse.json({ data })
 }
 
