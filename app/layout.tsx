@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Personal Tools — Fadly Faturrohman",
+  title: "Personal Tools - Fadly Faturrohman",
   description: "Aplikasi pribadi untuk mengelola keuangan, berbagi teks, dan membuat surat.",
 };
 

@@ -5,7 +5,7 @@ async page => {
   const results = [];
   const check = (condition, name) => { if (!condition) throw new Error(name); results.push(name); };
   const tools = [
-    ['Katalog AHSP 2026', '/ahsp'], ['Fintrack', '/fintrack'], ['Paste Text', '/paste'],
+    ['Katalog AHSP', '/ahsp'], ['Fintrack', '/fintrack'], ['Paste Text', '/paste'],
     ['Nominatif Perjalanan Dinas', '/nominatif'], ['Time Mark', '/timemark'],
   ];
   const errors = [];

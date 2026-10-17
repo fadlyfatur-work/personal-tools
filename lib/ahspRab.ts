@@ -65,7 +65,7 @@ export function rabNumber(cell?: RabCell): { value: number | null; issue: string
   if (cell.error) return { value: null, issue: 'Sel berisi kesalahan Excel.' }
   if (cell.value !== null && Number.isFinite(cell.value)) return { value: cell.value, issue: '' }
   const text = cell.text.trim().replace(/^Rp\.?\s*/i, '').replace(/\u00a0/g, '')
-  if (!text || /^[-–—]$/.test(text)) return { value: null, issue: cell.formula ? 'Hasil tersimpan rumus belum tersedia.' : '' }
+  if (!text || /^[-–-]$/.test(text)) return { value: null, issue: cell.formula ? 'Hasil tersimpan rumus belum tersedia.' : '' }
   if (/[\r\n]/.test(text)) return { value: null, issue: 'Beberapa angka berada dalam satu sel.' }
   let cleaned = text
   if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(text)) cleaned = text.replace(/\./g, '').replace(',', '.')

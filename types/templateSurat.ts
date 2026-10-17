@@ -13,7 +13,7 @@ export interface GroupField {
   minItems?: number
   repeatRows?: boolean
   fields: SingleField[]
-  // dua properti ini opsional — hanya dipakai kalau grup punya tanggal otomatis
+  // dua properti ini opsional - hanya dipakai kalau grup punya tanggal otomatis
   // yang mengikuti sebuah field dateRange (seperti kasus 'agenda' mengikuti 'periode_surat')
   autoDateFrom?: string
   autoDateField?: string
