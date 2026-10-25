@@ -55,6 +55,11 @@ assert.equal((await transactions.POST(req({ ...body, goal_item_id: itemId }))).s
 rpcError = null
 assert.equal((await goals.POST(req({ name: 'Liburan', target_amount: 30000000 }))).status, 201)
 assert.equal(calls.at(-1).name, 'fintrack_create_goal', 'Goal and wallet are created by one RPC')
+assert.equal((await transactions.POST(req({ ...body, type: 'transfer', to_account_id: txnId, debt_payment_expense: true }))).status, 201)
+assert.equal(calls.at(-1).name, 'fintrack_save_payment_transaction')
+assert.equal(calls.at(-1).args.p_debt_payment_expense, true)
+assert.equal((await editing.PUT(req({ ...body, debt_payment_expense: false }), { params: Promise.resolve({ id: txnId }) })).status, 200)
+assert.equal(calls.at(-1).args.p_debt_payment_expense, false)
 authorized = false
 assert.equal((await goals.POST(req({ name: 'Liburan', target_amount: 30000000 }))).status, 401)
 assert.equal((await transactions.POST(req(body))).status, 401)

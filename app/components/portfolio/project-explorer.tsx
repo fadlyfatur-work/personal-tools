@@ -7,15 +7,16 @@ import { ArrowUpRight, ArrowRight } from '@phosphor-icons/react'
 import { projects } from './data'
 import styles from './portfolio.module.css'
 
-const previews = [
-  { src: '/portfolio/nominatif.webp', width: 1280, height: 720, alt: 'Nominatif menghitung contoh perjalanan Jakarta ke Palembang dengan rincian biaya per pegawai.', caption: 'Nominatif, salah satu aplikasi di Personal Tools.' },
-  { src: '/portfolio/fintrack.webp', width: 430, height: 825, alt: 'Halaman masuk Fintrack dengan pilihan email dan PIN atau akun Google.', caption: 'Halaman masuk Fintrack. Data keuangan memerlukan autentikasi.' },
-]
+const previews: Record<string, { src: string; width: number; height: number; alt: string; caption: string }> = {
+  'aplikasi-pos': { src: '/portfolio/pos.webp', width: 1440, height: 1030, alt: 'Demo Project POS dengan katalog produk, stok, keranjang, dan pembayaran tunai yang berjalan di browser.', caption: 'Project POS. Demo kasir dengan data contoh yang tersimpan di browser.' },
+  'personal-platform': { src: '/portfolio/nominatif.webp', width: 1280, height: 720, alt: 'Nominatif menghitung contoh perjalanan Jakarta ke Palembang dengan rincian biaya per pegawai.', caption: 'Nominatif, salah satu aplikasi di Personal Tools.' },
+  fintrack: { src: '/portfolio/fintrack.webp', width: 430, height: 825, alt: 'Halaman masuk Fintrack dengan pilihan email dan PIN atau akun Google.', caption: 'Halaman masuk Fintrack. Data keuangan memerlukan autentikasi.' },
+}
 
 export function ProjectExplorer() {
   const [selected, setSelected] = useState(0)
   const project = projects[selected]
-  const preview = previews[selected]
+  const preview = previews[project.id]
   return <div className={styles.explorer} data-scroll-reveal="scale">
     <div className={styles.explorerChoices} role="tablist" aria-label="Pilih proyek" onKeyDown={event => {
       const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End']
@@ -33,11 +34,11 @@ export function ProjectExplorer() {
           <h3>{project.title}</h3>
           <p>{project.desc}</p>
           <div className={styles.explorerTags}>{project.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
-          {project.href ? <Link className={styles.inlineLink} href={project.href}>{selected === 1 ? 'Buka Fintrack' : 'Menu aplikasi'}<ArrowUpRight size={20} aria-hidden="true" /></Link> : <a className={styles.inlineLink} href="#project-list">Lihat proyek<ArrowRight size={20} aria-hidden="true" /></a>}
-          <p className={styles.explorerNote}>Teknologi portofolio asal. Aplikasi saat ini memakai Next.js dan Supabase.</p>
+          {project.href ? <Link className={styles.inlineLink} href={project.href}>{project.id === 'aplikasi-pos' ? 'Coba demo POS' : project.id === 'fintrack' ? 'Buka Fintrack' : 'Menu aplikasi'}<ArrowUpRight size={20} aria-hidden="true" /></Link> : <a className={styles.inlineLink} href="#project-list">Lihat proyek<ArrowRight size={20} aria-hidden="true" /></a>}
+          <p className={styles.explorerNote}>{project.id === 'aplikasi-pos' ? 'Showcase frontend. Pembayaran disimulasikan; data disimpan lokal pada browser perangkat ini.' : 'Teknologi portofolio asal. Aplikasi saat ini memakai Next.js dan Supabase.'}</p>
         </div>
         {preview ? <figure className={styles.projectPreview}>
-          <div className={`${styles.previewImage} ${selected === 1 ? styles.portraitPreview : ''}`}>
+          <div className={`${styles.previewImage} ${project.id === 'fintrack' ? styles.portraitPreview : ''}`}>
             <Image src={preview.src} width={preview.width} height={preview.height} alt={preview.alt} loading={selected === 0 ? 'eager' : 'lazy'} fetchPriority={selected === 0 ? 'high' : 'auto'} sizes="(max-width: 767px) 100vw, 65vw" />
           </div>
           <figcaption>{preview.caption}</figcaption>

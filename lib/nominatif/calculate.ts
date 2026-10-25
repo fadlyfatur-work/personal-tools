@@ -1,15 +1,24 @@
 import rates from './pmk-32-2025.json'
+import { templateErrors } from './template'
 
 export const provinces = rates.provinces
 export const SOURCE = 'https://jdih.kemenkeu.go.id/dok/pmk-32-tahun-2025'
-export const activities = { ordinary: 'Dinas biasa (luar kota)', local: 'Dalam kota lebih dari 8 jam', training: 'Diklat tatap muka', fullboard: 'Rapat fullboard', fullday: 'Rapat fullday', halfday: 'Rapat halfday' }
+export const activities = { ordinary: 'Dinas biasa (luar kota)', local: 'Dalam kota lebih dari 8 jam', localShort: 'Dalam kota kurang dari 8 jam', training: 'Diklat tatap muka', fullboard: 'Rapat fullboard', fullday: 'Rapat fullday', halfday: 'Rapat halfday' }
 export const positions = { staff: 'Staf / pegawai', echelon4: 'Eselon IV', echelon3: 'Eselon III', echelon2: 'Eselon II', echelon1: 'Eselon I', state: 'Pejabat negara / wakil menteri', otherState: 'Pejabat negara lainnya' }
 export type Activity = keyof typeof activities
 export type Position = keyof typeof positions
-export type Person = { id: string; name: string; nip: string; grade: string; position: Position; nights: string; hotelActual: string }
+export type Person = {
+  id: string; name: string; nip: string; grade: string; position: Position; nights: string; hotelActual: string;
+  jobTitle?: string; spdNumber?: string; ticket?: string; advance?: string; costLevel?: string;
+  mealRate?: string; mealDays?: string; snackRate?: string; snackDays?: string;
+  expenses?: { description: string; amount: string }[];
+}
 export type ManualRates = { name: string; year: string; daily: string; hotel: string; representation: string; originTransfer: string; destinationTransfer: string; localPercent: string }
 export type Trip = {
   satker?: string; documentNumber?: string; budget?: string; signer?: string;
+  output?: string; sptNumber?: string; sptDate?: string; documentDate?: string;
+  issueCity?: string; signerNip?: string; treasurer?: string; treasurerNip?: string;
+  bank?: string; address?: string; npwp?: string; fileType?: string; ppn?: string; pph?: string; receiptNumber?: string;
   rule: 'pmk2026' | 'manual'; mode: 'estimate' | 'actual'; year: string; purpose: string;
   originProvince: string; destinationProvince: string; origin: string; destination: string;
   start: string; end: string; activity: Activity; before: boolean; after: boolean;
@@ -37,6 +46,11 @@ export function hotelTier(person: Person) {
   return 3
 }
 export function calculate(trip: Trip, people: Person[]) {
+  const short = trip.activity === 'localShort'
+  if (short) {
+    trip = { ...trip, transport: 'land', ticket: trip.ticket.trim() || '170000', originTrips: '0', destinationTrips: '0', originRate: '', destinationRate: '', localActual: false, representationDuty: false, manual: { ...trip.manual, daily: '0', hotel: '0', representation: '0' } }
+    people = people.map(p => ({ ...p, nights: '0', hotelActual: '0', mealRate: '', mealDays: '', snackRate: '', snackDays: '' }))
+  }
   const errors: string[] = [], lines: Line[] = [], notes: string[] = []
   const days = duration(trip.start, trip.end), official = trip.rule === 'pmk2026'
   const origin = provinces.find(p => p.name === trip.originProvince)
@@ -53,14 +67,15 @@ export function calculate(trip: Trip, people: Person[]) {
   if (!origin || !destination || !trip.origin.trim() || !trip.destination.trim()) errors.push('Lengkapi provinsi dan kota asal serta tujuan.')
   if (!official && !ruleName) errors.push('Isi nama aturan manual.')
   if (!people.length) errors.push('Tambahkan minimal satu pegawai.')
-  if (trip.activity === 'local' && (city(trip.origin) !== city(trip.destination) || trip.originProvince !== trip.destinationProvince)) errors.push('Perjalanan dalam kota harus memiliki kota dan provinsi asal/tujuan yang sama.')
+  if ((trip.activity === 'local' || short) && (city(trip.origin) !== city(trip.destination) || trip.originProvince !== trip.destinationProvince)) errors.push('Perjalanan dalam kota harus memiliki kota dan provinsi asal/tujuan yang sama.')
+  if (short && days !== 1) errors.push('Dinas kurang dari 8 jam harus berangkat dan pulang pada tanggal yang sama.')
   if (official && trip.activity === 'ordinary' && city(trip.origin) === city(trip.destination) && trip.originProvince === trip.destinationProvince) errors.push('Asal dan tujuan berada dalam kota yang sama; pilih jenis kegiatan yang sesuai.')
   const meeting = ['fullboard', 'fullday', 'halfday'].includes(trip.activity)
   const extraDays = meeting ? Number(trip.before) + Number(trip.after) : 0
   if (meeting && days <= extraDays) errors.push('Sisakan minimal satu hari untuk kegiatan rapat.')
   if (official && trip.localActual && trip.activity !== 'ordinary') errors.push('Transpor lokal riil dengan uang harian 60% hanya didukung untuk dinas biasa di formulir ini.')
   const flight = official && trip.transport === 'plane' ? flightRate(trip) : undefined
-  const ticket = trip.ticketProvided ? 0 : trip.mode === 'estimate' && trip.ticket === '' && flight ? flight.economy : number(trip.ticket, 'Biaya tiket/transportasi utama PP')
+  const ticket = trip.ticketProvided || people.every(p => p.ticket?.trim()) ? 0 : trip.mode === 'estimate' && trip.ticket === '' && flight ? flight.economy : number(trip.ticket, 'Biaya tiket/transportasi utama PP')
   const originTrips = number(trip.originTrips, 'Jumlah transfer asal', 4)
   const destinationTrips = number(trip.destinationTrips, 'Jumlah transfer tujuan', 4)
   const transferRate = (value: string, fallback: number | null | undefined, label: string, count: number) => !count ? 0 : official && value === '' && fallback != null ? fallback : number(value, label)
@@ -78,26 +93,64 @@ export function calculate(trip: Trip, people: Person[]) {
     const nights = trip.hotelProvided ? 0 : number(p.nights, `${label}, malam menginap`, 365)
     if (days && nights > days - 1) errors.push(`${label}: jumlah malam tidak boleh melebihi lama perjalanan dikurangi satu.`)
     if (official && trip.activity === 'fullboard' && nights > extraDays) errors.push(`${label}: penginapan fullboard sudah termasuk paket; isi hanya malam tambahan sebelum/sesudah kegiatan.`)
-    const add = (component: string, quantity: number, unit: string, rate: number, note: string) => lines.push({ personId: p.id, person: label, nip: p.nip, grade: p.grade, position: positions[p.position], component, quantity, unit, rate, amount: Math.round(quantity * rate), note })
-    const normalDaily = official ? destination?.daily[trip.activity === 'local' ? 1 : trip.activity === 'training' ? 2 : 0] ?? 0 : number(trip.manual.daily, 'Tarif uang harian manual')
+    const add = (component: string, quantity: number, unit: string, rate: number, note: string) => lines.push({ personId: p.id, person: label, nip: p.nip, grade: p.grade, position: positions[p.position], component, quantity, unit, rate, amount: Math.round(quantity * rate) || 0, note })
+    const normalDaily = short ? 0 : official ? destination?.daily[trip.activity === 'local' ? 1 : trip.activity === 'training' ? 2 : 0] ?? 0 : number(trip.manual.daily, 'Tarif uang harian manual')
     if (trip.dailyProvided) add('Uang harian', 0, 'hari', normalDaily, 'Ditanggung pihak lain; tidak dihitung kembali.')
     else if (official && meeting) {
       add('Uang harian kegiatan', Math.max(0, days - extraDays), 'hari', trip.activity === 'fullboard' ? 130000 : 0, 'PMK hlm. 22, 56. Fullboard Rp130.000; halfday/fullday tidak diberikan uang harian kegiatan.')
       if (extraDays) add('Uang harian hari perjalanan', extraDays, 'hari', destination?.daily[0] ?? 0, 'PMK hlm. 56: maksimal 1 hari sebelum dan/atau sesudah, sesuai kebutuhan transportasi/panitia.')
     } else add('Uang harian', days, 'hari', Math.round(normalDaily * factor), official ? `PMK hlm. 15${factor !== 1 ? '; 60% karena transpor lokal riil (hlm. 53)' : ''}.` : `${ruleName}; tarif manual${factor !== 1 ? ` × ${factor * 100}%` : ''}.`)
-    const hotelLimit = official ? destination?.hotel[hotelTier(p)] ?? 0 : nights ? number(trip.manual.hotel, 'Tarif/batas hotel manual') : 0
+    const hotelLimit = short ? 0 : official ? destination?.hotel[hotelTier(p)] ?? 0 : nights ? number(trip.manual.hotel, 'Tarif/batas hotel manual') : 0
     const hotel = nights && trip.mode === 'actual' ? number(p.hotelActual, `${label}, biaya hotel aktual per malam`) : hotelLimit
     if (official && hotel > hotelLimit) errors.push(`${label}: hotel melebihi batas ${rupiah(hotelLimit)}/malam; pengecualian khusus belum didukung.`)
     add('Penginapan', nights, 'malam', hotel, trip.hotelProvided ? 'Ditanggung penyelenggara.' : `${official ? 'PMK hlm. 19, 54' : ruleName}; ${trip.mode === 'actual' ? 'biaya aktual per malam' : 'estimasi berdasarkan batas tarif'}, bukti sah diperlukan pada realisasi.`)
-    add(trip.transport === 'plane' ? 'Tiket pesawat ekonomi PP' : 'Transportasi utama PP', trip.ticketProvided ? 0 : 1, 'PP', ticket, trip.ticketProvided ? 'Ditanggung pihak lain.' : `${flight && trip.mode === 'estimate' && trip.ticket === '' ? `Referensi PMK hlm. ${flight.page}` : 'Nominal pengguna'}; sudah pergi-pulang, pembayaran berdasarkan biaya riil.`)
+    const personTicket = trip.ticketProvided ? 0 : p.ticket?.trim() ? number(p.ticket, `${label}, transportasi PP`) : ticket
+    add(trip.transport === 'plane' ? 'Tiket pesawat ekonomi PP' : 'Transportasi utama PP', trip.ticketProvided ? 0 : 1, 'PP', personTicket, trip.ticketProvided ? 'Ditanggung pihak lain.' : `${!p.ticket?.trim() && flight && trip.mode === 'estimate' && trip.ticket === '' ? `Referensi PMK hlm. ${flight.page}` : 'Nominal pengguna'}; sudah pergi-pulang, pembayaran berdasarkan biaya riil.`)
     add('Transfer di kota asal', originTrips, 'kali', originTransfer, official && trip.originRate === '' && origin?.transfer != null ? 'PMK hlm. 85, 107; lumpsum per perjalanan.' : 'Tarif manual per perjalanan; verifikasi dasar biaya.')
     add('Transfer di kota tujuan', destinationTrips, 'kali', destinationTransfer, official && trip.destinationRate === '' && destination?.transfer != null ? 'PMK hlm. 85, 107; lumpsum per perjalanan.' : 'Tarif manual per perjalanan; verifikasi dasar biaya.')
-    const rep = official ? ({ state: 250000, echelon1: 200000, echelon2: 150000 } as Partial<Record<Position, number>>)[p.position] ?? 0 : number(trip.manual.representation, 'Tarif representasi manual')
+    const rep = short ? 0 : official ? ({ state: 250000, echelon1: 200000, echelon2: 150000 } as Partial<Record<Position, number>>)[p.position] ?? 0 : number(trip.manual.representation, 'Tarif representasi manual')
     add('Uang representasi', trip.representationDuty ? days : 0, 'hari', trip.activity === 'local' && official ? rep / 2 : rep, official ? 'PMK hlm. 15, 54; hanya pejabat yang berhak dalam pelaksanaan tugas/fungsi jabatan.' : 'Tarif dan kelayakan ditentukan pengguna berdasarkan aturan manual.')
     if (trip.localActual) add('Transpor lokal riil', 1, 'total', localCost, 'Beberapa lokasi dalam kabupaten/kota yang sama; total per pegawai, tidak termasuk transfer bandara.')
+    let deductions = 0
+    for (const [kind, rate, count] of [['makan', p.mealRate, p.mealDays], ['snack', p.snackRate, p.snackDays]] as const) {
+      if (!rate && !count) continue
+      const qty = number(count || '0', `${label}, hari potongan ${kind}`, days || 366)
+      const value = number(rate || '0', `${label}, potongan ${kind} per hari`)
+      deductions += qty * value
+      add(`Potongan uang ${kind}`, qty, 'hari', value ? -value : 0, 'Potongan sesuai input; verifikasi dengan fasilitas yang diterima dan dasar biaya.')
+    }
+    const daily = lines.filter(l => l.personId === p.id && l.component.startsWith('Uang harian')).reduce((sum, l) => sum + l.amount, 0)
+    if (deductions > daily) errors.push(`${label}: potongan makan/snack melebihi jumlah uang harian.`)
+    let expenses = 0
+    if ((p.expenses?.length || 0) > 4) errors.push(`${label}: lampiran transportasi memuat maksimal 4 rincian.`)
+    for (const expense of p.expenses || []) {
+      if (!expense.description.trim()) errors.push(`${label}: isi uraian pengeluaran riil.`)
+      expenses += number(expense.amount, `${label}, pengeluaran riil`)
+    }
+    if (expenses > personTicket) errors.push(`${label}: pengeluaran riil tanpa bukti melebihi biaya transportasi utama. Rincian ini bagian dari biaya transportasi, bukan tambahan.`)
+    if (p.advance) number(p.advance, `${label}, panjar`)
   }
   if (!official) notes.push('Aturan manual: tarif dan kelayakan biaya wajib mengikuti sumber yang Anda isi. Sistem hanya menghitung volume × tarif; ketentuan khusus PMK tidak diterapkan otomatis.')
   if (official && meeting) notes.push('Paket rapat merupakan biaya penyelenggara dan tidak ditambahkan sebagai pembayaran pegawai. Hari tambahan harus sesuai penugasan dan kebutuhan perjalanan.')
-  return { days, ruleName, lines, total: errors.length ? null : lines.reduce((sum, l) => sum + l.amount, 0), errors: [...new Set(errors)], notes }
+  const total = lines.reduce((sum, l) => sum + l.amount, 0)
+  const tax = number(trip.ppn || '0', 'Potongan PPN') + number(trip.pph || '0', 'Potongan PPh')
+  if (tax > total) errors.push('Potongan pajak pada kartu kendali melebihi jumlah tagihan.')
+  if (!Number.isSafeInteger(total)) errors.push('Total biaya di luar batas bilangan yang didukung.')
+  return { days, ruleName, lines, people, total: errors.length ? null : total, errors: [...new Set(errors)], notes }
 }
 export type Calculation = ReturnType<typeof calculate>
+
+export function documentErrors(trip: Trip, people: Person[]) {
+  const errors = templateErrors(trip)
+  for (const [key, label] of [['sptNumber', 'Nomor SPT'], ['documentNumber', 'Nomor SPD'], ['budget', 'Kode pembebanan anggaran / MAK'], ['issueCity', 'Kota penerbitan dokumen']] as const) {
+    if (!trip[key]?.trim()) errors.push(`${label}: lengkapi untuk ekspor dokumen.`)
+  }
+  for (const [key, label] of [['sptDate', 'Tanggal SPT'], ['documentDate', 'Tanggal SPD']] as const) {
+    if (!trip[key] || !duration(trip[key], trip[key])) errors.push(`${label}: isi tanggal valid.`)
+  }
+  for (const [index, p] of people.entries()) {
+    if (!p.jobTitle?.trim()) errors.push(`Pegawai ${index + 1}: lengkapi jabatan pada dokumen.`)
+    if (!/^\d{18}$/.test(p.nip)) errors.push(`Pegawai ${index + 1}: NIP 18 digit diperlukan untuk dokumen.`)
+  }
+  return errors
+}

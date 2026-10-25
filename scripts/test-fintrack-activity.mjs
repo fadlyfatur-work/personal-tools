@@ -31,6 +31,7 @@ const route = load('app/api/fintrack/reports/route.ts', {
   '@/lib/fintrackUser': { requireFintrackIdentity: async () => ({ identity: { id: 'test-user' } }) },
   '@/lib/supabaseAdmin': {},
   '@/lib/fintrackOrdering': ordering,
+  '@/lib/fintrackCategories': load('lib/fintrackCategories.ts'),
 })
 const request = query => route.GET({ nextUrl: new URL(`http://localhost/api/fintrack/reports?month=2026-10&${query}`) })
 const first = await (await request('q=%20KOPI%20&category_id=food&transaction_type=expense')).json()

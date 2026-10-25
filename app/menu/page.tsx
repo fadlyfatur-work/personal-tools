@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { Outfit } from 'next/font/google'
-import { ArrowUpRight, Wallet, ClipboardText, FileText, TimerIcon, Calculator } from '@phosphor-icons/react/dist/ssr'
+import { ArrowUpRight, Wallet, ClipboardText, FileText, TimerIcon, Calculator, ShoppingCart } from '@phosphor-icons/react/dist/ssr'
 import { Navigation } from '../components/portfolio/navigation'
 import { ScrollReveal } from '../components/portfolio/scroll-reveal'
 import styles from '../components/portfolio/portfolio.module.css'
@@ -11,10 +11,11 @@ const outfit = Outfit({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Menu aplikasi | Personal Tools',
-  description: 'Pilih katalog AHSP, Fintrack, Paste Text, Nominatif, atau Time Mark.',
+  description: 'Coba aplikasi POS, katalog AHSP, Fintrack, Paste Text, Nominatif, atau Time Mark.',
 }
 
 const features = [
+  { href: '/aplikasi-pos', title: 'Aplikasi POS', desc: 'Coba kasir, stok, dan laporan. Data tersimpan di browser, struk tersedia dalam PDF.', icon: <ShoppingCart size={32} aria-hidden="true" /> },
   { href: '/ahsp', title: 'Katalog AHSP', desc: 'Telusuri pekerjaan, komponen analisis, kalkulator, dan status rekonsiliasi.', icon: <Calculator size={32} aria-hidden="true" /> },
   { href: '/fintrack', title: 'Fintrack', desc: 'Kelola dompet & transaksi. Login PIN 6 digit.', icon: <Wallet size={32} aria-hidden="true" /> },
   { href: '/paste', title: 'Paste Text', desc: 'Bagikan teks dengan kode singkat.', icon: <ClipboardText size={32} aria-hidden="true" /> },

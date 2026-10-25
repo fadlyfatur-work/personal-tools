@@ -35,7 +35,6 @@ export default function LocationInput({ value, onChange, disabled }: { value: st
     navigator.geolocation.getCurrentPosition(async position => {
       if (version !== deviceRequest.current) return
       const { latitude: lat, longitude: lon, accuracy } = position.coords
-      const coordinates = `${lat.toFixed(6)}, ${lon.toFixed(6)}`
       const controller = new AbortController(); deviceController.current = controller
       setDeviceMessage('Mengubah koordinat menjadi alamat…')
       try {
@@ -46,7 +45,7 @@ export default function LocationInput({ value, onChange, disabled }: { value: st
         onChange(data.address); setDeviceMessage(`Lokasi diambil · akurasi ±${Math.round(accuracy)} m. Alamat dapat diganti.`)
       } catch (error) {
         if (version !== deviceRequest.current) return
-        onChange(coordinates); setDeviceMessage(`${error instanceof Error && error.name !== 'AbortError' ? error.message : 'Alamat belum tersedia.'} Koordinat digunakan dan bisa diganti manual.`)
+        setDeviceMessage(`${error instanceof Error && error.name !== 'AbortError' ? error.message : 'Alamat belum tersedia.'} Posisi perangkat ditemukan, tetapi alamat belum dapat diambil. Coba lagi atau ketik lokasi secara manual.`)
       } finally { if (version === deviceRequest.current) setLocating(false) }
     }, error => {
       if (version !== deviceRequest.current) return

@@ -6,6 +6,7 @@ import { ReportGraphic } from '../components/report-chart'
 import { sortCategoryTree } from '@/lib/fintrackCategories'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { activityAccount } from '@/lib/fintrackUx'
 import { CaretDown, CaretLeft, CaretRight, ChartDonut, CircleNotch, Funnel, MagnifyingGlass } from '@phosphor-icons/react'
 import { Header } from '../components/header'
 import { BottomNav } from '../components/bottom-nav'
@@ -64,15 +65,15 @@ export default function ActivityPage() {
 
 function ActivityFromLink() {
   const params = useSearchParams()
-  return <ActivityContent key={params.toString()} initialMonth={params.get('month') || ''} initialCategory={params.get('parent_id') || '__all__'} initialSubcategory={params.get('category_id') || '__all__'} />
+  return <ActivityContent key={params.toString()} initialMonth={params.get('month') || ''} initialCategory={params.get('parent_id') || '__all__'} initialSubcategory={params.get('category_id') || '__all__'} initialAccount={activityAccount(params.get('account_id'))} />
 }
 
-function ActivityContent({ initialMonth, initialCategory, initialSubcategory }: { initialMonth: string; initialCategory: string; initialSubcategory: string }) {
+function ActivityContent({ initialMonth, initialCategory, initialSubcategory, initialAccount }: { initialMonth: string; initialCategory: string; initialSubcategory: string; initialAccount: string }) {
   const { data, user, accounts, categories, loading, openComposer } = useFintrack()
   const [view, setView] = useState<'transactions' | 'report'>('transactions')
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all')
   const [month, setMonth] = useState(/^\d{4}-(0[1-9]|1[0-2])$/.test(initialMonth) ? initialMonth : '')
-  const [account, setAccount] = useState('__all__')
+  const [account, setAccount] = useState(initialAccount)
   const [selectedDate, setSelectedDate] = useState('')
   const [reportTone, setReportTone] = useState<'expense' | 'income'>('expense')
   const [subcategory, setSubcategory] = useState(initialSubcategory)
@@ -80,7 +81,7 @@ function ActivityContent({ initialMonth, initialCategory, initialSubcategory }: 
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(initialCategory !== '__all__' || initialSubcategory !== '__all__')
+  const [filtersOpen, setFiltersOpen] = useState(initialAccount !== '__all__' || initialCategory !== '__all__' || initialSubcategory !== '__all__')
   const [trendMode, setTrendMode] = useState<TrendMode>('monthly')
   const touchStart = useRef<number | null>(null)
   useEffect(() => {

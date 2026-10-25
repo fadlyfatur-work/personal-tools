@@ -2,6 +2,10 @@ import type { Category, ReportSlice, Transaction } from '@/types/fintrack'
 
 type ReportCategory = Pick<Category, 'id' | 'name' | 'emoji' | 'parent_id'>
 
+export function reportTransactionType(transaction: Pick<Transaction, 'type' | 'debt_payment_expense'>) {
+  return transaction.type === 'transfer' && transaction.debt_payment_expense ? 'expense' : transaction.type
+}
+
 export function sortCategoryTree(categories: Category[]) {
   const categoryMap = new Map(categories.map(item => [item.id, item]))
   return [...categories].sort((a, b) => {
@@ -26,7 +30,7 @@ export function categorySlices(transactions: Transaction[], categories: ReportCa
   const categoryMap = new Map(categories.map(item => [item.id, item]))
   const grouped = new Map<string, ReportSlice>()
   for (const transaction of transactions) {
-    if (transaction.type !== type) continue
+    if (reportTransactionType(transaction) !== type) continue
     const leaf = transaction.category_id ? categoryMap.get(transaction.category_id) : undefined
     if (parentId && leaf?.id !== parentId && leaf?.parent_id !== parentId) continue
     const category = groupParents && !parentId && leaf?.parent_id ? categoryMap.get(leaf.parent_id) || leaf : leaf

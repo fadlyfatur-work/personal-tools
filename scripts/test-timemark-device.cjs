@@ -37,9 +37,13 @@ async function main() {
   const video = { videoWidth: 640, videoHeight: 480, play: async () => { played++ } }
   const jsx = (type, props) => ({ type, props })
   let captured
-  const Camera = load('app/timemark/camera.tsx', { File, document: { createElement: () => ({ getContext: () => ({ drawImage: () => {} }), toBlob: callback => callback(new Blob(['test'], { type: 'image/jpeg' })) }) }, navigator: { mediaDevices: { getUserMedia: constraints => { assert.equal(constraints.video.aspectRatio.ideal, 9 / 16); return new Promise(resolve => { resolveStream = resolve }) } } }, DOMException, require: name => name === 'react' ? {
+  const cameraModule = load('app/timemark/camera.tsx', { File, document: { createElement: () => ({ getContext: () => ({ drawImage: () => {} }), toBlob: callback => callback(new Blob(['test'], { type: 'image/jpeg' })) }) }, navigator: { mediaDevices: { getUserMedia: constraints => { assert.equal(constraints.video.aspectRatio.ideal, 9 / 16); return new Promise(resolve => { resolveStream = resolve }) } } }, DOMException, require: name => name === 'react' ? {
     useRef: () => ({ current: video }), useState: initial => [initial, () => {}], useEffect: callback => { effect = callback },
-  } : name === 'react/jsx-runtime' ? { jsx, jsxs: jsx } : { default: {} } }).default
+  } : name === 'react/jsx-runtime' ? { jsx, jsxs: jsx } : { default: {} } })
+  assert.equal(cameraModule.cameraVideoConstraints(true, 'user').aspectRatio.ideal, 9 / 16)
+  assert.equal(cameraModule.cameraVideoConstraints(false, 'environment').aspectRatio.ideal, 16 / 9)
+  assert.equal(cameraModule.cameraVideoConstraints(false, 'environment').width.ideal, 1920)
+  const Camera = cameraModule.default
   const tree = Camera({ onCapture: async file => { captured = file }, onClose: () => {} })
   function find(node, predicate) {
     if (!node || typeof node !== 'object') return
@@ -62,7 +66,8 @@ async function main() {
   cleanupActive()
   assert.equal(stopped, 2, 'Closing the camera must stop its tracks')
   let locationCallback, changes = []
-  const LocationInput = load('app/timemark/location-input.tsx', { navigator: { geolocation: { getCurrentPosition: success => { locationCallback = success } } }, window: { isSecureContext: true }, AbortController, fetch: async () => Response.json({ address: 'Jakarta, Indonesia' }), require: name => name === 'react' ? {
+  let reverseFails = false
+  const LocationInput = load('app/timemark/location-input.tsx', { navigator: { geolocation: { getCurrentPosition: success => { locationCallback = success } } }, window: { isSecureContext: true }, AbortController, fetch: async () => reverseFails ? Response.json({ error: 'Geoapify gagal' }, { status: 502 }) : Response.json({ address: 'Jakarta, Indonesia' }), require: name => name === 'react' ? {
     useRef: initial => ({ current: initial }), useState: initial => [initial, () => {}], useId: () => 'location-test', useEffect: () => {},
   } : name === 'react/jsx-runtime' ? { jsx, jsxs: jsx } : name === './location-cache' ? { normalizeQuery: value => value.trim() } : { default: {} } }).default
   const locationTree = LocationInput({ value: '', disabled: false, onChange: value => changes.push(value) })
@@ -74,6 +79,11 @@ async function main() {
   find(locationTree, node => node.type === 'input').props.onChange({ target: { value: 'Alamat manual' } })
   await locationCallback({ coords: { latitude: -6.2, longitude: 106.8, accuracy: 20 } })
   assert.equal(changes.at(-1), 'Alamat manual', 'Late device location must not overwrite manual edits')
+  reverseFails = true
+  locate()
+  await locationCallback({ coords: { latitude: -6.2, longitude: 106.8, accuracy: 20 } })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(changes.at(-1), 'Alamat manual', 'A failed reverse lookup must not replace the address with coordinates')
   console.log('Device tests passed: reverse lookup, validation, camera capture/cleanup, device location, and preserving manual edits.')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

@@ -28,20 +28,25 @@ function formatNominal(value: string) {
   return value.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
-export default function TransactionForm({ accounts, categories, onSaved, editing, initial, onCancelEdit, onDelete }: TransactionFormProps) {
-  const { beginTask, endTask, transactions } = useFintrack()
-  const [type, setType] = useState<TransactionType>(editing?.type || initial?.type || 'expense')
-  const [amount, setAmount] = useState(editing ? onlyDigits(String(Math.trunc(Number(editing.amount)))) : '')
-  const [from, setFrom] = useState(editing?.from_account_id || initial?.from_account_id || '')
-  const [to, setTo] = useState(editing?.to_account_id || initial?.to_account_id || '')
-  const [goalItem, setGoalItem] = useState(editing?.goal_item_id || initial?.goal_item_id || '')
-  const [category, setCategory] = useState(editing?.category_id || '')
+export default function TransactionForm({ accounts, categories, onSaved, editing, initial, onDelete }: TransactionFormProps) {
+  const { beginTask, endTask, transactions, manageCategories } = useFintrack()
+  const starting = { ...editing, ...initial }
+  const [type, setType] = useState<TransactionType>(starting.type || 'expense')
+  const [amount, setAmount] = useState(starting.amount ? onlyDigits(String(Math.trunc(Number(starting.amount)))) : '')
+  const [from, setFrom] = useState(starting.from_account_id || '')
+  const [to, setTo] = useState(starting.to_account_id || '')
+  const [goalItem, setGoalItem] = useState(starting.goal_item_id || '')
+  const [category, setCategory] = useState(starting.category_id || '')
   const [notesDismissed, setNotesDismissed] = useState(false)
-  const [note, setNote] = useState(editing?.note || '')
+  const [note, setNote] = useState(starting.note || '')
   const noteSuggestions = notesDismissed ? [] : suggestTransactionNotes(transactions, note)
-  const [date, setDate] = useState(editing?.transaction_date || new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(starting.transaction_date || new Date().toISOString().slice(0, 10))
+  const [baseline] = useState(() => JSON.stringify({ type, amount, from, to, category, goalItem, note, date }))
+  const dirty = Boolean(initial?.amount || initial?.note || initial?.category_id) || baseline !== JSON.stringify({ type, amount, from, to, category, goalItem, note, date })
   const [message, setMessage] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
   const [saving, setSaving] = useState(false)
+  const [countPayment, setCountPayment] = useState(starting.debt_payment_expense ?? !editing)
+  const isDebtPayment = type === 'transfer' && accounts.find(account => account.id === from)?.classification === 'asset' && accounts.find(account => account.id === to)?.classification === 'liability'
   const goalsQuery = useQuery({ ...fintrackGoalsOptions(), enabled: type === 'expense' && Boolean(from) })
   const selectedGoal = goalsQuery.data?.find(goal => goal.account_id === from)
 
@@ -64,7 +69,7 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
         const res = await fintrackRequest(editing ? `/api/fintrack/transactions/${editing.id}` : '/api/fintrack/transactions', {
           method: editing ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, amount: Number(amount), from_account_id: from || null, to_account_id: to || null, category_id: category || null, note: note || null, transaction_date: date, allow_negative: allowNegative, ...((goalItem || editing?.goal_item_id) ? { goal_item_id: goalItem || null } : {}) }),
+          body: JSON.stringify({ type, amount: Number(amount), from_account_id: from || null, to_account_id: to || null, category_id: category || null, note: note || null, transaction_date: date, allow_negative: allowNegative, ...((isDebtPayment || editing?.debt_payment_expense) ? { debt_payment_expense: isDebtPayment && countPayment } : {}), ...((goalItem || editing?.goal_item_id) ? { goal_item_id: goalItem || null } : {}) }),
         })
         const body = await res.json().catch(() => ({}))
         return { res, body }
@@ -93,10 +98,10 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
 
   const selectedAccountId = type === 'income' ? to : from
   const selectedPlanId = accounts.find((account) => account.id === selectedAccountId)?.plan_id
-  const filteredCategories = sortCategoryTree(categories.filter((item) => item.type === type && (!selectedPlanId || item.plan_id === selectedPlanId)))
+  const filteredCategories = sortCategoryTree(categories.filter((item) => item.type === (isDebtPayment ? 'expense' : type) && (!selectedPlanId || item.plan_id === selectedPlanId)))
 
   return (
-    <form className="ft-form" onSubmit={submit} data-updating={saving}>
+    <form className="ft-form" onSubmit={submit} data-updating={saving} data-dirty={dirty || countPayment !== (starting.debt_payment_expense ?? !editing)}>
       <div className="ft-segment" aria-label="Jenis transaksi">
         {(['expense', 'income', 'transfer'] as TransactionType[]).map((item) => (
           <button key={item} type="button" data-active={type === item} onClick={() => changeType(item)}>
@@ -127,9 +132,10 @@ export default function TransactionForm({ accounts, categories, onSaved, editing
           </select>
         </div>
       )}
-      {type !== 'transfer' && (
+      {isDebtPayment && <div className="ft-card ft-settings-card"><h3>Pembayaran utang / paylater</h3><label className="ft-debt-expense-choice"><input type="checkbox" checked={countPayment} onChange={event => setCountPayment(event.target.checked)} />Hitung sebagai pengeluaran</label><p className="ft-hint">Saldo dompet pembayar dan sisa utang berkurang. Aktifkan jika pengeluaran ingin dicatat saat membayar. Jika pembelian paylater sudah dicatat sebagai pengeluaran, nonaktifkan agar tidak dihitung dua kali.</p></div>}
+      {(type !== 'transfer' || isDebtPayment) && (
         <div className="ft-field">
-          <div className="ft-field-label-row"><label htmlFor="category">Kategori</label><Link href="/fintrack/manage" onClick={onCancelEdit}>Kelola kategori</Link></div>
+          <div className="ft-field-label-row"><label htmlFor="category">Kategori</label><Link href="/fintrack/manage?tab=categories" onClick={event => { event.preventDefault(); manageCategories({ type, debt_payment_expense: isDebtPayment && countPayment, amount: Number(amount), from_account_id: from || null, to_account_id: to || null, category_id: category || null, goal_item_id: goalItem || null, note, transaction_date: date }, editing || null) }}>Kelola kategori</Link></div>
           <select id="category" className="ft-input" value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="">Tanpa kategori</option>
             {filteredCategories.map((item) => <option key={item.id} value={item.id}>{item.emoji ? `${item.emoji} ` : ''}{categoryLabel(item, categories)}</option>)}

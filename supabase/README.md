@@ -1,5 +1,7 @@
 # Reset database FinTrack
 
+Pembayaran utang berkategori memerlukan migrasi tambahan `migrations/202610250001_fintrack_debt_payment_expense.sql`, diterapkan setelah migrasi sebelumnya. Jangan mengulang reset untuk mengaktifkan fitur. Panduan rollout ada di [UX dan pembayaran utang](../docs/fintrack-ux-and-debt-payments.md).
+
 Untuk kategori bertingkat, jalankan hanya `migrations/202610070001_fintrack_subcategories.sql` setelah migration sebelumnya dan sebelum memakai versi aplikasi terbaru. Panduan: [kategori FinTrack](../docs/fintrack-categories.md). Tidak perlu reset database.
 
 Untuk fitur Goals pada database yang sudah aktif, jalankan hanya migrasi tambahan `migrations/202610040001_fintrack_goals.sql` setelah migrasi sebelumnya. Panduan fitur ada di [docs/fintrack-goals.md](../docs/fintrack-goals.md). Jangan mengulang reset untuk mengaktifkan Goals.

@@ -16,3 +16,62 @@
 /* Camera is an exclusive workspace so a portrait stream can use the full preview. */
 .app[data-camera=open] .controls,.app[data-camera=open] .toolbar,.app[data-camera=open] .caption,.app[data-camera=open] .export{display:none}.app[data-camera=open] .workspace{grid-template-columns:minmax(0,1fr)}.app[data-camera=open] .preview{grid-template-rows:minmax(0,1fr)}.app[data-camera=open] .stage{overflow:hidden}.cameraView{display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0;min-height:0}.cameraView video{display:block;width:100%;height:100%;min-width:0;min-height:0;max-width:100%;max-height:100%;object-fit:contain}.app[data-camera=open] .camera{min-height:0}.app[data-camera=open] .cameraActions{flex:0 0 auto}
 @media(max-width:650px){.app[data-camera=open] .heading{display:none}.app[data-camera=open] .workspace{grid-template-rows:minmax(0,1fr)}.app[data-camera=open] .cameraView video{width:100%;height:100%;object-fit:contain}}
+
+/* Timemark shares the portfolio's neutral surfaces, blue accent, and restrained geometry. */
+.app{--tm-canvas:#f2f1ee;--tm-surface:#e8e7e3;--tm-ink:#191b20;--tm-muted:#555960;--tm-accent:#245fc6;--tm-line:#cececa;--tm-field:#fafaf8;--tm-action:#191b20;--tm-on-action:#f2f1ee;--tm-stage:#dededb;background:var(--tm-canvas);color:var(--tm-ink);font-family:inherit;font-size:14px;line-height:1.45;padding:0 32px 24px}
+.app[data-theme=dark]{--tm-canvas:#121316;--tm-surface:#1b1d21;--tm-ink:#f2f1ee;--tm-muted:#b7b7b9;--tm-accent:#7aa7ff;--tm-line:#35373d;--tm-field:#202226;--tm-action:#f2f1ee;--tm-on-action:#191b20;--tm-stage:#0d0e10;background:var(--tm-canvas);color:var(--tm-ink)}
+.app *{box-sizing:border-box}
+.app :is(button,input,select,summary,a){-webkit-tap-highlight-color:transparent}
+.app :is(button,input,select,summary,a):focus-visible,.app[data-theme=dark] :is(button,input,select,summary,a):focus-visible{outline:2px solid var(--tm-accent);outline-offset:3px}
+.app button,.app[data-theme=dark] button{min-height:44px;border:1px solid var(--tm-line);border-radius:3px;background:var(--tm-canvas);color:var(--tm-ink);font:inherit;font-weight:550;white-space:nowrap;transition:background 140ms,transform 100ms}
+.app button:hover:not(:disabled),.app[data-theme=dark] button:hover:not(:disabled){background:var(--tm-surface)}
+.app button:active:not(:disabled){transform:scale(.98)}
+.app .primary,.app[data-theme=dark] .primary{background:var(--tm-action);border-color:var(--tm-action);color:var(--tm-on-action)}
+.app .primary:hover:not(:disabled),.app[data-theme=dark] .primary:hover:not(:disabled){background:var(--tm-ink)}
+.app input:not([type=checkbox]):not([type=range]),.app select,.app[data-theme=dark] input:not([type=checkbox]):not([type=range]),.app[data-theme=dark] select{min-height:44px;border:1px solid var(--tm-line);border-radius:3px;background:var(--tm-field);color:var(--tm-ink);font:inherit}
+.app input::placeholder{color:var(--tm-muted);opacity:1}
+.app :is(input[type=checkbox],input[type=range]){accent-color:var(--tm-accent)}
+.header,.app[data-theme=dark] .header{height:68px;border-color:var(--tm-line)}
+.header>div:first-child{font-size:18px;letter-spacing:-.03em;white-space:nowrap}
+.header a,.app[data-theme=dark] .header a{color:var(--tm-ink);font-weight:600}
+.header strong{font-weight:650}
+.divider{color:var(--tm-muted);font-weight:400}
+.headerActions button{min-height:38px;font-size:12px}
+.local,.app[data-theme=dark] .local{color:var(--tm-muted)}
+.heading{padding:18px 0 16px}
+.heading h1{font-size:clamp(22px,2.5vw,31px);font-weight:550;letter-spacing:-.04em;line-height:1.12}
+.heading p,.app[data-theme=dark] .heading p{color:var(--tm-muted);font-size:13px}
+.workspace{max-width:1480px;grid-template-columns:minmax(288px,330px) minmax(0,1fr);gap:0;border:1px solid var(--tm-line)}
+.controls,.app[data-theme=dark] .controls{padding:20px;background:var(--tm-canvas);border:0;border-right:1px solid var(--tm-line);border-radius:0}
+.controls section,.app[data-theme=dark] .controls section{padding-bottom:18px;margin-bottom:18px;border-color:var(--tm-line)}
+.controls h2,.controls legend{font-size:16px;letter-spacing:-.02em;margin-bottom:13px}
+.controls label{font-size:12px;gap:6px;margin-bottom:12px}
+.sourceActions button{min-width:0;padding-inline:8px}
+.help,.app[data-theme=dark] .help{color:var(--tm-muted);font-size:11px;line-height:1.55}
+.app .textButton,.app[data-theme=dark] .textButton{color:var(--tm-accent);background:transparent;border:0;min-height:32px;font-size:12px}
+.app .textButton:hover:not(:disabled),.app[data-theme=dark] .textButton:hover:not(:disabled){background:transparent;text-decoration:underline}
+.logoRow button{min-height:38px;font-size:12px}
+.controls details,.app[data-theme=dark] .controls details{border-color:var(--tm-line)}
+.range output,.app[data-theme=dark] .range output{color:var(--tm-muted)}
+.locationDropdown,.app[data-theme=dark] .locationDropdown{background:var(--tm-field);border-color:var(--tm-line);border-radius:3px}
+.locationDropdown p,.app[data-theme=dark] .locationDropdown p{color:var(--tm-muted)}
+.locationDropdown li{border-top:1px solid var(--tm-line)}
+.locationDropdown li:hover,.locationDropdown li[aria-selected=true],.app[data-theme=dark] .locationDropdown li:hover,.app[data-theme=dark] .locationDropdown li[aria-selected=true]{background:var(--tm-surface);color:var(--tm-accent)}
+.locationDropdown .attribution{border-top:1px solid var(--tm-line)}
+.locationCredit,.app[data-theme=dark] .locationCredit{color:var(--tm-muted)}
+.preview{padding:14px 18px 18px}
+.toolbar{padding-bottom:12px;margin:0}
+.toolbar button,.app[data-theme=dark] .toolbar button{min-height:38px;padding:7px 11px;background:transparent;border-color:transparent;color:var(--tm-muted);font-size:12px;font-weight:500}
+.toolbar button[aria-pressed=true],.app[data-theme=dark] .toolbar button[aria-pressed=true]{background:var(--tm-surface);border-color:var(--tm-line);color:var(--tm-ink)}
+.stage,.app[data-theme=dark] .stage{background:var(--tm-stage);border-color:var(--tm-line);border-radius:0}
+.empty,.app[data-theme=dark] .empty{color:var(--tm-muted)}
+.empty h2,.app[data-theme=dark] .empty h2{color:var(--tm-ink)}
+.caption,.app[data-theme=dark] .caption{color:var(--tm-muted)}
+.export,.app[data-theme=dark] .export{border-color:var(--tm-line)}
+.export p,.app[data-theme=dark] .export p{color:var(--tm-muted)}
+.cameraView,.cameraView video{background:#0d0e10}
+.cameraView p{background:#1b1d21;color:#f2f1ee;border-radius:3px}
+@media(max-width:780px){.app{padding:0 16px 16px}.header{height:60px}.workspace{grid-template-columns:minmax(250px,290px) minmax(0,1fr)}.controls{padding:14px}.preview{padding:10px}.export p{display:none}.export>div{margin-left:auto}}
+@media(max-width:650px){.app{padding:0 12px 12px}.header{height:54px}.header>div:first-child{font-size:16px}.headerActions button{min-height:36px}.heading{padding:10px 0}.heading h1{font-size:19px}.workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(230px,1.2fr) minmax(190px,1fr)}.preview{grid-row:1;padding:8px;border-bottom:1px solid var(--tm-line)}.controls,.app[data-theme=dark] .controls{grid-row:2;border-right:0;padding:14px}.toolbar{padding-bottom:5px}.toolbar button{min-height:34px;padding:5px 8px;font-size:11px}.stage{padding:6px}.caption{padding:5px 0}.export{padding-top:6px}.export button{min-width:0}.app[data-camera=open] .workspace{grid-template-rows:minmax(0,1fr)}.app[data-camera=open] .preview{border:0}.app[data-camera=open] .stage{padding:0}}
+@media(max-height:560px){.heading{display:none}.header{height:48px}.app[data-camera=open]{padding-bottom:8px}.app[data-camera=open] .preview{padding:6px}.app[data-camera=open] .camera{gap:4px}.app[data-camera=open] .cameraActions{gap:4px}.app[data-camera=open] .cameraActions button{min-height:36px;padding:5px 9px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.app button{transition:none}.app button:active:not(:disabled){transform:none}}

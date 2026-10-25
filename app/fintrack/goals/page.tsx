@@ -73,9 +73,9 @@ export default function GoalsPage() {
         const progress = goalProgress(goal)
         const estimated = goal.items.reduce((sum, item) => sum + Number(item.estimated_amount), 0)
         return <details key={goal.id} className="ft-card ft-goal-card">
-          <summary><span className="ft-goal-emoji" aria-hidden="true">{goal.emoji}</span><div className="ft-goal-heading"><h2>{goal.name}</h2><span>{goal.kind === 'investment' ? 'Investasi' : 'Tabungan tujuan'}{goal.target_date ? ` · ${new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${goal.target_date}T12:00:00`))}` : ''}</span><div className="ft-goal-progress-label"><strong>{formatRupiah(progress.funded)}</strong><span>{progress.percentage}%</span></div><progress max={100} value={progress.percentage} aria-label={`Progres pendanaan ${goal.name}`} /><small>Target {formatRupiah(goal.target_amount)}</small></div><span className="ft-goal-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="ft-goal-detail">
-            <dl className="ft-goal-numbers"><div><dt>Tersedia</dt><dd>{formatRupiah(goal.current_balance)}</dd></div><div><dt>Sudah digunakan</dt><dd>{formatRupiah(goal.spent)}</dd></div><div><dt>Kurang</dt><dd>{formatRupiah(progress.remaining)}</dd></div></dl>
+          <summary><span className="ft-goal-emoji" aria-hidden="true">{goal.emoji}</span><div className="ft-goal-heading"><h2>{goal.name}</h2><span>{goal.kind === 'investment' ? 'Investasi' : 'Tabungan tujuan'}{goal.target_date ? ` · ${new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${goal.target_date}T12:00:00`))}` : ''}</span><div className="ft-goal-progress-label"><strong><span className="ft-goal-funding-label">Total pendanaan</span>{formatRupiah(progress.funded)}</strong><span>{progress.percentage}%</span></div><progress max={100} value={progress.percentage} aria-label={`Progres pendanaan ${goal.name}`} /><small>Target {formatRupiah(goal.target_amount)}</small></div><span className="ft-goal-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="ft-goal-detail"><p className="ft-goal-help">Total pendanaan = dana tersedia + dana yang sudah digunakan.</p>
+            <dl className="ft-goal-numbers"><div><dt>Saldo tersedia</dt><dd>{formatRupiah(goal.current_balance)}</dd></div><div><dt>Sudah digunakan</dt><dd>{formatRupiah(goal.spent)}</dd></div><div><dt>Kurang</dt><dd>{formatRupiah(progress.remaining)}</dd></div></dl>
             <div className="ft-goal-actions">
               {goal.status !== 'archived' && <><button type="button" className="ft-button ft-button-primary" onClick={() => transact(goal, 'deposit')}>Tambah dana</button><button type="button" className="ft-button ft-button-secondary" onClick={() => transact(goal, 'expense')}>Catat belanja</button></>}
               {goal.status === 'archived' && accounts.some(account => account.id === goal.account_id) && <button type="button" className="ft-button ft-button-secondary" disabled={busy} onClick={() => void action(() => write(`/api/fintrack/goals/${goal.id}`, 'PATCH', { status: 'active' }))}>Pulihkan tujuan</button>}
@@ -85,7 +85,7 @@ export default function GoalsPage() {
                   <button type="button" role="menuitem" onClick={() => setPanel({ type: 'goal', goal })}><PencilSimple size={16} />Ubah tujuan</button>
                   <button type="button" role="menuitem" disabled={busy} onClick={() => void action(() => write(`/api/fintrack/goals/${goal.id}`, 'PATCH', { status: goal.status === 'active' ? 'completed' : 'active' }))}><Check size={16} />{goal.status === 'active' ? 'Tandai selesai' : 'Aktifkan lagi'}</button>
                 </>}
-                <button type="button" role="menuitem" onClick={() => router.push('/fintrack/activity')}><ArrowUpRight size={16} />Lihat aktivitas</button>
+                <button type="button" role="menuitem" onClick={() => router.push(`/fintrack/activity?account_id=${goal.account_id}`)}><ArrowUpRight size={16} />Lihat aktivitas</button>
                 {goal.status !== 'archived' && <button type="button" role="menuitem" className="danger ft-goal-menu-archive" disabled={busy} onClick={() => { if (window.confirm('Arsipkan tujuan ini? Dompet dan riwayat transaksi tetap tersimpan.')) void action(() => write(`/api/fintrack/goals/${goal.id}`, 'PATCH', { status: 'archived' })) }}><Trash size={16} />Arsipkan</button>}
               </ActionMenu>
             </div>
@@ -100,11 +100,11 @@ export default function GoalsPage() {
     </>}
     <BottomNav />
     {panel && <TransactionSheet onClose={() => setPanel(null)}>{close => <>
-      <div className="ft-modal-header"><div><p>Tujuan keuangan</p><h2 id="transaction-modal-title">{panel.type === 'goal' ? panel.goal ? 'Ubah tujuan' : 'Buat tujuan' : panel.type === 'item' ? panel.item ? 'Ubah item' : 'Tambah item' : panel.goal.name}</h2></div><button type="button" className="ft-icon-button" onClick={close} aria-label="Tutup"><X size={18} /></button></div>
-      <div className="ft-modal-body">{panel.type === 'transaction' ? <TransactionForm accounts={accounts} categories={categories} initial={panel.initial} onSaved={transaction => { applyTransactionChange(null, transaction); void refreshData(); close() }} /> : <GoalEditor panel={panel} save={async payload => {
+      <div className="ft-modal-header"><div><p>Tujuan keuangan</p><h2 id="transaction-modal-title">{panel.type === 'goal' ? panel.goal ? 'Ubah tujuan' : 'Buat tujuan' : panel.type === 'item' ? panel.item ? 'Ubah item' : 'Tambah item' : panel.goal.name}</h2></div><button type="button" className="ft-icon-button" onClick={() => close()} aria-label="Tutup"><X size={18} /></button></div>
+      <div className="ft-modal-body">{panel.type === 'transaction' ? <TransactionForm accounts={accounts} categories={categories} initial={panel.initial} onSaved={transaction => { applyTransactionChange(null, transaction); void refreshData(); close(true) }} /> : <GoalEditor panel={panel} save={async payload => {
         await write(panel.type === 'goal' ? panel.goal ? `/api/fintrack/goals/${panel.goal.id}` : '/api/fintrack/goals' : `/api/fintrack/goals/${panel.goal.id}/items`, panel.type === 'goal' ? panel.goal ? 'PATCH' : 'POST' : panel.item ? 'PATCH' : 'POST', payload)
         await refreshData()
-        close()
+        close(true)
       }} />}</div>
     </>}</TransactionSheet>}
   </main>
@@ -112,6 +112,7 @@ export default function GoalsPage() {
 
 function GoalEditor({ panel, save }: { panel: Exclude<Panel, { type: 'transaction' }>; save: (payload: unknown) => Promise<void> }) {
   const [form, setForm] = useState(panel.type === 'goal' ? panel.goal ? { name: panel.goal.name, emoji: panel.goal.emoji, kind: panel.goal.kind, target_amount: String(panel.goal.target_amount), target_date: panel.goal.target_date || '' } : emptyGoal : { ...emptyGoal, name: panel.item?.name || '', target_amount: panel.item ? String(panel.item.estimated_amount) : '' })
+  const [baseline] = useState(() => JSON.stringify(form))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   async function submit(event: FormEvent) {
@@ -122,7 +123,7 @@ function GoalEditor({ panel, save }: { panel: Exclude<Panel, { type: 'transactio
     catch (err) { setError(err instanceof Error ? err.message : 'Gagal menyimpan') }
     finally { setSaving(false) }
   }
-  return <form className="ft-form" onSubmit={submit}>
+  return <form className="ft-form" onSubmit={submit} data-dirty={JSON.stringify(form) !== baseline} data-updating={saving}>
     <div className="ft-field"><label htmlFor="goal-name">{panel.type === 'goal' ? 'Nama tujuan' : 'Nama item'}</label><input id="goal-name" className="ft-input" value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} required maxLength={60} placeholder={panel.type === 'goal' ? 'Misalnya, liburan Jepang' : 'Misalnya, tiket pesawat'} /></div>
     {panel.type === 'goal' && <><div className="ft-field"><label htmlFor="goal-emoji">Ikon</label><input id="goal-emoji" className="ft-input" value={form.emoji} onChange={event => setForm({ ...form, emoji: event.target.value })} required maxLength={16} /></div>{!panel.goal && <div className="ft-field"><label htmlFor="goal-kind">Jenis tujuan</label><select id="goal-kind" className="ft-input" value={form.kind} onChange={event => setForm({ ...form, kind: event.target.value })}><option value="purchase">Tabungan tujuan</option><option value="investment">Investasi</option></select></div>}</>}
     <div className="ft-field"><label htmlFor="goal-amount">{panel.type === 'goal' ? 'Target dana (Rp)' : 'Estimasi biaya (Rp)'}</label><input id="goal-amount" className="ft-input" inputMode="numeric" value={nominal(form.target_amount)} onChange={event => setForm({ ...form, target_amount: digits(event.target.value) })} required maxLength={16} /><small>{panel.type === 'item' ? 'Estimasi item tidak mengubah target tujuan secara otomatis.' : 'Dompet tujuan dimulai dari Rp0. Tambahkan dana melalui transfer.'}</small></div>

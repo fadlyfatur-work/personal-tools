@@ -12,6 +12,8 @@ Sebelum migrasi diterapkan, halaman menampilkan pesan bahwa Goals belum tersedia
 
 ## Perilaku
 
+Pembaruan UX 25 Oktober 2026: Total pendanaan diberi label, Lihat aktivitas mempertahankan filter dompet tujuan, serta penutupan editor dengan perubahan meminta konfirmasi. Lihat [panduan UX dan pembayaran utang](fintrack-ux-and-debt-payments.md).
+
 - Membuat tujuan sekaligus membuat dompet dengan saldo nol secara atomik. Dana dimasukkan melalui transfer dari dompet lain.
 - Target, ikon, tenggat opsional, serta estimasi per item dapat diubah. Jumlah estimasi item tidak otomatis mengubah target.
 - Progres = saldo dompet + seluruh pengeluaran berstatus `posted` dari dompet itu. Pengeluaran tanpa item juga dihitung. Agregasi berasal dari seluruh riwayat, bukan batas 60 transaksi bootstrap.

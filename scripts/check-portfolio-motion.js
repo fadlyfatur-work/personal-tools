@@ -58,7 +58,7 @@ async page => {
   await page.getByRole('button', { name: 'Favorit 0', exact: true }).click();
   await page.getByRole('heading', { name: 'Belum ada proyek favorit', exact: true }).waitFor();
   await page.getByRole('button', { name: 'Lihat semua proyek', exact: true }).click();
-  check(await page.locator('#project-list > li').count() === 6 && await page.locator('#project-list [data-reveal-pending]').count() === 0, 'Daftar proyek yang dirender ulang tetap terlihat');
+  check(await page.locator('#project-list > li').count() === 7 && await page.locator('#project-list [data-reveal-pending]').count() === 0, 'Daftar proyek yang dirender ulang tetap terlihat');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(origin);
   await page.locator('summary[aria-label="Menu navigasi"]').click();

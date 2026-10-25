@@ -45,7 +45,7 @@ export default function Home() {
           <ProjectExplorer />
           <div className={styles.listHeading} data-scroll-reveal><h3>Seluruh proyek</h3><p>Simpan favorit dan atur urutan sesuai kebutuhan Anda.</p></div>
           <ProjectList />
-          <p className={styles.projectNote}>Teknologi di atas mengikuti versi proyek portofolio asal. Menu aplikasi dan Fintrack di situs ini berjalan dengan Next.js dan Supabase.</p>
+          <p className={styles.projectNote}>Teknologi mengikuti masing-masing versi proyek. Demo POS menyimpan data di browser; aplikasi Personal Tools lainnya memakai Next.js dan Supabase.</p>
         </div>
       </section>
 

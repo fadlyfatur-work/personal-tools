@@ -1,6 +1,6 @@
 'use client'
 
-import { categorySlices, categoryBudget } from '@/lib/fintrackCategories'
+import { categorySlices, categoryBudget, reportTransactionType } from '@/lib/fintrackCategories'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
@@ -17,6 +17,9 @@ type Palette = 'forest' | 'ocean' | 'earth'
 type Theme = 'light' | 'dark'
 
 interface FintrackContextValue {
+  categoryDraft: { values: Partial<Transaction>; editing: Transaction | null; returnPath: string; ownerId: string } | null
+  manageCategories: (values: Partial<Transaction>, editing: Transaction | null) => void
+  resumeTransaction: () => void
   palette: Palette
   setPalette: (palette: Palette) => void
   theme: Theme
@@ -37,7 +40,7 @@ interface FintrackContextValue {
   beginTask: (id: string, label: string) => void
   endTask: (id: string) => void
   isBusy: (id?: string) => boolean
-  openComposer: (transaction?: Transaction | null) => void
+  openComposer: (transaction?: Transaction | null, initial?: Partial<Transaction>) => void
   applyTransactionChange: (previous: Transaction | null, next: Transaction | null) => void
 }
 
@@ -93,13 +96,13 @@ function rebuildDerived(data: FintrackBootstrap, accounts: Account[], transactio
   const liabilities = included.filter((account) => account.classification === 'liability').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const monthly = transactions.filter((transaction) => transaction.transaction_date >= data.report.period_start && transaction.transaction_date <= data.report.period_end)
   const income = monthly.filter((transaction) => transaction.type === 'income').reduce((sum, transaction) => sum + Number(transaction.amount), 0)
-  const expense = monthly.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + Number(transaction.amount), 0)
+  const expense = monthly.filter((transaction) => reportTransactionType(transaction) === 'expense').reduce((sum, transaction) => sum + Number(transaction.amount), 0)
   const reportFor = (type: 'income' | 'expense') => categorySlices(monthly, data.categories, type)
   const dailyMap = new Map<string, { day: string; income: number; expense: number }>()
   monthly.forEach((transaction) => {
-    if (transaction.type === 'transfer') return
+    if (reportTransactionType(transaction) === 'transfer') return
     const point = dailyMap.get(transaction.transaction_date) || { day: transaction.transaction_date, income: 0, expense: 0 }
-    point[transaction.type] += Number(transaction.amount)
+    point[reportTransactionType(transaction) as 'income' | 'expense'] += Number(transaction.amount)
     dailyMap.set(transaction.transaction_date, point)
   })
   return { ...data, accounts, transactions, summary: { assets, liabilities, net_worth: assets - liabilities, income, expense }, report: { ...data.report, category_expense: data.report.category_expense || categorySlices(monthly, data.categories, 'expense', null, false), income: reportFor('income'), expense: reportFor('expense'), transactions: monthly, daily: [...dailyMap.values()].sort((a, b) => a.day.localeCompare(b.day)) } }
@@ -131,7 +134,19 @@ function FintrackState({ children }: { children: React.ReactNode }) {
   })
   const [tasks, setTasks] = useState<Record<string, string>>({})
   const [loaderVisible, setLoaderVisible] = useState(false)
-  const [composer, setComposer] = useState<{ open: boolean; editing: Transaction | null }>({ open: false, editing: null })
+  const [composer, setComposer] = useState<{ open: boolean; editing: Transaction | null; initial?: Partial<Transaction> }>({ open: false, editing: null })
+  const [categoryDraft, setCategoryDraft] = useState<FintrackContextValue['categoryDraft']>(null)
+  const manageCategories = useCallback((values: Partial<Transaction>, editing: Transaction | null) => {
+    setCategoryDraft({ values, editing, returnPath: pathname, ownerId: query.data?.user.id || '' })
+    setComposer({ open: false, editing: null })
+    router.push('/fintrack/manage?tab=categories')
+  }, [pathname, router, query.data?.user.id])
+  const resumeTransaction = useCallback(() => {
+    if (!categoryDraft || categoryDraft.ownerId !== query.data?.user.id) return
+    setComposer({ open: true, editing: categoryDraft.editing, initial: categoryDraft.values })
+    router.push(categoryDraft.returnPath)
+    setCategoryDraft(null)
+  }, [categoryDraft, router, query.data?.user.id])
   const [budgetNotice, setBudgetNotice] = useState<{ title: string; message: string; over: boolean } | null>(null)
 
   const warmUserId = query.data?.user.id
@@ -204,8 +219,12 @@ function FintrackState({ children }: { children: React.ReactNode }) {
   const refreshData = useCallback(async () => {
     await Promise.all([query.refetch(), queryClient.invalidateQueries({ queryKey: ['fintrack', 'activity'] }), queryClient.invalidateQueries({ queryKey: ['fintrack', 'goals'] })])
   }, [query, queryClient])
-  const clearCache = useCallback(() => queryClient.removeQueries({ queryKey: ['fintrack'] }), [queryClient])
-  const openComposer = useCallback((transaction?: Transaction | null) => setComposer({ open: true, editing: transaction || null }), [])
+  const clearCache = useCallback(() => {
+    setCategoryDraft(null)
+    setComposer({ open: false, editing: null })
+    queryClient.removeQueries({ queryKey: ['fintrack'] })
+  }, [queryClient])
+  const openComposer = useCallback((transaction?: Transaction | null, initial?: Partial<Transaction>) => setComposer({ open: true, editing: transaction || null, initial }), [])
   const applyTransactionChange = useCallback((previous: Transaction | null, next: Transaction | null) => updateData((current) => {
     const accounts = current.accounts.map((account) => ({ ...account, current_balance: Number(account.current_balance) - (previous ? accountDelta(previous, account) : 0) + (next ? accountDelta(next, account) : 0) }))
     const allTransactions = knownTransactions(current)
@@ -215,14 +234,14 @@ function FintrackState({ children }: { children: React.ReactNode }) {
     if (current.report.category_expense) {
       const totals = current.report.category_expense.map(item => ({ ...item }))
       for (const [transaction, direction] of [[previous, -1], [next, 1]] as const) {
-        if (!transaction || transaction.type !== 'expense' || transaction.transaction_date < current.report.period_start || transaction.transaction_date > current.report.period_end) continue
+        if (!transaction || reportTransactionType(transaction) !== 'expense' || transaction.transaction_date < current.report.period_start || transaction.transaction_date > current.report.period_end) continue
         const slice = totals.find(item => item.category_id === (transaction.category_id || null))
         if (slice) slice.amount += direction * Number(transaction.amount)
         else if (direction === 1) totals.push(...categorySlices([transaction], rebuilt.categories, 'expense', null, false))
       }
       rebuilt.report.category_expense = totals.filter(item => item.amount > 0)
     }
-    if (next?.type === 'expense' && next.category_id && next.transaction_date >= rebuilt.report.period_start && next.transaction_date <= rebuilt.report.period_end) {
+    if (next && reportTransactionType(next) === 'expense' && next.category_id && next.transaction_date >= rebuilt.report.period_start && next.transaction_date <= rebuilt.report.period_end) {
       const leaf = rebuilt.categories.find((item) => item.id === next.category_id)
       const category = rebuilt.categories.find(item => item.id === leaf?.parent_id) || leaf
       const budget = category ? categoryBudget(category, rebuilt.categories) : 0
@@ -241,8 +260,9 @@ function FintrackState({ children }: { children: React.ReactNode }) {
   }), [updateData])
 
   const value = useMemo<FintrackContextValue>(() => ({
+    categoryDraft: categoryDraft?.ownerId === query.data?.user.id ? categoryDraft : null, manageCategories, resumeTransaction,
     palette, setPalette, theme, setTheme, data: query.data, user: query.data?.user || null, accounts: query.data?.accounts || [], categories: query.data?.categories || [], transactions: query.data?.transactions || [], loading: shouldBootstrap && query.isPending, error: query.error instanceof Error ? query.error.message : '', setUser, setAccounts, setCategories, updateData, refreshData, clearCache, beginTask, endTask, isBusy, openComposer, applyTransactionChange,
-  }), [palette, setPalette, theme, setTheme, query.data, query.isPending, query.error, shouldBootstrap, setUser, setAccounts, setCategories, updateData, refreshData, clearCache, beginTask, endTask, isBusy, openComposer, applyTransactionChange])
+  }), [categoryDraft, manageCategories, resumeTransaction, palette, setPalette, theme, setTheme, query.data, query.isPending, query.error, shouldBootstrap, setUser, setAccounts, setCategories, updateData, refreshData, clearCache, beginTask, endTask, isBusy, openComposer, applyTransactionChange])
   const labels = Object.values(tasks)
   const bootstrapError = query.error as (Error & { status?: number }) | null
 
@@ -267,22 +287,22 @@ function FintrackState({ children }: { children: React.ReactNode }) {
       <div className="fintrack-app" data-palette={palette} data-theme={theme}>
         <div className="ft-global-loader" data-visible={loaderVisible} role="status" aria-live="polite" aria-hidden={!loaderVisible}><span>{labels.at(-1) || 'Menyelaraskan'}</span><i aria-hidden="true" /></div>
         <div className="ft-page-transition" key={pathname}>{children}</div>
-        {composer.open && <TransactionModal editing={composer.editing} onClose={() => setComposer({ open: false, editing: null })} />}
+        {composer.open && <TransactionModal editing={composer.editing} initial={composer.initial} onClose={() => setComposer({ open: false, editing: null })} />}
         {budgetNotice && <div className="ft-budget-toast" data-over={budgetNotice.over} role="status" aria-live="assertive"><BellRinging size={19} weight="fill" /><div><strong>{budgetNotice.title}</strong><span>{budgetNotice.message}</span></div><button type="button" onClick={() => setBudgetNotice(null)} aria-label="Tutup notifikasi budget"><X size={15} /></button></div>}
       </div>
     </FintrackContext.Provider>
   )
 }
 
-function TransactionModal({ editing, onClose }: { editing: Transaction | null; onClose: () => void }) {
+function TransactionModal({ editing, initial, onClose }: { editing: Transaction | null; initial?: Partial<Transaction>; onClose: () => void }) {
   const { accounts, categories, data, loading, beginTask, endTask, applyTransactionChange, refreshData } = useFintrack()
-  function saved(transaction: Transaction, close: () => void) {
+  function saved(transaction: Transaction, close: (force?: boolean) => void) {
     applyTransactionChange(editing, transaction)
     void refreshData()
-    close()
+    close(true)
   }
 
-  async function removeTransaction(close: () => void) {
+  async function removeTransaction(close: (force?: boolean) => void) {
     if (!editing || !window.confirm('Hapus transaksi ini dan kembalikan perubahan saldonya?')) return
     const pin = data?.has_pin ? window.prompt('Masukkan PIN konfirmasi 6 digit') : null
     if (data?.has_pin && !pin) return
@@ -293,16 +313,16 @@ function TransactionModal({ editing, onClose }: { editing: Transaction | null; o
       if (!response.ok) throw new Error(body.error || 'Transaksi tidak dapat dihapus')
       applyTransactionChange(editing, null)
       void refreshData()
-      close()
+      close(true)
     } catch (error) { window.alert(error instanceof Error ? error.message : 'Transaksi tidak dapat dihapus') } finally { endTask('transaction-delete') }
   }
 
   return (
     <TransactionSheet onClose={onClose}>{close => <>
 
-        <div className="ft-modal-header"><div><p>Transaksi</p><h2 id="transaction-modal-title">{editing ? 'Perbarui catatan' : 'Catat transaksi'}</h2></div><button className="ft-icon-button" type="button" onClick={close} aria-label="Tutup pencatatan"><X size={19} /></button></div>
+        <div className="ft-modal-header"><div><p>Transaksi</p><h2 id="transaction-modal-title">{editing ? 'Perbarui catatan' : 'Catat transaksi'}</h2></div><button className="ft-icon-button" type="button" onClick={() => close()} aria-label="Tutup pencatatan"><X size={19} /></button></div>
         <div className="ft-modal-body" data-updating={loading}>
-          {accounts.length === 0 && !loading ? <div className="ft-empty ft-modal-empty"><div><strong>Buat dompet terlebih dahulu</strong><p>Transaksi membutuhkan dompet sebagai sumber atau tujuan saldo.</p><Link href="/fintrack/manage" className="ft-button ft-button-primary" onClick={onClose}>Kelola dompet</Link></div></div> : <TransactionForm key={editing?.id || 'new'} accounts={accounts} categories={categories} editing={editing} onCancelEdit={close} onDelete={editing ? () => removeTransaction(close) : undefined} onSaved={transaction => saved(transaction, close)} />}
+          {accounts.length === 0 && !loading ? <div className="ft-empty ft-modal-empty"><div><strong>Buat dompet terlebih dahulu</strong><p>Transaksi membutuhkan dompet sebagai sumber atau tujuan saldo.</p><Link href="/fintrack/manage" className="ft-button ft-button-primary" onClick={onClose}>Kelola dompet</Link></div></div> : <TransactionForm key={editing?.id || 'new'} accounts={accounts} categories={categories} editing={editing} initial={initial} onCancelEdit={close} onDelete={editing ? () => removeTransaction(close) : undefined} onSaved={transaction => saved(transaction, close)} />}
         </div>
       </>}</TransactionSheet>
   )

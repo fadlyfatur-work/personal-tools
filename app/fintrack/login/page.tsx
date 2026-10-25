@@ -1,20 +1,26 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { loginCallbackMessage } from '@/lib/fintrackUx'
 import { EnvelopeSimple, GoogleLogo, Key, LockKey, Moon, Sun, Wallet } from '@phosphor-icons/react'
 import { getSupabaseBrowser } from '@/lib/supabaseBrowser'
 import { fintrackRequest } from '@/lib/fintrackRequest'
 import { useFintrack } from '../components/fintrack-provider'
 
 export default function LoginPage() {
+  return <Suspense fallback={<p role="status">Memuat halaman masuk...</p>}><LoginContent /></Suspense>
+}
+
+function LoginContent() {
+  const params = useSearchParams()
   const router = useRouter()
   const { beginTask, endTask, theme, setTheme } = useFintrack()
   const [googleLoading, setGoogleLoading] = useState(false)
   const [pinLoading, setPinLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [pin, setPin] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(() => loginCallbackMessage(params.get('error')))
 
   async function signInWithGoogle() {
     setGoogleLoading(true)

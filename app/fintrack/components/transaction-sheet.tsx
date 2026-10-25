@@ -1,15 +1,27 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type PointerEvent } from 'react'
+import { sheetCloseState } from '@/lib/fintrackUx'
 
-export function TransactionSheet({ children, onClose }: { children: (close: () => void) => ReactNode; onClose: () => void }) {
+export function TransactionSheet({ children, onClose }: { children: (close: (force?: boolean) => void) => ReactNode; onClose: () => void }) {
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const discardButton = useRef<HTMLButtonElement>(null)
   const dialog = useRef<HTMLDialogElement>(null)
   const panel = useRef<HTMLElement>(null)
   const motion = useRef({ y: 0, velocity: 0, frame: 0, closing: false, reduced: false })
   const drag = useRef<{ id: number; origin: number; last: number; time: number; moved: boolean } | null>(null)
   const suppressClick = useRef(false)
+  const previousFocus = useRef<HTMLElement | null>(null)
   const finish = useRef(onClose)
   useEffect(() => { finish.current = onClose }, [onClose])
+  useEffect(() => { if (confirmDiscard) discardButton.current?.focus() }, [confirmDiscard])
+
+  function requestClose(force = false) {
+    const state = sheetCloseState(Boolean(panel.current?.querySelector('form[data-dirty="true"]')), Boolean(panel.current?.querySelector('form[data-updating="true"]')), force)
+    if (state === 'wait') { settle(false); return }
+    if (state === 'confirm') { previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; settle(false); setConfirmDiscard(true); return }
+    settle(true)
+  }
 
   function paint() {
     const { y, reduced } = motion.current
@@ -105,17 +117,18 @@ export function TransactionSheet({ children, onClose }: { children: (close: () =
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
     if (event.timeStamp - gesture.time > 100 || cancelled) motion.current.velocity = 0
     const threshold = Math.min(160, (panel.current?.offsetHeight || 600) * .3)
-    settle(!cancelled && gesture.moved && motion.current.y + motion.current.velocity * .15 > threshold)
+    if (!cancelled && gesture.moved && motion.current.y + motion.current.velocity * .15 > threshold) requestClose()
+    else settle(false)
   }
 
   return <dialog ref={dialog} className="ft-modal-layer" aria-labelledby="transaction-modal-title"
-    onCancel={event => { event.preventDefault(); settle(true) }}
-    onClick={event => { if (event.target === event.currentTarget) settle(true) }}>
-    <section ref={panel} className="ft-modal">
-      <button type="button" className="ft-sheet-handle" aria-label="Tutup panel transaksi" onPointerDown={start} onPointerMove={move} onPointerUp={event => end(event)} onPointerCancel={event => end(event, true)} onLostPointerCapture={event => { if (drag.current) end(event, true) }} onClick={event => { if (event.detail === 0 || !suppressClick.current) settle(true) }}><span /></button>
+    onCancel={event => { event.preventDefault(); if (confirmDiscard) setConfirmDiscard(false); else requestClose() }}
+    onClick={event => { if (event.target === event.currentTarget) requestClose() }}>
+    <section ref={panel} className="ft-modal ft-protected-sheet">
+      <button type="button" className="ft-sheet-handle" aria-label="Tutup panel transaksi" onPointerDown={start} onPointerMove={move} onPointerUp={event => end(event)} onPointerCancel={event => end(event, true)} onLostPointerCapture={event => { if (drag.current) end(event, true) }} onClick={event => { if (event.detail === 0 || !suppressClick.current) requestClose() }}><span /></button>
       {/* The render prop only passes close to event handlers; it never invokes it during render. */}
-      {/* eslint-disable-next-line react-hooks/refs */}
-      {children(() => settle(true))}
+      <div inert={confirmDiscard}>{children(requestClose)}</div>
+      {confirmDiscard && <div className="ft-discard-confirm" role="alertdialog" aria-modal="true" aria-labelledby="discard-title" onKeyDown={event => { if (event.key === 'Tab') { const buttons = event.currentTarget.querySelectorAll('button'); const next = event.shiftKey ? buttons[0] : buttons[1]; if (document.activeElement === next) { event.preventDefault(); (event.shiftKey ? buttons[1] : buttons[0]).focus() } } }}><h2 id="discard-title">Buang perubahan?</h2><p>Isian belum disimpan.</p><button ref={discardButton} type="button" className="ft-button ft-button-primary" onClick={() => { setConfirmDiscard(false); requestAnimationFrame(() => previousFocus.current?.focus()) }}>Lanjutkan mengisi</button><button type="button" className="ft-button ft-button-secondary" onClick={() => requestClose(true)}>Buang perubahan</button></div>}
     </section>
   </dialog>
 }

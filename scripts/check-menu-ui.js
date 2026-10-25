@@ -5,6 +5,7 @@ async page => {
   const results = [];
   const check = (condition, name) => { if (!condition) throw new Error(name); results.push(name); };
   const tools = [
+    ['Aplikasi POS', '/aplikasi-pos'],
     ['Katalog AHSP', '/ahsp'], ['Fintrack', '/fintrack'], ['Paste Text', '/paste'],
     ['Nominatif Perjalanan Dinas', '/nominatif'], ['Time Mark', '/timemark'],
   ];
@@ -20,13 +21,16 @@ async page => {
   check(await page.locator('#main .heroActions').count() === 0 && await page.getByText('Lihat aplikasi', { exact: true }).count() === 0, 'Hero dan langkah pengantar telah dihapus');
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 740 }]) {
     await page.setViewportSize(viewport);
-    check(await page.locator('#applications li').evaluateAll(elements => elements.every(e => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; })), 'Kelima aplikasi terlihat tanpa scroll ' + viewport.width + 'x' + viewport.height);
+    check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Menu tidak melebar ' + viewport.width);
+    await page.locator('#applications li').last().scrollIntoViewIfNeeded();
+    check(await page.locator('#applications li').last().isVisible(), 'Aplikasi terakhir dapat dijangkau ' + viewport.width);
+    await page.evaluate(() => scrollTo(0, 0));
     check(await page.locator('#applications li').first().evaluate(e => e.getBoundingClientRect().top < 170), 'Daftar dimulai dekat bagian atas ' + viewport.width);
   }
   await page.setViewportSize({ width: 1440, height: 900 });
   const menuPalette = await page.locator('main').evaluate(e => ['--canvas', '--ink', '--accent', '--line'].map(key => getComputedStyle(e).getPropertyValue(key)));
   check(JSON.stringify(homePalette) === JSON.stringify(menuPalette), 'Palet identik dengan portfolio');
-  check(await page.locator('#applications li').count() === 5, 'Lima aplikasi tetap tersedia');
+  check(await page.locator('#applications li').count() === tools.length, 'Enam aplikasi tersedia');
   check(await page.getByRole('navigation', { name: 'Navigasi utama', exact: true }).locator('[aria-current="page"]').textContent() === 'Menu aplikasi', 'Navigasi menandai halaman aktif');
   check(await page.getByRole('navigation', { name: 'Navigasi utama', exact: true }).getByRole('link', { name: 'Tentang', exact: true }).getAttribute('href') === '/#about', 'Navigasi Tentang menuju portfolio');
   for (const [name, href] of tools) {
@@ -69,7 +73,7 @@ async page => {
   const noScript = await page.context().browser().newContext({ javaScriptEnabled: false });
   const staticPage = await noScript.newPage();
   await staticPage.goto(origin + '/menu');
-  check(await staticPage.locator('#applications li').count() === 5 && await staticPage.locator('[data-reveal-pending]').count() === 0, 'Menu tetap tersedia tanpa JavaScript');
+  check(await staticPage.locator('#applications li').count() === tools.length && await staticPage.locator('[data-reveal-pending]').count() === 0, 'Menu tetap tersedia tanpa JavaScript');
   await noScript.close();
   await page.getByRole('link', { name: 'Fdly.dev, Beranda', exact: true }).click();
   await page.waitForURL(origin + '/');

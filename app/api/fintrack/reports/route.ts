@@ -1,3 +1,4 @@
+import { reportTransactionType } from '@/lib/fintrackCategories'
 import { NextRequest, NextResponse } from 'next/server'
 import { currentReportMonth, getFintrackReport } from '@/lib/fintrackReport'
 import { requireFintrackIdentity } from '@/lib/fintrackUser'
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
   try {
     const report = await getFintrackReport(auth.identity.id, month, undefined, accountId, parentId)
     const selectedSlice = [...report.income, ...report.expense].find((item) => item.category_id === categoryId)
-    const baseTransactions = report.transactions.filter((item) => (includeTransfers || item.type !== 'transfer') && (!transactionType || item.type === transactionType))
+    const baseTransactions = report.transactions.filter((item) => (includeTransfers || reportTransactionType(item) !== 'transfer') && (!transactionType || reportTransactionType(item) === transactionType))
     const filteredTransactions = categoryId === '__none__' ? baseTransactions.filter((item) => !item.category_id) : categoryId ? baseTransactions.filter((item) => Boolean(item.category_id && (selectedSlice?.category_ids || [categoryId]).includes(item.category_id))) : baseTransactions
     if (categoryId) {
       const matches = (item: { category_id: string | null }) => categoryId === '__none__' ? !item.category_id : item.category_id === categoryId
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     const dayMap = new Map<string, { day: string; income: boolean; expense: boolean }>()
     for (const transaction of matchedTransactions) {
       const day = dayMap.get(transaction.transaction_date) || { day: transaction.transaction_date, income: false, expense: false }
-      if (transaction.type !== 'transfer') day[transaction.type] = true
+      if (reportTransactionType(transaction) !== 'transfer') day[reportTransactionType(transaction) as 'income' | 'expense'] = true
       dayMap.set(day.day, day)
     }
     const selectedTransactions = date ? matchedTransactions.filter(item => item.transaction_date === date) : matchedTransactions

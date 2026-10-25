@@ -3,12 +3,32 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from './timemark.module.css'
 
+export function cameraVideoConstraints(portrait: boolean, facing: 'environment' | 'user'): MediaTrackConstraints {
+  return {
+    facingMode: { ideal: facing },
+    width: { ideal: portrait ? 1080 : 1920 },
+    height: { ideal: portrait ? 1920 : 1080 },
+    aspectRatio: { ideal: portrait ? 9 / 16 : 16 / 9 },
+  }
+}
+
 export default function Camera({ onCapture, onClose }: { onCapture: (file: File) => Promise<void>; onClose: () => void }) {
   const video = useRef<HTMLVideoElement>(null)
   const [facing, setFacing] = useState<'environment' | 'user'>('environment')
   const [ready, setReady] = useState(false)
   const [capturing, setCapturing] = useState(false)
   const [error, setError] = useState('')
+  const [portrait, setPortrait] = useState(() => typeof window === 'undefined' || window.innerHeight >= window.innerWidth)
+
+  useEffect(() => {
+    const updateOrientation = () => setPortrait(window.innerHeight >= window.innerWidth)
+    window.addEventListener('resize', updateOrientation)
+    window.addEventListener('orientationchange', updateOrientation)
+    return () => {
+      window.removeEventListener('resize', updateOrientation)
+      window.removeEventListener('orientationchange', updateOrientation)
+    }
+  }, [])
 
   useEffect(() => {
     let disposed = false
@@ -16,7 +36,9 @@ export default function Camera({ onCapture, onClose }: { onCapture: (file: File)
     async function start() {
       try {
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('Kamera memerlukan HTTPS atau localhost. Kamu juga bisa mengunggah foto.')
-        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: facing }, width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 9 / 16 } } })
+        setReady(false)
+        setError('')
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: cameraVideoConstraints(portrait, facing) })
         if (disposed) { stream.getTracks().forEach(track => track.stop()); return }
         if (video.current) { video.current.srcObject = stream; await video.current.play() }
       } catch (cause) {
@@ -28,7 +50,7 @@ export default function Camera({ onCapture, onClose }: { onCapture: (file: File)
     }
     void start()
     return () => { disposed = true; stream?.getTracks().forEach(track => track.stop()) }
-  }, [facing])
+  }, [facing, portrait])
 
   async function capture() {
     if (!video.current?.videoWidth || capturing) return

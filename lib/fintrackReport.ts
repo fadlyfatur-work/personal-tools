@@ -1,4 +1,4 @@
-import { categorySlices } from '@/lib/fintrackCategories'
+import { categorySlices, reportTransactionType } from '@/lib/fintrackCategories'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getOwnedPlanId } from '@/lib/fintrackUser'
 import type { FintrackReport, Transaction } from '@/types/fintrack'
@@ -53,9 +53,9 @@ export function buildFintrackReport(month: string, cutoffDay: number, transactio
   const reportFor = (type: 'income' | 'expense') => categorySlices(current, categories, type)
   const dailyMap = new Map<string, { day: string; income: number; expense: number }>()
   for (const transaction of all) {
-    if (transaction.type === 'transfer') continue
+    if (reportTransactionType(transaction) === 'transfer') continue
     const point = dailyMap.get(transaction.transaction_date) || { day: transaction.transaction_date, income: 0, expense: 0 }
-    point[transaction.type] += Number(transaction.amount)
+    point[reportTransactionType(transaction) as 'income' | 'expense'] += Number(transaction.amount)
     dailyMap.set(transaction.transaction_date, point)
   }
   const trendEnd = new Date(`${currentRange.end}T00:00:00Z`)
@@ -70,15 +70,15 @@ export function buildFintrackReport(month: string, cutoffDay: number, transactio
     const start = new Date(weeklyStart); start.setUTCDate(start.getUTCDate() + index * 7)
     const end = new Date(Math.min(start.getTime() + 6 * 86400000, weeklyEnd.getTime()))
     const startKey = start.toISOString().slice(0, 10), endKey = end.toISOString().slice(0, 10)
-    const values = all.filter((item) => item.type !== 'transfer' && item.transaction_date >= startKey && item.transaction_date <= endKey)
+    const values = all.filter((item) => reportTransactionType(item) !== 'transfer' && item.transaction_date >= startKey && item.transaction_date <= endKey)
     const startLabel = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: start.getUTCMonth() === end.getUTCMonth() ? undefined : 'short', timeZone: 'UTC' }).format(start)
     const endLabel = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(end)
-    return { key: startKey, label: `${startLabel}-${endLabel}`, income: values.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0), expense: values.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0) }
+    return { key: startKey, label: `${startLabel}-${endLabel}`, income: values.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0), expense: values.filter((item) => reportTransactionType(item) === 'expense').reduce((sum, item) => sum + Number(item.amount), 0) }
   })
   const monthly = Array.from({ length: 5 }, (_, index) => {
     const key = moveReportMonth(month, index - 4), range = reportRange(key, cutoffDay)
-    const values = all.filter((item) => item.type !== 'transfer' && item.transaction_date >= range.start && item.transaction_date <= range.end)
-    return { key, label: new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(new Date(`${key}-01T00:00:00Z`)), income: values.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0), expense: values.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0) }
+    const values = all.filter((item) => reportTransactionType(item) !== 'transfer' && item.transaction_date >= range.start && item.transaction_date <= range.end)
+    return { key, label: new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(new Date(`${key}-01T00:00:00Z`)), income: values.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0), expense: values.filter((item) => reportTransactionType(item) === 'expense').reduce((sum, item) => sum + Number(item.amount), 0) }
   })
   return {
     month,
@@ -94,7 +94,7 @@ export function buildFintrackReport(month: string, cutoffDay: number, transactio
     previous: {
       month: previous,
       income: before.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0),
-      expense: before.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0),
+      expense: before.filter((item) => reportTransactionType(item) === 'expense').reduce((sum, item) => sum + Number(item.amount), 0),
     },
     daily,
     weekly,

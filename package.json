@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:nominatif": "node scripts/test-nominatif.mjs"
+    "test:nominatif": "node scripts/test-nominatif.mjs",
+    "test:pos": "node scripts/test-pos.mjs && node scripts/test-pos-theme.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -18,6 +19,7 @@
     "bcryptjs": "^3.0.3",
     "docxtemplater": "^3.69.3",
     "jose": "^6.2.12",
+    "jspdf": "^4.2.1",
     "next": "16.3.4",
     "pizzip": "^3.2.0",
     "quill": "^2.0.3",

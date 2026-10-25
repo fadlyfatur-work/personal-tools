@@ -9,14 +9,17 @@ export async function GET(request: Request) {
   url.search = new URLSearchParams({ text: query, filter: 'countrycode:id', limit: '5', lang: 'id', format: 'json', apiKey }).toString()
   try {
     const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(8000) })
-    if (!response.ok) return Response.json({ error: 'Layanan lokasi sedang tidak tersedia. Silakan isi manual.' }, { status: response.status === 429 ? 429 : 502 })
+    if (response.status === 401 || response.status === 403) return Response.json({ error: 'API key Geoapify pada server ditolak. Periksa key dan pembatasannya.' }, { status: 502 })
+    if (response.status === 429) return Response.json({ error: 'Kuota Geoapify sedang terlampaui. Coba lagi nanti.' }, { status: 429 })
+    if (!response.ok) return Response.json({ error: `Geoapify gagal merespons (HTTP ${response.status}). Silakan isi manual.` }, { status: 502 })
     const data = await response.json()
     if (!Array.isArray(data.results)) throw new Error('Invalid provider response')
     const results = [...new Set<string>(data.results
       .filter((item: { country_code?: string; formatted?: string }) => item?.country_code === 'id' && typeof item.formatted === 'string' && item.formatted.trim())
       .map((item: { formatted: string }) => item.formatted.slice(0, 400)))].slice(0, 5)
     return Response.json({ results }, { headers: { 'Cache-Control': 'private, no-store' } })
-  } catch {
-    return Response.json({ error: 'Pencarian lokasi gagal. Coba lagi atau isi manual.' }, { status: 502 })
+  } catch (error) {
+    const message = error instanceof Error && error.name === 'TimeoutError' ? 'Koneksi ke Geoapify kehabisan waktu.' : 'Server tidak dapat menghubungi Geoapify.'
+    return Response.json({ error: message }, { status: 502 })
   }
 }

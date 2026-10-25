@@ -5,6 +5,7 @@ export const socials = [
   { name: 'Instagram', url: 'https://instagram.com/fadlyfatur__' },
 ]
 export const projects = [
+  { id: 'aplikasi-pos', title: 'Project POS', href: '/aplikasi-pos', desc: 'Demo kasir dengan katalog produk, persediaan, shift, laporan, dan struk PDF. Coba langsung di browser; hubungi saya untuk penerapan pada toko.', tags: ['React', 'TypeScript', 'localStorage'] },
   { id: 'personal-platform', title: 'Personal Tools', href: '/menu', desc: 'Monorepo fullstack dengan Nginx Gateway, multi-service backend, dan frontend terpadu.', tags: ['Vue 3', 'Go', 'Docker'] },
   { id: 'fintrack', title: 'Financial tracking (Fintrack)', href: '/fintrack', desc: 'Aplikasi pencatatan keuangan pribadi multi-plan dengan wallet dan budgeting.', tags: ['Vue', 'Gin', 'Postgres'] },
   { id: 'api-gateway', title: 'API Gateway', href: '', desc: 'Reverse proxy untuk routing multi-service dengan autentikasi terpusat via JWT.', tags: ['Nginx', 'JWT', 'Docker'] },

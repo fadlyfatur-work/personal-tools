@@ -49,3 +49,5 @@ CLAUDE.md
 
 # Local browser audit artifacts
 .playwright-cli/
+
+.impeccable/

@@ -41,6 +41,7 @@ export interface Category {
 export type TransactionType = 'income' | 'expense' | 'transfer'
 
 export interface Transaction {
+  debt_payment_expense?: boolean
   goal_item_id?: string | null
   id: string
   plan_id: string

@@ -1,3 +1,4 @@
+import { reportTransactionType } from '@/lib/fintrackCategories'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getOwnedPlanId, requireFintrackIdentity } from '@/lib/fintrackUser'
@@ -116,7 +117,7 @@ export async function GET() {
   const assets = includedOwned.filter((account) => account.classification === 'asset').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const liabilities = includedOwned.filter((account) => account.classification === 'liability').reduce((sum, account) => sum + Number(account.current_balance), 0)
   const income = monthlyTransactions.filter((item) => item.type === 'income').reduce((sum, item) => sum + Number(item.amount), 0)
-  const expense = monthlyTransactions.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Number(item.amount), 0)
+  const expense = monthlyTransactions.filter((item) => reportTransactionType(item) === 'expense').reduce((sum, item) => sum + Number(item.amount), 0)
   const peopleMap = new Map((peopleResult.data || []).map((person) => [person.id, person]))
   const accountMap = new Map(ownedAccounts.map((account) => [account.id, account]))
 

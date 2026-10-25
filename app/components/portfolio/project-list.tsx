@@ -56,7 +56,7 @@ export function ProjectList() {
           <div className={styles.projectCopy}>
             <h3>{project.href ? <Link draggable={false} href={project.href}>{project.title}<ArrowUpRight size={22} aria-hidden="true" /></Link> : project.title}</h3>
             <p>{project.desc}</p>
-            {project.href && <Link className={styles.projectDestination} href={project.href}>{id === 'fintrack' ? 'Buka aplikasi saat ini' : 'Jelajahi menu aplikasi'}</Link>}
+            {project.href && <Link className={styles.projectDestination} href={project.href}>{id === 'aplikasi-pos' ? 'Coba demo POS' : id === 'fintrack' ? 'Buka aplikasi saat ini' : 'Jelajahi menu aplikasi'}</Link>}
           </div>
           <div className={styles.tags} aria-label={`Teknologi ${project.title}`}>{project.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
           <div className={styles.projectControls}>
