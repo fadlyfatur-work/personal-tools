@@ -40,3 +40,22 @@ unavailable.api.setPosTheme('dark')
 assert.equal(unavailable.snapshot().preference, 'dark', 'Blocked storage must not prevent changing theme')
 assert.match(unavailable.snapshot().error, /halaman ini/)
 console.log('POS theme: system default, manual preference, reload, tab sync and blocked storage passed')
+
+const css = fs.readFileSync('app/aplikasi-pos/pos.module.css', 'utf8')
+const blocks = [css.match(/\.workspace \{([^}]+)\}/)[1], css.match(/\.workspace\[data-theme="dark"\] \{([^}]+)\}/)[1]]
+const pairs = [['--text', '--canvas'], ['--text', '--surface'], ['--muted', '--surface'], ['--muted', '--surface-subtle'], ['--on-accent', '--green'], ['--accent-text', '--pale'], ['--danger-text', '--error-surface'], ['--warning-text', '--warning-surface'], ['--success-text', '--success-surface']]
+function luminance(hex) {
+  const expanded = hex.length === 4 ? [...hex.slice(1)].map(c => c + c).join('') : hex.slice(1)
+  return expanded.match(/../g).map(c => parseInt(c, 16) / 255).map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).reduce((sum, value, i) => sum + value * [0.2126, 0.7152, 0.0722][i], 0)
+}
+let lowest = Infinity
+for (const [index, block] of blocks.entries()) {
+  const tokens = Object.fromEntries([...block.matchAll(/(--[\w-]+):\s*(#[\da-f]+)/g)].map(match => [match[1], match[2]]))
+  for (const [foreground, background] of pairs) {
+    const values = [luminance(tokens[foreground]), luminance(tokens[background])]
+    const ratio = (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05)
+    assert.ok(ratio >= 4.5, `${index ? 'Dark' : 'Light'} ${foreground}/${background}: ${ratio.toFixed(2)}`)
+    lowest = Math.min(lowest, ratio)
+  }
+}
+console.log(`POS theme: ${pairs.length * blocks.length} semantic text pairs pass AA; minimum ${lowest.toFixed(2)}:1`)

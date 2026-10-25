@@ -40,6 +40,16 @@ Struk mengikuti desain thermal yang disetujui: identitas toko rata tengah, metad
 
 UI di [`app/aplikasi-pos/`](../app/aplikasi-pos/) memakai CSS Modules untuk menjaga isolasi. Hijau POS asal dipertahankan. Tabel menggulir di dalam panel, dialog memakai elemen native, dan halaman kasir diperiksa pada lebar 320, 390, 768, dan 1440 px. Preview portofolio `public/portfolio/pos.webp` berasal dari screenshot aplikasi berjalan.
 
+## Tema terang dan gelap
+
+Pilihan Tema di header menyediakan Sistem (default), Terang, dan Gelap. Sistem mengikuti `prefers-color-scheme` melalui CSS, termasuk perubahan preferensi perangkat saat halaman terbuka. Pilihan manual disimpan terpisah dari data transaksi pada key `personal-tools-pos-theme-v1` oleh [`lib/pos/theme.ts`](../lib/pos/theme.ts), bertahan setelah refresh dan disinkronkan antartab. Jika storage diblokir, perubahan tema tetap bekerja untuk sesi halaman dengan pesan yang jujur. Reset data demo tidak menghapus pilihan tema.
+
+Palet memakai token semantik pada root POS. Gelap: canvas `#111815`, panel `#1a231f`, panel sekunder `#202c26`, teks `#e9f0eb`, teks pendukung `#afbeb3`, aksen `#67c88c` dengan teks tombol `#102619`. Hijau merek tetap dikenali; warna status merah/amber menandakan kesalahan/peringatan. Border, input, placeholder, focus ring, menu, form, tabel, dan dialog mengikuti tema yang sama. Kertas struk tetap putih dengan teks hitam di pratinjau dan PDF.
+
+Arah warna menggunakan prinsip design-taste-frontend yang sesuai perubahan ini. Aturan landing page tidak diterapkan pada tabel/alur kasir. Targeted preserve: DESIGN_VARIANCE 3 / MOTION_INTENSITY 1 / VISUAL_DENSITY 6; komposisi operasional tidak diubah dan tidak menambah dependensi.
+
+Tes tema pada `scripts/test-pos-theme.mjs` memeriksa default Sistem, persistensi/reload, sinkronisasi tab, data pilihan invalid, storage diblokir, serta 18 pasangan warna teks dalam dua palet (minimum 4,86:1). Browser memverifikasi kedua mode, pilihan Sistem pada perangkat gelap, refresh, kasir, pembayaran sampai struk, form produk dan laporan. Tidak ada overflow kasir pada 320/390/768/1440 px. Lihat [catatan dark mode](implementation-timeline/aplikasi-pos/2026-10-25-tambah-tema-gelap-pos.md).
+
 ## Verifikasi
 
 - `npm run test:pos`: lulus; menguji checkout, stok, validasi, idempotensi, snapshot, relasi master, shift/opname, penyimpanan rusak/penuh, antartab, dan PDF panjang.
