@@ -57,11 +57,8 @@ export default function QuillEditor({ id, label, value, onChange, placeholder }:
   }, [value])
 
   return (
-    <>
-      <style>{`.quill-compact .ql-toolbar.ql-snow{border:1px solid #dadce0;border-bottom:1px solid #eef0f2;border-radius:8px 8px 0 0;padding:5px 6px;background:#fff}.quill-compact .ql-container.ql-snow{border:1px solid #dadce0;border-top:0;border-radius:0 0 8px 8px;font-family:inherit;font-size:14px;color:#202124}.quill-compact .ql-editor{min-height:76px;padding:10px 12px;line-height:1.6}.quill-compact .ql-editor.ql-blank::before{color:#9aa0a6;font-style:normal}.quill-compact:focus-within .ql-toolbar.ql-snow{border-color:#1a73e8}.quill-compact:focus-within .ql-container.ql-snow{border-color:#1a73e8;box-shadow:0 0 0 3px rgba(26,115,232,.12)}`}</style>
       <div className="quill-compact">
         <div ref={holderRef} />
       </div>
-    </>
   )
 }

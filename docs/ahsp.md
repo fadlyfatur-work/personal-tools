@@ -1,5 +1,9 @@
 # Katalog AHSP 2026
 
+## Verifikasi master terbaru
+
+Sejak rekonsiliasi 27 Oktober 2026, UI memakai **Verified** dan **Need re-verified**, menggantikan tiga label keberadaan sumber. Rincian komponen dan variabel JSON SIPASTI melengkapi katalog tanpa menimpa identitas atau rujukan PDF. Ketentuan lama tentang komponen belum tersedia merupakan catatan snapshot sebelumnya. Kontrak status, hasil pembacaan ulang, migrasi, dan prosedur pemulihan tersedia di [rekonsiliasi master AHSP](ahsp-master-verification.md).
+
 ## Rekapitulasi MPTK
 
 Halaman `/ahsp/mptk`, ditautkan dari katalog AHSP, mencari komponen tenaga kerja, material, dan peralatan sebagai hasil utama. Setiap komponen menampilkan pekerjaan penggunanya, koefisien atau ekspresi asli, basis analisis, status ekstraksi, regulasi, serta tautan halaman sumber. Pencarian nama/kode memakai substring literal tanpa membedakan kapitalisasi; filter jenis, bidang, satuan komponen, regulasi, dan status analisis diterapkan sebelum pengelompokan/pagination. Kolom pencarian diterapkan dengan Cari/Enter; perubahan filter juga menerapkan kata kunci yang sedang diisi. Daftar komponen dan daftar penggunaan masing-masing berhalaman 30 baris.
@@ -179,15 +183,7 @@ Pencarian berada di atas tabel dalam layout bertumpuk pada semua ukuran layar. B
 
 Jenis Normatif/Informatif diambil dari daftar lampiran. SMKK mengikuti label Informatif untuk kelompok A.7 dalam daftar isi Lampiran V (halaman PDF 4). Pada snapshot ini ada 2.868 Normatif, 2.339 Informatif, dan 922 yang belum teridentifikasi. Label terakhir menunjukkan data jenis yang belum terpetakan.
 
-Pratinjau modal menggunakan 3.638 cuplikan halaman PDF yang dirender tanpa mengubah isinya. JPEG disimpan di bucket khusus dokumen pemerintah; PDF asli dan SHA-256 tetap disimpan. Pembuatan ulang:
-
-```text
-python scripts/ahsp-page-previews.py --corpus <direktori-PDF> --inventory <inventory.json> --output <direktori-preview>
-node --env-file=.env.local scripts/ahsp-upload-previews.mjs <manifest-preview.json>
-node --env-file=.env.local scripts/test-ahsp-search-live.mjs
-```
-
-Uji live tersebut hanya membaca PostgreSQL dan menguji jumlah per istilah, exact/like, hasil bertumpang tindih, tipe, pagination, dan pencarian 50 istilah.
+Pratinjau modal membuka PDF sumber langsung dalam `iframe` pada nomor halaman yang dirujuk. Aplikasi tidak memuat atau menghasilkan JPEG halaman. PDF dapat berada di bucket `ahsp-regulations` atau di URL sumber yang tercatat; setelah deployment memakai pratinjau PDF, objek lama di bucket `ahsp-source-pages` dapat dihapus melalui Supabase Storage untuk membebaskan ruang. Jangan jalankan lagi skrip generator/pengunggah pratinjau lama.
 
 ## Rekonsiliasi SIPASTI PU
 

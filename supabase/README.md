@@ -1,4 +1,16 @@
-# Reset database FinTrack
+# Migrasi Supabase
+
+## Laporan ASB
+
+Terapkan migration `202611110001_report.sql`, `202611170001_report_optional_correction.sql`, lalu `202611180001_report_recaps.sql` secara manual untuk `/report`, atau gunakan file lokal `.next/report-activation.sql` dari `node scripts/setup-report.mjs prepare` untuk menyiapkan schema, dua PIN dan sumber PDF awal. PIN awal dibaca dari environment/file lokal yang diabaikan Git; migration yang dikomit tidak memuat nilainya. File aktivasi privat, tidak menimpa PIN/laporan lama. Lihat [panduan laporan](../docs/report.md).
+
+## Office Suite
+
+Migration `202610260001_tools.sql` sampai `202610260004_operations.sql` menyiapkan akun/workspace, template privat, Office, dan operasi TI. Jalankan juga `202610280001_tools_admin.sql` untuk pengelolaan pengguna, pemisahan admin suite/template, status akses aktif, serta perlindungan self-lockout. Terapkan manual dalam urutan filename; tidak perlu reset FinTrack. Migration Documents menutup akses anonim tabel `templates` lama, sehingga harus dikoordinasikan dengan aplikasi protected dan import generator. `node scripts/prepare-office-suite-sql.mjs` menyusun satu file aktivasi untuk ditinjau/dijalankan di SQL Editor. Panduan admin, secret, import, aktivasi worker dan batas verifikasi: [Office Suite](../docs/office-suite.md).
+
+## Reset database FinTrack
+
+Untuk pembacaan AI pada RAB, terapkan hanya `migrations/202610250002_ahsp_ai_profiles.sql`. Migrasi ini menambahkan tabel profil/kuota privat dan tidak memerlukan reset. Panduan: [Pembacaan AI RAB](../docs/ahsp-rab-ai.md).
 
 Pembayaran utang berkategori memerlukan migrasi tambahan `migrations/202610250001_fintrack_debt_payment_expense.sql`, diterapkan setelah migrasi sebelumnya. Jangan mengulang reset untuk mengaktifkan fitur. Panduan rollout ada di [UX dan pembayaran utang](../docs/fintrack-ux-and-debt-payments.md).
 

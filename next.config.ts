@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    '/api/ahsp/rab/ai/pdf-assets/*': ['node_modules/pdfjs-dist/cmaps/**/*', 'node_modules/pdfjs-dist/standard_fonts/**/*', 'node_modules/pdfjs-dist/wasm/**/*'],
+  },
   async headers() {
     return [
       {

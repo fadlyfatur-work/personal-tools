@@ -2,8 +2,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
-import { documentTemplates } from '@/lib/documentTemplates'
+import { toolsRequest, ToolsRequestError } from '@/lib/tools/client'
+import { DocumentAccess } from '../document-access'
+import {SuiteFrame} from '@/app/tools/components/suite-frame'
 import { useParams } from 'next/navigation'
 import { ArrowLeft, DownloadSimple, FileText, Plus } from '@phosphor-icons/react'
 import styles from '../documents.module.css'
@@ -35,8 +36,13 @@ function htmlToPlainText(html: string): string {
 }
 
 export default function TemplateFormPage() {
+  return <SuiteFrame title="Isi dokumen" section="documents"><div className={`${styles.page} ${styles.embedded}`}><DocumentAccess>{(_access, reset) => <TemplateForm reset={reset} />}</DocumentAccess></div></SuiteFrame>
+}
+
+function TemplateForm({ reset }: { reset: () => void }) {
   const params = useParams<{ code: string }>()
   const [templateName, setTemplateName] = useState('')
+  const [versionId, setVersionId] = useState('')
   const [config, setConfig] = useState<TemplateConfig | null>(null)
   const [singleData, setSingleData] = useState<Record<string, string | DateRangeValue>>({})
   const [groupData, setGroupData] = useState<Record<string, Record<string, string>[]>>({})
@@ -56,36 +62,35 @@ export default function TemplateFormPage() {
       setNotFound(false)
       setFetchError(false)
       setConfig(null)
+      setTemplateName('')
+      setVersionId('')
+      setSingleData({})
+      setGroupData({})
       setErrorMsg('')
       setWarnings([])
       setDownloaded(false)
       try {
-        const { data, error } = Object.hasOwn(documentTemplates, params.code) ? { data: documentTemplates[params.code], error: null } : await supabase
-          .from('templates')
-          .select('name, fields')
-          .eq('code', params.code)
-          .abortSignal(controller.signal)
-          .maybeSingle()
+        const data = await toolsRequest<{ name: string; fields: TemplateConfig; version_id: string }>(`/api/documents/templates/${encodeURIComponent(params.code)}`, { signal: controller.signal })
         if (controller.signal.aborted) return
-        if (error) throw error
-        if (!data) {
-          setNotFound(true)
-          return
-        }
+        setVersionId(data.version_id)
         const cfg = data.fields as TemplateConfig
         setTemplateName(data.name)
         setConfig(cfg)
         setSingleData(Object.fromEntries(cfg.single.map(field => [field.key, field.type === 'dateRange' ? { start: '', end: '' } : ''])))
-        setGroupData(Object.fromEntries(cfg.groups.map(group => [group.name, group.autoDateFrom ? [] : [Object.fromEntries(group.fields.map(field => [field.key, '']))]])))
-      } catch {
-        if (!controller.signal.aborted) setFetchError(true)
+        setGroupData(Object.fromEntries(cfg.groups.map(group => [group.name, group.autoDateFrom ? [] : Array.from({ length: Math.max(group.minItems || 0, 1) }, () => Object.fromEntries(group.fields.map(field => [field.key, ''])))])))
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          if (error instanceof ToolsRequestError && error.status === 401) reset()
+          else if (error instanceof ToolsRequestError && error.status === 404) setNotFound(true)
+          else { setFetchError(true); setErrorMsg(error instanceof Error ? error.message : 'Template belum dapat dimuat.') }
+        }
       } finally {
         if (!controller.signal.aborted) setFetching(false)
       }
     }
     void fetchTemplate()
     return () => controller.abort()
-  }, [params.code, attempt])
+  }, [params.code, attempt, reset])
 
   function handleDateRangeChange(fieldKey: string, part: 'start' | 'end', value: string) {
     const current = (singleData[fieldKey] as DateRangeValue) || { start: '', end: '' }
@@ -150,7 +155,7 @@ export default function TemplateFormPage() {
           <div key={index} className={styles.entry}>
             <div className={styles.entryHeader}>
               <h3>{group.label} {index + 1}</h3>
-              {!group.autoDateFrom && items.length > 1 && <button type="button" className={styles.remove} aria-label={`Hapus ${group.label} ${index + 1}`} onClick={() => removeGroupItem(group.name, index)}>Hapus</button>}
+              {!group.autoDateFrom && items.length > (group.minItems ?? 1) && <button type="button" className={styles.remove} aria-label={`Hapus ${group.label} ${index + 1}`} onClick={() => removeGroupItem(group.name, index)}>Hapus</button>}
             </div>
             {group.fields.map(field => {
               const id = `${group.name}-${index}-${field.key}`
@@ -167,6 +172,8 @@ export default function TemplateFormPage() {
                     <input id={id} className={styles.input} value={value ? formatTanggalIndo(value) : ''} disabled />
                   ) : rich ? (
                     <QuillEditor id={id} label={label} value={value} onChange={value => updateGroupItem(group.name, index, field.key, value)} placeholder={`Tulis ${label.toLowerCase()}…`} />
+                  ) : field.type === 'select' ? (
+                    <select id={id} required={field.required} className={styles.input} value={value} onChange={event => updateGroupItem(group.name, index, field.key, event.target.value)}><option value="">Pilih {label.toLowerCase()}</option>{field.options?.map(option => <option key={option} value={option}>{option}</option>)}</select>
                   ) : field.type === 'textarea' ? (
                     <textarea id={id} required={field.required} className={styles.input} rows={3} value={value} onChange={event => updateGroupItem(group.name, index, field.key, event.target.value)} />
                   ) : (
@@ -229,11 +236,13 @@ export default function TemplateFormPage() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: params.code, single: singleData, groups: plainGroups }),
+        body: JSON.stringify({ code: params.code, version_id: versionId, single: singleData, groups: plainGroups }),
       })
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
+        if (res.status === 401) { setConfig(null); setTemplateName(''); setVersionId(''); setSingleData({}); setGroupData({}); reset(); return }
+        if (res.status === 409) { setErrorMsg('Template telah berubah. Muat versi terbaru sebelum mengunduh. Isian akan diatur ulang.'); return }
         setErrorMsg(err.error || 'Dokumen belum bisa dibuat. Coba lagi.')
         return
       }
@@ -297,18 +306,17 @@ export default function TemplateFormPage() {
   const pct = Math.round((progress.filled / progress.total) * 100)
 
   return (
-    <main className={styles.page}>
-      <div className={styles.container}>
+    <div>
         <Link href="/documents" className={styles.back}><ArrowLeft size={18} aria-hidden="true" /> Pilih template surat</Link>
         {fetching ? (
           <div className={styles.panel} role="status"><div className={styles.skeleton} /><div className={styles.skeleton} /><p className={styles.muted}>Memuat isian template…</p></div>
         ) : fetchError ? (
-          <div className={styles.empty} role="alert"><h1>Template belum bisa dimuat</h1><p>Periksa koneksi internet, lalu coba lagi.</p><button className={styles.secondary} onClick={() => setAttempt(value => value + 1)}>Coba lagi</button></div>
+          <div className={styles.empty} role="alert"><h2>Template belum bisa dimuat</h2><p>{errorMsg || 'Periksa koneksi internet, lalu coba lagi.'}</p><button className={styles.secondary} onClick={() => setAttempt(value => value + 1)}>Coba lagi</button></div>
         ) : notFound || !config ? (
-          <div className={styles.empty}><FileText size={32} aria-hidden="true" /><h1>Template tidak ditemukan</h1><p>Template ini tidak tersedia. Pilih surat lain dari daftar template.</p><Link href="/documents" className={styles.secondary}>Lihat template surat</Link></div>
+          <div className={styles.empty}><FileText size={32} aria-hidden="true" /><h2>Template tidak ditemukan</h2><p>Template ini tidak tersedia. Pilih surat lain dari daftar template.</p><Link href="/documents" className={styles.secondary}>Lihat template surat</Link></div>
         ) : (
           <>
-            <header className={styles.header}><h1>{templateName}</h1><p>Lengkapi data surat di bawah. Format dokumen mengikuti template yang dipilih.</p></header>
+            <header className={styles.header}><h2>{templateName}</h2><p>Lengkapi data surat di bawah. Format dokumen mengikuti template yang dipilih.</p></header>
             <form className={styles.workspace} onSubmit={event => { event.preventDefault(); void handleGenerate() }}>
               <div>
                 {config.single.length > 0 && <section className={styles.panel}><div className={styles.sectionHeading}><h2>Data surat</h2></div><p className={styles.help}>Isi informasi utama sesuai kebutuhan surat.</p>{config.single.map(renderSingleField)}</section>}
@@ -320,7 +328,7 @@ export default function TemplateFormPage() {
                 <p>{progress.filled} dari {progress.total} isian terisi. Periksa kembali data sebelum mengunduh.</p>
                 <progress className={styles.progress} value={progress.filled} max={progress.total} aria-label="Kelengkapan isian" />
                 <p>{pct}% lengkap</p>
-                {errorMsg && <div className={styles.error} role="alert">{errorMsg}</div>}
+                {errorMsg && <div className={styles.error} role="alert">{errorMsg}{errorMsg.includes('Muat versi terbaru') && <button type="button" className={styles.secondary} onClick={() => setAttempt(value => value + 1)}>Muat versi terbaru</button>}</div>}
                 {warnings.length > 0 && <div className={styles.notice} role="status">{warnings.map((warning, index) => <p key={index}>{warning}</p>)}</div>}
                 {downloaded && <div className={styles.success} role="status">Dokumen berhasil dibuat. Unduhan Word telah dimulai.</div>}
                 <button type="submit" className={styles.button} disabled={loading} aria-busy={loading}><DownloadSimple size={20} aria-hidden="true" />{loading ? 'Membuat dokumen…' : 'Unduh Word'}</button>
@@ -330,7 +338,6 @@ export default function TemplateFormPage() {
             </form>
           </>
         )}
-      </div>
-    </main>
+    </div>
   )
 }

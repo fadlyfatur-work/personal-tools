@@ -15,6 +15,7 @@ import ComponentUsage from './component-usage'
 import type { RabUsageReport } from '@/lib/ahspRabUsage'
 import ItemComponents, { useRabComponents } from './item-components'
 import SavedSessions from './saved-sessions'
+import AiImport, { type AiSourceFile } from './ai-import'
 import type { RabSavedSession } from '@/lib/ahspRabStorage'
 
 const number = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 5 })
@@ -65,6 +66,8 @@ export default function RabReconciliation() {
   const [occurrencePage, setOccurrencePage] = useState(1)
   const [applyReadingGroup, setApplyReadingGroup] = useState(false)
   const [restoring, setRestoring] = useState(false)
+  const [aiSource, setAiSource] = useState<AiSourceFile | null>(null)
+  const [aiBusy, setAiBusy] = useState(false)
   const occurrenceDialog = useRef<HTMLDialogElement>(null)
   const editDialog = useRef<HTMLDialogElement>(null)
   const searchDialog = useRef<HTMLDialogElement>(null)
@@ -169,10 +172,17 @@ export default function RabReconciliation() {
     generation.current++; searchGeneration.current++; request.current?.abort(); setRows([]); setSheets([]); setSelected([]); setFilename(''); setPhase('empty'); setError(''); setNotice(''); setToast(null); setShowUsage(false); setUsageReport(null); setSessionId(null); dirty.current = false
     setExcludedSelection([]); setHideChecked(false)
     setRestoring(false)
+    setAiSource(null)
     if (input.current) input.current.value = ''
   }
   async function upload(file?: File) {
     if (!file) return
+    if (!/\.xlsx$/i.test(file.name)) {
+      if (!/\.(pdf|png|jpe?g|webp)$/i.test(file.name)) { setError('Pilih Excel .xlsx, PDF, PNG, JPG, atau WebP.'); return }
+      if (file.size > RAB_MAX_BYTES) { setError('Ukuran file maksimal 10 MB.'); return }
+      setError(''); setAiSource({ file, id: crypto.randomUUID() }); return
+    }
+    setAiSource(null)
     const id = ++generation.current
     setSessionId(null)
     setRestoring(false)
@@ -193,18 +203,19 @@ export default function RabReconciliation() {
   const changeMapping = (name: string, mapping: RabMapping) => {
     setSheets(current => current.map(sheet => sheet.name === name ? { ...sheet, mapping } : sheet)); setError(''); setDuplicatesAccepted(false)
   }
-  async function process(resume = false) {
+  async function process(resume = false, imported?: RabRow[]) {
     setError(''); setNotice(''); setPage(1)
-    if (!selected.length || selected.length > RAB_MAX_SHEETS) { setError('Pilih minimal 1 dan maksimal 3 sheet.'); return }
+    const fromAi = !!imported || resume && rows.some(row => !!row.document)
+    if (!fromAi && (!selected.length || selected.length > RAB_MAX_SHEETS)) { setError('Pilih minimal 1 dan maksimal 3 sheet.'); return }
     if (limited.length && !limitedAccepted) { setError('Konfirmasikan batas 1.000 baris atau batalkan proses.'); return }
     if (duplicates.length && !duplicatesAccepted) { setError('Periksa potensi penghitungan ganda antar-sheet terlebih dahulu.'); return }
-    for (const sheet of chosen) {
+    for (const sheet of fromAi ? [] : chosen) {
       const mapping = sheet.mapping
       if (!mapping.name || !Number.isInteger(mapping.start) || mapping.start < 1 || mapping.start > RAB_MAX_ROWS) { setError(`Periksa kolom uraian dan awal data pada ${sheet.name}.`); return }
       const cols = Object.entries(mapping).filter(([key, val]) => key !== 'start' && val).map(([, val]) => val)
       if (new Set(cols).size !== cols.length) { setError(`Kolom pada ${sheet.name} tidak boleh dipakai untuk dua jenis data.`); return }
     }
-    const initial = resume ? rows : chosen.flatMap(sheet => extractRabRows(sheet, sheet.mapping))
+    const initial = imported || (resume ? rows : chosen.flatMap(sheet => extractRabRows(sheet, sheet.mapping)))
     if (!initial.some(row => !row.excluded)) { setError('Belum ada item pekerjaan. Periksa kolom, awal data, dan baris yang dikecualikan.'); setRows(initial); setPhase('results'); return }
     setRows(initial); setPhase('matching'); setUsageReport(null); dirty.current = true
     const id = ++generation.current, controller = new AbortController()
@@ -333,7 +344,7 @@ export default function RabReconciliation() {
   return <main className={`${base.page} ${styles.app} ${swiss.page}`} data-theme={appearance.mode} data-palette={appearance.palette}><div className={base.container}>
     <header className={base.header} data-ahsp-header><Link href="/ahsp" onClick={e => { if (dirty.current && !window.confirm('Perubahan terakhir belum disimpan atau diunduh. Tinggalkan halaman?')) e.preventDefault() }}>Kembali ke katalog AHSP</Link>
       <AppearancePicker appearance={appearance} />
-      <div data-ahsp-heading><h1>Pencocokan RAB</h1><p>Cocokkan pekerjaan Excel dengan SE 47/2026 dan Permen 08/2023. Referensi tambahan ditampilkan terpisah.</p></div>
+      <div data-ahsp-heading><h1>Pencocokan RAB</h1><p>Cocokkan pekerjaan dari Excel, PDF, atau gambar dengan SE 47/2026 dan Permen 08/2023. Referensi tambahan ditampilkan terpisah.</p></div>
     </header>
     <section className={styles.summary} aria-label="Rekapitulasi pencocokan" data-rab-summary aria-live="polite" aria-busy={phase === 'reading' || phase === 'matching'}>
       <div className={styles.summaryHeading}><div className={styles.headingHelp}><h2>Rekapitulasi</h2><button type="button" className={`${base.helpButton} ${styles.recapHelpButton}`} popoverTarget="rab-recap-help" aria-label="Tentang rekapitulasi"><span aria-hidden="true">?</span></button></div><span className={base.loadingIndicator}>{(phase === 'reading' || phase === 'matching') && <span className={base.spinner} aria-hidden="true" />}{phase === 'reading' ? 'Membaca workbook…' : phase === 'matching' ? 'Sementara · pencocokan berjalan…' : phase === 'config' ? 'Pilih sheet dan periksa kolom' : rows.length ? complete ? 'Pencocokan selesai' : 'Hasil sementara' : 'Belum ada dokumen'}</span></div>
@@ -354,9 +365,13 @@ export default function RabReconciliation() {
     </section>
     {error && <div className={styles.problem} role="alert">{error}</div>}<p className={styles.notice} role="status">{notice}</p>
     <div className={swiss.workspace} data-stage={phase}>
-    {(phase === 'empty' || phase === 'reading') && <section className={styles.panel} data-rab-panel aria-labelledby="upload-title"><h2 id="upload-title">Unggah workbook</h2><p>Hanya .xlsx, maksimal 10 MB. Pilih 1–3 sheet; setiap sheet dibatasi baris Excel 1–1.000, termasuk header dan baris kosong.</p><p>Isi sel dibaca di browser. File RAB tidak dikirim ke server. Simpan perhitungan atau unduh hasil sebelum meninggalkan halaman.</p><label>Dokumen Excel<input ref={input} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={phase === 'reading'} onChange={e => { void upload(e.target.files?.[0]) }} /></label>{phase === 'reading' && <button type="button" onClick={reset}>Batalkan</button>}</section>}
-    <SavedSessions activeId={sessionId} disabled={phase === 'reading' || phase === 'matching' || restoring} current={phase === 'results' ? { filename, sheets: chosen, selected, rows, catalogAt, limitedAccepted, duplicatesAccepted, usageReport } : null} onRestore={restoreSession} onSaved={session => { setSessionId(session.id); dirty.current = false }} />
+    {(phase === 'empty' || phase === 'reading') && <section className={styles.panel} data-rab-panel aria-labelledby="upload-title"><h2 id="upload-title">Unggah dokumen</h2><p>Excel .xlsx, PDF, PNG, JPG, atau WebP · maksimal 10 MB.</p><p>Excel: pilih 1–3 sheet, maksimal baris 1–1.000 per sheet. PDF/gambar: pilih maksimal 10 halaman, dengan hasil maksimal 1.000 item.</p><p>Excel dibaca di browser. Pada jalur AI, halaman gambar dan teks terpilih dikirim ke penyedia yang Anda atur.</p><label>Dokumen RAB<input ref={input} type="file" accept=".xlsx,.pdf,.png,.jpg,.jpeg,.webp,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,image/png,image/jpeg,image/webp" disabled={phase === 'reading' || aiBusy} onChange={e => { void upload(e.target.files?.[0]) }} /></label>{phase === 'reading' && <button type="button" onClick={reset}>Batalkan</button>}</section>}
+    {!aiSource && <SavedSessions activeId={sessionId} disabled={phase === 'reading' || phase === 'matching' || restoring} current={phase === 'results' ? { filename, sheets: chosen, selected, rows, catalogAt, limitedAccepted, duplicatesAccepted, usageReport } : null} onRestore={restoreSession} onSaved={session => { setSessionId(session.id); dirty.current = false }} />}
     </div>
+    <AiImport source={aiSource} disabled={phase === 'reading' || phase === 'matching' || restoring} onBusy={setAiBusy} onClear={() => { setAiSource(null); if (input.current) input.current.value = '' }} onAccept={(sourceName, importedRows) => {
+      setFilename(sourceName); setSheets([]); setSelected([]); setSessionId(null); setAiSource(null); setLimitedAccepted(false); setDuplicatesAccepted(false); setShowUsage(false); setUsageReport(null); setExcludedSelection([]); setHideChecked(false)
+      void process(false, importedRows)
+    }} />
     {restoring && <p className={base.loadingIndicator} role="status"><span className={base.spinner} aria-hidden="true" />Memeriksa katalog untuk simpanan ini…</p>}
     {phase === 'config' && <section className={styles.panel} data-rab-panel aria-label="Pengaturan pembacaan"><h2>Sheet dan kolom sumber</h2><p>{filename} · Pilih maksimal 3 sheet. Periksa posisi kolom pada setiap sheet.</p>
       <fieldset className={styles.sheetChoices}><legend>Sheet yang diproses ({selected.length}/3)</legend>{sheets.map(sheet => <label key={sheet.name}><input type="checkbox" checked={selected.includes(sheet.name)} disabled={!selected.includes(sheet.name) && selected.length >= 3} onChange={e => { setSelected(current => e.target.checked ? [...current, sheet.name] : current.filter(name => name !== sheet.name)); setLimitedAccepted(false); setDuplicatesAccepted(false) }} /><span>{sheet.name}{sheet.hidden ? ' (tersembunyi)' : ''} · baris terakhir berisi: {sheet.lastRow}{sheet.lastRow > RAB_MAX_ROWS ? ' · melewati batas' : ''}</span></label>)}</fieldset>
@@ -367,7 +382,7 @@ export default function RabReconciliation() {
     </section>}
     {phase === 'results' && showUsage && <ComponentUsage rows={rows} onLoaded={usageLoaded} onBack={() => setShowUsage(false)} onDownload={() => { void download() }} exporting={exporting} />}
     {(phase === 'results' || phase === 'matching') && !showUsage && <div inert={restoring} aria-busy={restoring}>
-      <div className={styles.actions}><strong>{filename}</strong>{phase === 'matching' ? <button type="button" onClick={stop}><span className={base.spinner} aria-hidden="true" />Hentikan pencocokan</button> : <><button type="button" onClick={() => { void download() }} disabled={exporting || !rows.length}>{exporting ? <span className={base.spinner} aria-hidden="true" /> : <DownloadSimple size={18} aria-hidden="true" />}{exporting ? 'Menyiapkan Excel…' : 'Unduh Excel'}</button>{recap.pending > 0 && <button type="button" onClick={() => { void process(true) }}>Lanjutkan pencocokan</button>}<button type="button" onClick={() => { if (!dirty.current || window.confirm('Ubah pemetaan akan mengosongkan hasil dan keputusan manual. Lanjutkan?')) { setRows([]); setPhase('config'); dirty.current = false } }}>Ubah pemetaan</button><button type="button" onClick={reset}>Ganti file</button></>}</div>
+      <div className={styles.actions}><strong>{filename}</strong>{phase === 'matching' ? <button type="button" onClick={stop}><span className={base.spinner} aria-hidden="true" />Hentikan pencocokan</button> : <><button type="button" onClick={() => { void download() }} disabled={exporting || !rows.length}>{exporting ? <span className={base.spinner} aria-hidden="true" /> : <DownloadSimple size={18} aria-hidden="true" />}{exporting ? 'Menyiapkan Excel…' : 'Unduh Excel'}</button>{recap.pending > 0 && <button type="button" onClick={() => { void process(true) }}>Lanjutkan pencocokan</button>}{!rows.some(row => row.document) && <button type="button" onClick={() => { if (!dirty.current || window.confirm('Ubah pemetaan akan mengosongkan hasil dan keputusan manual. Lanjutkan?')) { setRows([]); setPhase('config'); dirty.current = false } }}>Ubah pemetaan</button>}<button type="button" onClick={reset}>Ganti file</button></>}</div>
       {phase === 'results' && <section className={styles.panel} data-rab-panel aria-label="Langkah setelah rekonsiliasi"><h2>Lanjutkan hasil rekonsiliasi</h2><p>Unduh hasil saat ini atau lihat penggunaan komponen dari pekerjaan yang cocok.</p><div className={styles.actions}><button type="button" onClick={() => { void download() }} disabled={exporting || !rows.length}>Selesai dan unduh Excel</button><button type="button" className={styles.primary} disabled={recap.primary + recap.additional === 0} onClick={() => setShowUsage(true)}>Lanjut ke rekap penggunaan komponen</button></div>{recap.primary + recap.additional === 0 && <p className={styles.help}>Tetapkan minimal satu pekerjaan cocok untuk membuka rekap penggunaan komponen.</p>}{usageReport && <p className={styles.help}>Rekap penggunaan komponen sudah disertakan pada unduhan. Perubahan rekonsiliasi memerlukan rekap penggunaan ulang.</p>}</section>}
       {recap.excluded > 0 && <section className={styles.excluded} aria-label="Baris dikecualikan"><button type="button" aria-expanded={showExcluded} onClick={() => setShowExcluded(!showExcluded)}>{showExcluded ? 'Tutup' : 'Periksa'} {recap.excluded} baris dikecualikan ({recap.excludedReview} perlu diperiksa)</button>{showExcluded && <><div className={styles.actions}><label className={styles.checkbox}><input type="checkbox" aria-label="Pilih semua baris dikecualikan" checked={selectedExcluded.length === excludedRows.length} disabled={phase === 'matching'} ref={el => { if (el) el.indeterminate = selectedExcluded.length > 0 && selectedExcluded.length < excludedRows.length }} onChange={e => setExcludedSelection(e.target.checked ? excludedRows.map(row => row.id) : [])} />Pilih semua</label><button type="button" disabled={!selectedExcluded.length || phase === 'matching'} onClick={includeSelected}>Masukkan {selectedExcluded.length} baris ke daftar pekerjaan</button></div><ul>{excludedRows.map(row => <li key={row.id}><label className={styles.excludeCheck}><input type="checkbox" aria-label={`Pilih ${row.name}, baris ${row.row}`} checked={excludedSelection.includes(row.id)} disabled={phase === 'matching'} onChange={e => setExcludedSelection(current => e.target.checked ? [...current, row.id] : current.filter(id => id !== row.id))} /></label><div><strong>{row.name}</strong><small>{row.sheet}!{row.source} · {row.exclusion}</small></div><button type="button" disabled={phase === 'matching'} onClick={() => openEdit(row, true)}>Ubah pengecualian</button></li>)}</ul></>}</section>}
       <div className={styles.tabs} aria-label="Kelompok hasil"><button type="button" aria-pressed={tab === 'matched'} onClick={() => { setTab('matched'); setPage(1) }}>Cocok ({recap.primary + recap.additional})</button><button type="button" aria-pressed={tab === 'unmatched'} onClick={() => { setTab('unmatched'); setPage(1) }}>Tidak cocok ({recap.total - recap.primary - recap.additional})</button></div>
@@ -384,7 +399,7 @@ export default function RabReconciliation() {
         {inspectedItem ? <>{!editing.candidate && <p className={styles.help}>Komponen berikut milik kandidat terdekat; belum ditetapkan sebagai pasangan pekerjaan.</p>}{itemComponents(inspectedItem)}</> : <p className={styles.help}>Belum ada pasangan atau kandidat AHSP untuk menampilkan rincian MPTK.</p>}
         <div className={styles.editFields}>{Object.entries(fields).map(([key, text]) => <label key={key}>{text}<input aria-label={text} type={['volume', 'price', 'total'].includes(key) ? 'number' : 'text'} step="any" value={draft[key as keyof typeof fields]} onChange={e => setDraft({ ...draft, [key]: e.target.value })} />{key !== 'name' && <small>Sumber {editing.refs[key] || 'tidak dipetakan'}: {editing.raw[key] || 'Kosong'}</small>}</label>)}</div>
         <p className={styles.help}>Angka koreksi memakai titik untuk desimal, tanpa pemisah ribuan. Kosong tetap kosong. Menyimpan pemeriksaan membatalkan pasangan sebelumnya agar dicocokkan ulang.</p>
-        <button type="button" onClick={restoreReading}>Pulihkan isian dari sumber</button>
+        {!editing.document && <button type="button" onClick={restoreReading}>Pulihkan isian dari sumber</button>}
         {!draft.excluded && members(editing).length > 1 && <><button type="button" onClick={() => openOccurrences(editing)}>Lihat {members(editing).length} kemunculan sebelum konfirmasi grup</button><label className={styles.checkbox}><input type="checkbox" checked={applyReadingGroup} onChange={e => setApplyReadingGroup(e.target.checked)} />Terapkan uraian, kode, dan konfirmasi pembacaan ke semua {members(editing).length} kemunculan. Satuan dan angka kemunculan lain tetap.</label></>}
         <label className={styles.checkbox}><input type="checkbox" checked={draft.excluded} onChange={e => setDraft({ ...draft, excluded: e.target.checked })} />Kecualikan dari daftar pekerjaan</label>{draft.excluded && <label>Alasan pengecualian<textarea aria-label="Alasan pengecualian" value={draft.exclusion} onChange={e => setDraft({ ...draft, exclusion: e.target.value })} required /></label>}
         <label className={styles.checkbox}><input type="checkbox" checked={draft.acknowledged} onChange={e => setDraft({ ...draft, acknowledged: e.target.checked })} />Saya telah memeriksa uraian, satuan, dan hubungan angka dengan sel sumber. Nilai kosong memang belum tersedia.</label>

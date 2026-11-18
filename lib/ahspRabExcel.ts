@@ -87,9 +87,10 @@ export type RabExportContext = { filename: string; sheets: { name: string; lastR
 const escapeXml = (text: string) => text.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 export function exportRabWorkbook(rows: RabRow[], context: RabExportContext): Uint8Array {
   const recap = rabRecap(rows)
+  const documentRows = rows.filter(row => row.document)
   const status = (row: RabRow) => row.excluded ? 'Dikecualikan' : row.noMatch ? 'Tidak ada kecocokan · sudah diperiksa' : ({ pending: 'Belum dicocokkan', review: 'Perlu ditinjau', missing: 'Belum ditemukan', matched: row.candidate && rabPrimary(row.candidate) ? 'Cocok regulasi utama' : 'Cocok regulasi tambahan' })[row.status]
   const header = ['Kode sumber', 'Uraian sumber', 'Satuan sumber', 'Volume', 'Harga Satuan (Rupiah)', 'Total Harga (Rupiah)', 'Kode AHSP', 'Uraian hasil rekonsiliasi', 'Satuan AHSP', 'Regulasi', 'Status regulasi', 'Status kecocokan', 'Keputusan', 'Penyelesaian perbedaan', 'Catatan pembacaan']
-  const detail = (row: RabRow): ExportCell[] => [row.code, row.name, row.unit, row.volume, row.price, row.total, row.candidate?.code ?? '', row.candidate?.name ?? '', row.candidate?.unit ?? '', row.candidate?.regulation ?? '', row.candidate?.regulation_status ?? '', status(row), row.manual ? 'Manual' : row.candidate ? 'Otomatis' : '', row.resolution, [row.exclusion, ...row.issues, row.reviewed ? '' : 'Pembacaan belum dikonfirmasi', ...(row.candidate ? rabDifferences(row, row.candidate) : []), rabAmountWarning(row)].filter(Boolean).join('; ')]
+  const detail = (row: RabRow): ExportCell[] => [row.code, row.name, row.unit, row.volume, row.price, row.total, row.candidate?.code ?? '', row.candidate?.name ?? '', row.candidate?.unit ?? '', row.candidate?.regulation ?? '', row.candidate?.regulation_status ?? '', status(row), row.manual ? 'Manual' : row.candidate ? 'Otomatis' : '', row.resolution, [row.document ? `${row.document.filename}, halaman ${row.document.page}` : "", row.exclusion, ...row.issues, row.reviewed ? '' : 'Pembacaan belum dikonfirmasi', ...(row.candidate ? rabDifferences(row, row.candidate) : []), rabAmountWarning(row)].filter(Boolean).join('; ')]
   const summary: ExportSheet = { name: 'Rekapitulasi', rows: [], widths: [44, 24, 38, 24], headers: [], merges: [], heights: {}, money: new Set(), freeze: 1 }
   const section = (title: string) => {
     if (summary.rows.length) summary.rows.push([])
@@ -109,10 +110,16 @@ export function exportRabWorkbook(rows: RabRow[], context: RabExportContext): Ui
   pair('Referensi utama', 'SE 47/2026 dan Permen 08/2023')
   pair('Status proses', context.completed && !recap.pending ? 'Pencocokan selesai' : 'Sementara / pencocokan belum selesai')
   pair('Status pembacaan', recap.issues || recap.excludedReview ? `${recap.issues} item dan ${recap.excludedReview} pengecualian belum dikonfirmasi` : 'Tidak ada pembacaan yang menunggu konfirmasi')
-  pair('Cakupan', context.sheets.some(s => s.lastRow > RAB_MAX_ROWS) ? 'TERBATAS: hanya baris Excel 1–1000 per sheet terpilih' : 'Sheet terpilih; baris sebelum awal data dikecualikan')
-  section('CAKUPAN SHEET')
-  summary.rows.push(['Sheet', 'Awal data', 'Akhir diproses', 'Baris terakhir berisi']); summary.headers.push(summary.rows.length)
-  for (const sheet of context.sheets) summary.rows.push([sheet.name, sheet.start, Math.min(sheet.lastRow, RAB_MAX_ROWS), sheet.lastRow])
+  pair('Cakupan', documentRows.length ? 'PDF/gambar: hanya halaman terpilih yang menghasilkan item; pembacaan AI dikonfirmasi pengguna.' : context.sheets.some(s => s.lastRow > RAB_MAX_ROWS) ? 'TERBATAS: hanya baris Excel 1–1000 per sheet terpilih' : 'Sheet terpilih; baris sebelum awal data dikecualikan')
+  if (documentRows.length) {
+    section('CAKUPAN HALAMAN SUMBER')
+    summary.rows.push(['Dokumen', 'Halaman', 'Jumlah item terbaca']); summary.headers.push(summary.rows.length)
+    for (const page of [...new Set(documentRows.map(row => row.document!.page))].sort((a, b) => a - b)) summary.rows.push([context.filename, page, documentRows.filter(row => row.document!.page === page).length])
+  } else {
+    section('CAKUPAN SHEET')
+    summary.rows.push(['Sheet', 'Awal data', 'Akhir diproses', 'Baris terakhir berisi']); summary.headers.push(summary.rows.length)
+    for (const sheet of context.sheets) summary.rows.push([sheet.name, sheet.start, Math.min(sheet.lastRow, RAB_MAX_ROWS), sheet.lastRow])
+  }
   section('HASIL PENCOCOKAN')
   for (const [title, result] of [
     ['Item diperiksa', recap.total], ['Total item cocok', `${recap.primary + recap.additional} (${rabPercent(recap.percent + recap.additionalPercent)}%)`], ['Cocok regulasi utama', `${recap.primary} (${rabPercent(recap.percent)}%)`],
@@ -134,7 +141,7 @@ export function exportRabWorkbook(rows: RabRow[], context: RabExportContext): Ui
   pair('Dasar persentase', 'Jumlah item cocok pada kelompok regulasi / seluruh item diperiksa. Item belum selesai tetap masuk penyebut.', 44)
   pair('Pekerjaan pengganti', 'Kode dan uraian pada Final RAB memakai pasangan yang telah ditetapkan cocok. Item tanpa pasangan memakai data sumber; kolom regulasi dibiarkan kosong.', 56)
   pair('Satuan dan angka sumber', 'Satuan, volume, harga satuan, dan total sumber tidak dikonversi saat memilih pasangan AHSP, termasuk bila satuan AHSP berbeda.', 44)
-  pair('Rumus sumber', 'Nilai hasil tersimpan dibaca tanpa menghitung ulang Excel. Selisih Volume × Harga Satuan dicatat tanpa menimpa total sumber.', 44)
+  pair(documentRows.length ? 'Pembacaan AI' : 'Rumus sumber', documentRows.length ? 'Angka mengikuti pembacaan yang telah dikonfirmasi. Nilai tidak terbaca tetap kosong. Selisih Volume × Harga Satuan dicatat tanpa menimpa total sumber.' : 'Nilai hasil tersimpan dibaca tanpa menghitung ulang Excel. Selisih Volume × Harga Satuan dicatat tanpa menimpa total sumber.', 44)
   if (context.usage) {
     section('CAKUPAN REKAP PENGGUNAAN KOMPONEN')
     pair('Pekerjaan cocok', context.usage.matched, 30, false)

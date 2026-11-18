@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = await getSupabaseServer()
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
     await createPinSession(user.id, Number(user.pin_version || 0))
   } catch (error) {
     console.error(error)

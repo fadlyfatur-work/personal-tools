@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Monitoring ASB Provinsi | Superior UI + UX</title>
+  <style>
+* { box-sizing:border-box }
+[hidden] { display:none !important }
+:root { color-scheme:light; --good:#14613d; --good-bg:#e5f3e9; --warn:#815005; --warn-bg:#fff0d5; --bad:#a42e36; --bad-bg:#fce8e7; --blue:#254f87; --blue-bg:#e7effb }
+:root[data-theme="dark"] { color-scheme:dark; --bg:#141a21; --paper:#1d252e; --soft:#242e39; --ink:#f2f5f9; --muted:#b9c4d0; --line:#404c5a; --accent:#a4c9ff; --action:#3a63a1; --good:#a0e0b6; --good-bg:#243e32; --warn:#f5cd7e; --warn-bg:#473821; --bad:#ffb2b1; --bad-bg:#4f2d34; --blue:#b7d3ff; --blue-bg:#263a56; --head:var(--soft); --head-ink:var(--ink) }
+body { margin:0; background:var(--bg); color:var(--ink); font: .875rem/1.45 var(--font); font-variant-numeric:tabular-nums }
+button,input,select,textarea { font:inherit; color:inherit }
+button,summary,select { cursor:pointer }
+button,input,select,textarea { border:1px solid var(--line); border-radius:var(--control); background:var(--paper); padding:.48rem .68rem; min-height:2.4rem }
+button { font-weight:650; white-space:nowrap }
+button:hover:not(:disabled) { background:var(--soft) }
+button:active:not(:disabled) { transform:translateY(1px) }
+button:disabled { cursor:default; color:var(--muted); background:var(--soft) }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px }
+input,select,textarea { max-inline-size:100% }
+textarea { resize:vertical }
+label { display:grid; gap:.25rem; font-weight:650; min-width:0 }
+label:has(input[type=checkbox]) { display:flex; align-items:center }
+label:has(input[type=checkbox]) input { min-height:auto }
+button.primary,button.primary:hover:not(:disabled) { background:var(--action); color:#fff; border-color:transparent }
+button.primary:disabled { background:var(--soft); color:var(--muted) }
+button.danger { color:var(--bad) }
+h1,h2,h3,p,dl,dd { margin:0 }
+h1 { font-size:var(--title); line-height:1.1; letter-spacing:-.033em }
+h2 { font-size:1.2rem; letter-spacing:-.02em }
+h3 { font-size:.98rem }
+small,.muted { color:var(--muted); font-size:.8125rem }
+p + p { margin-top:.45rem }
+.shell { width:min(100%,var(--width)); margin:auto; padding:var(--pad) }
+.mast,.toolbar,.files,.filters,.edit,.nav,.legend,.dialogHead,.dialogActions,.line,.chartFilters,.recapContext { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap }
+.mast { justify-content:space-between }
+.toolbar { justify-content:flex-end }
+.mast p { margin-top:.4rem }
+.preview { display:inline-block; color:var(--muted); font-size:.75rem }
+.nav button { border:0; background:transparent }
+.nav button[aria-pressed=true] { color:var(--accent); background:var(--soft) }
+.summary { background:var(--paper) }
+.summary > summary { padding:.7rem 1rem; font-weight:700 }
+.summary[open] > summary { border-bottom:1px solid var(--line) }
+.summaryGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.5rem; padding:.75rem }
+.metric { padding:.65rem .8rem; min-width:0; background:var(--soft); border-radius:var(--control) }
+.metric dt { color:var(--muted); font-size:.8125rem }
+.metric dd { display:flex; align-items:baseline; flex-wrap:wrap; column-gap:.45rem; font-weight:720; font-size:1.55rem; letter-spacing:-.025em }
+.metric dd small { font-weight:600; letter-spacing:0 }
+.filterBar { display:flex; justify-content:space-between; align-items:end; flex-wrap:wrap; gap:.65rem }
+.filters,.chartFilters { align-items:end }
+.filters input { width:14rem }
+.filters select { width:12rem }
+.edit { align-self:end }
+.legend { gap:.35rem .7rem; color:var(--muted); font-size:.8125rem }
+.legend span { white-space:nowrap }
+.legend b { font-weight:700 }
+.good { color:var(--good); background:var(--good-bg) }
+.warn,.process { color:var(--warn); background:var(--warn-bg) }
+.bad { color:var(--bad); background:var(--bad-bg) }
+.none { color:var(--muted); background:var(--soft) }
+.blue { color:var(--blue); background:var(--blue-bg) }
+.legend b,.state { padding:.18rem .42rem; border-radius:var(--status); display:inline-block }
+.scroll { overflow-x:auto; overscroll-behavior-x:contain; background:var(--paper) }
+table { width:100%; border-collapse:separate; border-spacing:0; font-size:.8125rem; text-align:center }
+.report { min-width:100rem; --number:2.35rem; --province:9.25rem }
+th,td { padding:.4rem .42rem; border-bottom:1px solid var(--line); vertical-align:middle }
+thead th { background:var(--head); color:var(--head-ink); line-height:1.25; font-weight:700 }
+thead th small { display:block; color:inherit; opacity:.9; font-weight:500; font-size:.75rem }
+thead tr:nth-child(2) th { background:var(--soft); color:var(--ink) }
+tbody tr { --row:var(--paper) }
+tbody tr:nth-child(even),tbody tr:hover { --row:var(--soft) }
+tbody :is(td,th) { background:var(--row); height:var(--row-height) }
+.report .num,.report .prov { position:sticky; z-index:1 }
+.report .num { left:0; width:var(--number); min-width:var(--number) }
+.report .prov { left:var(--number); width:var(--province); min-width:var(--province); text-align:left; box-shadow:2px 0 0 var(--line) }
+.report .prov button { text-align:left; white-space:normal; width:100% }
+.report thead .prov,.report thead .num { z-index:2 }
+.report .package { text-align:left; min-width:18rem; max-width:25rem }
+.cell { padding:.25rem .35rem; border:0; min-height:2rem }
+.cell:not(.state) { background:transparent }
+.cell:hover:not(:disabled) { text-decoration:underline; text-underline-offset:3px }
+.package summary { font-weight:650 }
+.package small { display:block; padding-left:.85rem }
+.package details > div { padding:.4rem 0 .15rem .85rem }
+.packageItem { display:grid; gap:.25rem; margin:.38rem 0; padding:.5rem; border:1px solid var(--line); border-radius:var(--control); background:var(--paper) }
+.packageItem.bad { background:var(--bad-bg) }
+.packageItem .cell { text-align:left; white-space:normal }
+.packageItem small { padding:0 }
+.packageItem label { width:100% }
+tfoot th,tfoot td { background:var(--soft); font-weight:700 }
+progress { width:3.4rem; height:.42rem; accent-color:var(--accent); vertical-align:middle }
+.notice { padding:.55rem .78rem; border-radius:var(--control); color:var(--blue); background:var(--blue-bg) }
+.notice:empty { display:none }
+.empty { padding:1.2rem; color:var(--muted); background:var(--paper) }
+.panel { padding:var(--panel); background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); display:grid; gap:1rem }
+.panel .scroll { border:1px solid var(--line) }
+.chart { min-height:12rem; width:100%; display:block }
+.chart text { font:12px var(--font); fill:var(--muted) }
+.chart .grid { stroke:var(--line) }
+.chart .series { stroke:var(--accent); stroke-width:3; fill:none }
+.chart circle { fill:var(--accent) }
+dialog { color:var(--ink); background:var(--paper); width:min(44rem,calc(100% - 1.5rem)); max-height:calc(100dvh - 1.5rem); border:1px solid var(--line); border-radius:var(--radius); padding:0; box-shadow:0 18px 55px #15233033 }
+dialog::backdrop { background:#18233478 }
+.dialogHead { justify-content:space-between; flex-wrap:nowrap; padding:.85rem 1.1rem; border-bottom:1px solid var(--line) }
+.dialogBody { padding:1.1rem; display:grid; gap:.8rem }
+.dialogBody form { display:grid; gap:.7rem }
+.dialogActions { justify-content:flex-end }
+.formRow { display:grid; gap:.65rem; grid-template-columns:repeat(2,minmax(0,1fr)) }
+.block { display:grid; gap:.45rem; padding:.75rem; border:1px solid var(--line); border-radius:var(--control) }
+.block details { padding-top:.35rem; border-top:1px solid var(--line) }
+.block ol { padding-inline-start:1.25rem }
+.block time { display:block }
+.stack { display:grid; gap:.55rem }
+.footer { margin-top:1rem; color:var(--muted); font-size:.8125rem }
+@media(max-width:47rem) {
+  .mast,.toolbar { justify-content:flex-start }
+  .summaryGrid { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .report { --province:7.75rem; --number:1.85rem }
+  .filters { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .filters label:first-child { grid-column:1/-1 }
+  .filters :is(select,input) { width:100% }
+  .preview { margin-top:.15rem }
+}
+@media(max-width:25rem) { .formRow { grid-template-columns:1fr } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none !important; animation:none !important } }
+
+.metricBasis { padding:0 .85rem .55rem }
+.login { width:min(25rem,calc(100% - 1.5rem)); margin:6vh auto }
+body:has(.login:not([hidden])) { min-height:100dvh; display:grid; align-items:center }
+#login-error:empty { display:none }
+#login-error { color:var(--bad) }
+#notice { margin-bottom:.6rem }
+#query::placeholder { color:var(--muted) }
+#close { flex:none; font-size:1.1rem; line-height:1 }
+.report td .state { min-width:3rem }
+.historyTime { display:block }
+.formStatus { color:var(--bad); font-weight:650 }
+.recapContext { margin-bottom:.5rem }
+.chartFilters input,.chartFilters select { min-height:2.5rem }
+legend { font-weight:650 }
+fieldset { min-width:0; border:0; padding:0; margin:0 }
+
+.updated { display:block; margin-top:.15rem }
+.metric .metricUnit { color:var(--muted); font-size:.75rem; font-weight:500; letter-spacing:0; margin-top:.1rem }
+.formStatus:empty { display:none }
+.report { width:100rem; min-width:100%; table-layout:fixed }
+.report .num { width:var(--number) }
+.report .prov { width:var(--province) }
+.report .package { width:19rem }
+.report :is(td,th) { overflow-wrap:anywhere }
+.report .state { white-space:normal }
+.packageItem .cell { overflow-wrap:anywhere }
+.dialogActions button { white-space:normal }
+
+:root{--font:system-ui,"Segoe UI",sans-serif;--bg:#edf2f2;--paper:#fff;--soft:#e9f1f1;--ink:#14292d;--muted:#425b60;--line:#c2d3d3;--accent:#13575a;--action:#13575a;--head:#d8e8e7;--head-ink:#143d40;--width:100rem;--pad:clamp(.8rem,2.6vw,2.4rem);--title:clamp(1.35rem,2vw,1.85rem);--radius:.65rem;--control:.42rem;--status:.35rem;--row-height:2.85rem;--panel:1.2rem}
+.mast{margin-bottom:.9rem;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:.85rem 1rem;align-items:center}
+.mast .preview{margin-top:.25rem}
+.nav{gap:.24rem;margin-bottom:.6rem}
+.nav button[aria-pressed=true]{background:var(--accent);color:var(--paper)}
+:root[data-theme="dark"] .nav button[aria-pressed=true]{color:var(--bg)}
+.summary{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:.65rem}
+.summaryGrid{grid-template-columns:repeat(3,minmax(0,1fr)) repeat(2,minmax(0,1.1fr))}
+.metric:nth-last-child(-n+2){grid-row:span 2;display:grid;align-content:center;border:1px solid var(--line)}
+.metric:nth-last-child(2){grid-column:4;grid-row:1 / span 2}
+.metric:nth-last-child(1){grid-column:5;grid-row:1 / span 2}
+.workspace{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper)}
+.workspaceTitle{padding:.75rem .85rem .45rem;border-top:3px solid var(--accent);border-radius:var(--radius) var(--radius) 0 0}
+.filterBar{padding:.25rem .85rem .55rem}
+.legend{padding:0 .85rem .65rem}
+.scroll{border-top:1px solid var(--line);border-radius:0 0 var(--radius) var(--radius)}
+.report thead tr:nth-child(2) th{border-inline-end:1px solid var(--line)}
+.dialogActions{border-top:1px solid var(--line);padding-top:.65rem}
+@media(max-width:47rem){.summaryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.metric:nth-last-child(-n+2){grid-area:auto}}
+
+.edit{padding-inline-start:.65rem;border-inline-start:1px solid var(--line)}.edit small{font-weight:650}.filterBar{padding-bottom:.8rem}.workspaceTitle h2{font-size:1rem}.report thead tr:first-child th:nth-child(7){background:var(--action);color:#fff}.workspace .empty{border-radius:0 0 var(--radius) var(--radius)}@media(max-width:47rem){.edit{padding-inline-start:0;border:0}}
+  </style>
+</head>
+<body>
+<main class="shell" id="app">
+  <header class="mast">
+    <div>
+      <h1>Monitoring ASB Provinsi</h1>
+      <p class="muted" id="date-label">Laporan terbaru</p>
+      <small id="updated" class="updated muted"></small>
+      <small class="preview">Pratinjau desain · data contoh</small>
+    </div>
+    <div class="toolbar" role="group" aria-label="Aksi laporan">
+      <button class="primary" id="save-recap" type="button">Simpan rekap</button>
+      <button id="latest" type="button" hidden>Kembali ke terbaru</button>
+      <div class="files" role="group" aria-label="Berkas">
+        <button type="button" data-action="file" data-title="Unduh template Excel">Template Excel</button>
+        <button type="button" data-action="file" data-title="Impor Excel">Impor</button>
+        <button type="button" data-action="file" data-title="Unduh PDF">PDF</button>
+      </div>
+      <button id="theme" type="button" aria-label="Tema gelap" title="Ubah tema" aria-pressed="false">◐</button>
+      <button type="button" data-action="access" aria-label="Pengaturan PIN" title="Pengaturan PIN">⚙</button>
+      <button type="button" data-action="logout">Keluar</button>
+    </div>
+  </header>
+  <nav class="nav" aria-label="Bagian laporan">
+    <button type="button" data-tab="table" aria-pressed="true">Tabel Progres</button>
+    <button type="button" data-tab="chart" aria-pressed="false">Perkembangan</button>
+    <button type="button" data-tab="history" aria-pressed="false">Riwayat</button>
+  </nav>
+  <p class="notice" id="notice" role="status"></p>
+  <section id="table-view" aria-label="Tabel Progres">
+    <details class="summary">
+      <summary>Ringkasan akun dan ASB</summary>
+      <dl class="summaryGrid" id="metrics"></dl>
+      <p class="metricBasis muted" id="comparison"></p>
+    </details>
+    <div class="workspace">
+      <div class="workspaceTitle"><h2>Progres per provinsi</h2></div>
+      <div class="filterBar">
+        <div class="filters">
+          <label>Cari provinsi<input type="search" id="query" placeholder="Ketik nama provinsi"></label>
+          <label>Tahap<select id="stage">
+            <option value="all">Semua Tahapan</option><option value="1">Tahap 1 · Sekda</option><option value="2">Tahap 2 · Pimpinan/APIP</option><option value="3">Tahap 3 · Penyusun</option><option value="4">Tahap 4 · Paket</option><option value="5">Tahap 5 · Integrasi</option>
+          </select></label>
+          <label>Status<select id="status"></select></label>
+        </div>
+        <div class="edit" role="group" aria-label="Mode Edit">
+          <small id="edit-label">Mode lihat</small>
+          <button type="button" id="edit">Edit tabel</button>
+          <button type="button" id="cancel" hidden>Batal</button>
+          <button type="button" id="submit" class="primary" hidden>✓ Submit</button>
+        </div>
+      </div>
+      <div class="legend" aria-label="Legenda status">
+        <span><b class="good">✓</b> Ada / Selesai</span><span><b class="blue">◷</b> Proses akun</span><span><b class="process">◷</b> Proses Tahap 4</span><span><b class="bad">!</b> Perbaikan</span><span><b class="warn">!</b> T/C · perlu dilengkapi</span><span><b class="none">-</b> N/D · belum ada data</span>
+      </div>
+      <div class="scroll" role="region" aria-label="Tabel progres ASB, gulir ke samping untuk melihat tahapan lainnya" tabindex="0">
+        <table class="report">
+          <thead>
+            <tr><th rowspan="2" scope="col" class="num">No</th><th rowspan="2" scope="col" class="prov">Provinsi <button type="button" class="cell" id="add-prov" aria-label="Tambah provinsi" title="Tambah provinsi" hidden>+</button></th><th rowspan="2" scope="col" class="package">Nama Paket</th>
+            <th scope="colgroup"><small>Tahap 1</small>Akun Sekda</th><th scope="colgroup" colspan="3"><small>Tahap 2</small>Pimpinan &amp; APIP</th><th scope="colgroup" colspan="2"><small>Tahap 3</small>Penyusun</th><th scope="colgroup" colspan="4"><small>Tahap 4</small>Proses ASB</th><th scope="colgroup" colspan="2"><small>Tahap 5</small>Integrasi SIPD</th><th scope="colgroup" colspan="3">Ringkasan</th></tr>
+            <tr><th>Status akun</th><th>Kepala Dinas</th><th>Kepala BPKAD</th><th>APIP</th><th>Harga</th><th>ASB</th><th>PU</th><th>BPKAD</th><th>APIP</th><th>Perbaikan</th><th>Total paket</th><th>Siap integrasi</th><th>% integrasi</th><th>Progres keseluruhan</th><th>Posisi akun</th></tr>
+          </thead>
+          <tbody id="rows"></tbody><tfoot id="totals"></tfoot>
+        </table>
+      </div>
+      <p id="empty" class="empty" hidden>Provinsi tidak ditemukan. Periksa kata kunci atau filter.</p>
+    </div>
+    <p class="footer">Jumlah paket dihitung dari paket aktif. Posisi akun menunjukkan tahap tertinggi yang memiliki akun.</p>
+  </section>
+  <section id="chart-view" class="panel" aria-labelledby="chart-title" hidden>
+    <div><h2 id="chart-title">Perkembangan akun tercatat</h2><p class="muted">Grafik membandingkan rekap yang sudah disimpan.</p></div>
+    <div class="chartFilters">
+      <label>Tanggal awal<input type="date" id="from" value="2026-11-10"></label>
+      <label>Tanggal akhir<input type="date" id="to" value="2026-11-18"></label>
+      <label>Provinsi<select id="chart-prov"></select></label>
+      <label>Data yang ditampilkan<select id="chart-metric"><option value="accounts">Akun tercatat</option><option value="total">Total paket</option><option value="integrated">Paket siap integrasi</option><option value="percent">Persentase integrasi</option></select></label>
+    </div>
+    <div id="chart"></div>
+    <details><summary id="chart-data-title">Lihat data grafik dan rekap</summary><div class="scroll"><table><thead><tr><th>Tanggal</th><th>Nilai</th><th>Keterangan</th><th>Akses</th></tr></thead><tbody id="chart-data"></tbody></table></div></details>
+  </section>
+  <section id="history-view" class="panel" aria-labelledby="history-title" hidden>
+    <h2 id="history-title">Riwayat revisi</h2><div class="stack" id="history"></div>
+  </section>
+</main>
+<section class="login panel" id="login" aria-labelledby="login-title" hidden>
+  <h1 id="login-title">Buka Laporan</h1><p>Masukkan PIN admin atau penginput untuk melihat laporan.</p>
+  <p class="muted">Pratinjau desain · gunakan PIN contoh 000000.</p>
+  <form id="login-form" class="stack"><label>PIN<input type="password" id="pin" inputmode="numeric" autocomplete="off" pattern="[0-9]{6,12}" required></label><p id="login-error" role="alert"></p><button type="submit" class="primary">Buka Laporan</button></form>
+  <small>Belum punya PIN? Hubungi admin laporan.</small>
+</section>
+<dialog id="dialog" aria-labelledby="dialog-title"><div class="dialogHead"><h2 id="dialog-title"></h2><button id="close" type="button" aria-label="Tutup">×</button></div><div class="dialogBody" id="dialog-body"></div></dialog>
+<dialog id="confirm" aria-labelledby="confirm-title"><div class="dialogHead"><h2 id="confirm-title"></h2></div><div class="dialogBody"><p id="confirm-copy"></p><div class="dialogActions"><button id="confirm-cancel" type="button" autofocus>Batal</button><button id="confirm-ok" class="danger" type="button"></button></div></div></dialog>
+
+<script>
+(() => {
+  'use strict';
+
+  const $=id=>document.getElementById(id);
+  const esc=text=>String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const roles=['Sekda / Admin SKPD','Kepala Dinas','Kepala BPKAD','APIP','Penyusun Harga','Penyusun ASB'];
+  const stages=['PU','BPKAD','APIP','Perbaikan'];
+  const flow=['Penyusunan ASB oleh PU','Diperiksa oleh BPKAD','Diperiksa oleh APIP','Siap Integrasi SIPD','Sudah diterima SIPD'];
+  const accountNames=['T/C','Ada','Tidak ada'];
+  const past='2026-11-14', latest='2026-11-17', demoDay='2026-11-18';
+  const exampleTime='17 Nov 2026, 14.07 WIB';
+  const date=day=>new Date(day+'T00:00:00Z').toLocaleDateString('id-ID',{dateStyle:'long',timeZone:'UTC'});
+  const now=()=>new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Jakarta'})+' WIB';
+  const account=(state=0)=>({state,count:'',note:'',details:[]});
+  const makeProvince=(name,status=[])=>({name,accounts:roles.map((_,i)=>account(status[i])),packages:[],notes:[]});
+  function makePackage(name, step=0, time=now()){
+    const events=name?[{from:'Paket dibuat',to:flow[0],time},...flow.slice(1,step+1).map((to,i)=>({from:flow[i],to,time}))]:[];
+    return {name,step,time,changed:time,progressTime:time,events,repair:0,reason:'',note:''};
+  }
+  const names='Sumatera Selatan|Lampung|Jawa Barat|Jawa Tengah|DI Yogyakarta|Banten|Nusa Tenggara Timur|Kalimantan Barat|Kalimantan Selatan|Sulawesi Tengah|Papua Selatan|Aceh|Sumatera Utara|Sumatera Barat|Riau|Jambi|Bengkulu|Kepulauan Bangka Belitung|Kepulauan Riau|DKI Jakarta|Jawa Timur|Bali|Nusa Tenggara Barat|Kalimantan Tengah|Kalimantan Timur|Kalimantan Utara|Sulawesi Utara|Sulawesi Selatan|Sulawesi Tenggara|Gorontalo|Sulawesi Barat|Maluku|Maluku Utara|Papua|Papua Barat|Papua Tengah|Papua Pegunungan|Papua Barat Daya'.split('|');
+  let rows=names.map((name,i)=>makeProvince(name,[i<17?1:0,[2,3,4,11,20].includes(i)?1:0,[1,2,3,4,10,20].includes(i)?1:0,[2,3,4].includes(i)?1:0,[2,3,4,10,30].includes(i)?1:0,[2,3,4,30].includes(i)?1:0]));
+  rows[2].packages=[makePackage('Rehabilitasi Jaringan Irigasi DI. Cigolempang',3,exampleTime),makePackage('Peningkatan Jalan Akses Kecamatan',1,exampleTime)];
+  rows[3].packages=[makePackage('Pemeliharaan Jalan Ruas Kabupaten',2,exampleTime)];
+  rows[4].packages=[makePackage('Rehabilitasi Saluran Drainase',4,exampleTime)];
+  rows[30].packages=[makePackage('Peningkatan Jalan Ruas Bts. Tapalang - Tapalang Barat Kab. Mamuju',0,exampleTime),{...makePackage('Peningkatan Jalan Lingkungan',0,exampleTime),reason:'Ruang lingkup paket diperbarui.'}];
+  rows[30].packages[0].repair=1;
+  rows[30].packages[0].events.push({from:flow[0],to:flow[1],time:exampleTime},{from:flow[1],to:flow[0],time:exampleTime,repair:true,note:'Lengkapi volume pekerjaan.'});
+  rows[3].notes=[{analysis:'Pemeriksaan dokumen masih berlangsung.',follow:'Cek kembali setelah telaah APIP.',time:exampleTime}];
+  const active=row=>row.packages.filter(p=>p.name.trim()&&!p.reason);
+  const integrated=row=>active(row).filter(p=>p.step>=3).length;
+  const position=row=>row.accounts.slice(4).some(a=>a.state===1)?3:row.accounts.slice(1,4).some(a=>a.state===1)?2:row.accounts[0].state===1?1:0;
+  const score=row=>active(row).reduce((sum,p)=>sum+Math.min(p.step,3),0);
+  const sort=()=>rows.sort((a,b)=>score(b)-score(a)||position(b)-position(a));
+  sort();
+  const earlier=structuredClone(rows);
+  earlier.find(r=>r.name==='Jawa Barat').packages.pop();
+  earlier.find(r=>r.name==='DI Yogyakarta').packages=[];
+  earlier.find(r=>r.name==='Jawa Tengah').accounts[1]=account();
+  const recaps=new Map([[past,earlier],[latest,structuredClone(rows)]]);
+  const changes=[{day:past,time:'14 Nov 2026, 10.00 WIB',revision:1,label:'Simpan rekap'},{day:latest,time:exampleTime,revision:1,label:'Simpan rekap'}];
+  let day=latest, viewed='', tab='table', draft=null, confirmAction;
+  const current=()=>viewed?recaps.get(viewed):draft||rows;
+  const total=data=>data.reduce((n,r)=>n+active(r).length,0);
+  const ready=data=>data.reduce((n,r)=>n+integrated(r),0);
+  const accounts=data=>roles.map((_,i)=>data.filter(r=>r.accounts[i].state===1).length);
+  const phase=(p,i)=>i===3?p.repair:p.step>i?2:p.step===i?1:0;
+  const option=(value,label,selected)=>`<option value="${value}"${String(value)===String(selected)?' selected':''}>${label}</option>`;
+  const button=(label,action,attrs='',cls='')=>`<button type="button" data-action="${action}" ${attrs} class="${cls}">${label}</button>`;
+  const notice=text=>{$('notice').textContent=text;};
+  const fieldAttrs=(i,j)=>`data-i="${i}"${j===undefined?'':` data-j="${j}"`}`;
+  const percent=(num,den)=>den?Math.round(num/den*10000)/100:null;
+  const percentText=value=>value===null?'N/D':value.toLocaleString('id-ID')+'%';
+  function renderSummary(){
+    const prior=[...recaps.keys()].filter(d=>d<(viewed||day)).at(-1);
+    const metrics=data=>[...accounts(data),total(data),ready(data)];
+    const before=prior?metrics(recaps.get(prior)):[];
+    const labels=[...roles,'Total ASB','Paket integrasi SIPD'];
+    $('comparison').textContent=prior?`Dibandingkan dengan rekap ${date(prior)}.`:'Belum ada rekap pembanding.';
+    $('metrics').innerHTML=metrics(current()).map((value,i)=>{
+      const diff=value-before[i];
+      return `<div class="metric"><dt>${labels[i]}</dt><dd>${value}${Number.isFinite(diff)?` <small>(${diff>0?'+':''}${diff})</small>`:''}</dd><dd class="metricUnit">${i<6?'Provinsi dengan akun':i===6?'Paket aktif':'Siap integrasi atau diterima SIPD'}</dd></div>`;
+    }).join('');
+  }
+  const filterLabels={all:'Semua status',ada:'Ada',tc:'T/C',none:'Tidak ada',done:'Selesai',process:'Proses',pending:'Belum dimulai',nd:'N/D'};
+  function setStatuses(){
+    const group=$('stage').value;
+    const keys=group==='all'?Object.keys(filterLabels):['1','2','3'].includes(group)?['all','ada','tc','none']:['all','done','process','pending','nd'];
+    $('status').innerHTML=keys.map(k=>option(k,filterLabels[k],'all')).join('');
+  }
+  function matches(row){
+    if(!row.name.toLocaleLowerCase('id-ID').includes($('query').value.trim().toLocaleLowerCase('id-ID')))return false;
+    const group=$('stage').value,status=$('status').value;
+    if(status==='all')return true;
+    if(['ada','tc','none'].includes(status)){
+      const list=group==='1'?row.accounts.slice(0,1):group==='2'?row.accounts.slice(1,4):group==='3'?row.accounts.slice(4):row.accounts;
+      return list.some(a=>a.state===({ada:1,tc:0,none:2}[status]));
+    }
+    const packages=active(row), count=integrated(row);
+    if(status==='nd')return !packages.length;
+    const integration=packages.length&&({done:count===packages.length,process:count>0&&count<packages.length,pending:count===0}[status]);
+    const packageMatch=packages.some(p=>stages.some((_,i)=>phase(p,i)===({done:2,process:1,pending:0}[status])));
+    return group==='5'?integration:group==='4'?packageMatch:integration||packageMatch;
+  }
+  function packageCell(row,i,expanded){
+    const activePackages=active(row), archived=row.packages.filter(p=>p.reason);
+    const title=activePackages.length===1?esc(activePackages[0].name):`${activePackages.length} Paket`;
+    const card=p=>{
+      const attrs=fieldAttrs(i,row.packages.indexOf(p));
+      return `<article class="packageItem ${p.reason?'bad':''}">
+      ${draft?`<label>Nama paket<input data-package-name ${attrs} maxlength="240" value="${esc(p.name)}"></label>`:button(esc(p.name),'package',attrs,'cell')}
+      <small>Ditambahkan pada ${esc(p.time||'Belum tersimpan')}</small>
+      ${p.reason?`<small>Alasan penonaktifan: ${esc(p.reason)}</small>`:''}
+      ${draft?button(p.reason?'Aktifkan kembali':'Hapus paket',p.reason?'restore-package':'archive-package',attrs,`cell ${p.reason?'':'danger'}`):''}
+      </article>`;
+    };
+    return `<details data-key="${i}" ${expanded.has(String(i))?'open':''}><summary>${title}</summary>${activePackages.length===1?`<small>Ditambahkan pada ${esc(activePackages[0].time||'Belum tersimpan')}</small>`:''}
+      <div>${row.packages.filter(p=>!p.reason&&(p.name.trim()||draft)).map(card).join('')}
+      ${!activePackages.length&&!draft?'<p class="muted">Belum ada paket aktif.</p>':''}
+      ${draft?button('+ Tambah paket','add-package',fieldAttrs(i)):''}
+      ${archived.length?`<details data-key="${i}-arsip" ${expanded.has(`${i}-arsip`)?'open':''}><summary>${archived.length} Paket dihapus/nonaktif</summary><div>${archived.map(card).join('')}</div></details>`:''}</div></details>`;
+  }
+  function stageCell(row,i,j){
+    const packages=active(row), state=packages.map(p=>phase(p,j));
+    const done=state.filter(n=>n===2).length, working=state.filter(n=>n===1).length, waiting=state.length-done-working;
+    const tone=j===3&&working?'bad':done&&done===state.length?'good':working||done?'process':'none';
+    const label=[done&&`${done} selesai`,working&&`${working} proses`,waiting&&`${waiting} -`].filter(Boolean).join(' · ')||'-';
+    return `<td>${button(`${label} <span aria-hidden="true">›</span>`,'workflow',`${fieldAttrs(i,j)} aria-label="Lihat progres ${stages[j]} ${esc(row.name)}: ${label}"`,`cell state ${tone}`)}</td>`;
+  }
+  function renderTable(){
+    const data=current(), expanded=new Set([...$('rows').querySelectorAll('details[open]')].map(el=>el.dataset.key));
+    const visible=data.filter(matches);
+    $('empty').hidden=!!visible.length;
+    $('rows').innerHTML=visible.map((row,index)=>{
+      const i=data.indexOf(row), attrs=fieldAttrs(i), count=active(row).length, integration=integrated(row), ratio=percent(integration,count);
+      const cells=row.accounts.map((a,j)=>`<td>${button(['! T/C','✓ Ada','- Tidak ada'][a.state],draft?'toggle':'account',`${fieldAttrs(i,j)} title="${esc(`${roles[j]}: ${accountNames[a.state]}. Jumlah ${a.count||'belum diketahui'}.`)}"`,`cell state ${['warn','good','none'][a.state]}`)}</td>`).join('');
+      return `<tr><td class="num">${index+1}</td><th scope="row" class="prov">${button(esc(row.name),'province',attrs,'cell')}</th>
+        <td class="package">${packageCell(row,i,expanded)}</td>${cells}${stages.map((_,j)=>stageCell(row,i,j)).join('')}
+        <td>${button(count,'province',`${attrs} aria-label="Total paket ${esc(row.name)}"`,'cell')}</td><td>${button(integration,'province',`${attrs} aria-label="Paket siap integrasi ${esc(row.name)}"`,'cell')}</td>
+        <td>${ratio===null?'N/D':`<progress value="${ratio}" max="100" aria-label="Integrasi ${esc(row.name)}"></progress> ${percentText(ratio)}`}</td><td class="muted">N/D</td><td>${position(row)?`<span class="state blue">Tahap ${position(row)}</span>`:'<span class="state warn">! T/C</span>'}</td></tr>`;
+    }).join('');
+    $('totals').innerHTML=`<tr><th scope="row" colspan="3">Provinsi dengan akun tercatat</th>${accounts(data).map(n=>`<td>${n}</td>`).join('')}<td colspan="4">Proses ASB</td><td>${total(data)}</td><td>${ready(data)}</td><td>${percentText(percent(ready(data),total(data)))}</td><td colspan="2">Ringkasan laporan</td></tr>`;
+  }
+
+  function renderChart(){
+    const key=$('chart-metric').value, label=$('chart-metric').selectedOptions[0].textContent, selected=$('chart-prov').value;
+    $('chart-prov').innerHTML=option('all','Seluruh provinsi',selected)+rows.map((p,i)=>option(i,esc(p.name),selected)).join('');
+    const name=rows[Number($('chart-prov').value)]?.name;
+    const points=[...recaps].filter(([d])=>d>=$('from').value&&d<=$('to').value).map(([d,data])=>{
+      const scope=name?data.filter(p=>p.name===name):data, packages=total(scope), integrated=ready(scope);
+      const count=name?accounts(scope).reduce((n,a)=>n+a,0):scope.filter(r=>r.accounts.some(a=>a.state===1)).length;
+      return {d,value:scope.length?{accounts:count,total:packages,integrated,percent:percent(integrated,packages)}[key]:null};
+    });
+    $('chart-title').textContent=`Perkembangan ${label.toLocaleLowerCase('id-ID')}`;
+    $('chart-data-title').textContent=`Lihat data grafik dan rekap (${points.length} tanggal)`;
+    $('chart-data').innerHTML=points.map(({d,value})=>`<tr><td>${date(d)}</td><td>${key==='percent'?percentText(value):value??'N/D'}</td><td>${value===null?'Belum ada data':'Tersimpan'}</td><td>${button('Lihat Rekap','open-recap',`data-day="${d}"`,'cell')}</td></tr>`).join('');
+    const max=key==='percent'?100:4*Math.max(1,Math.ceil(Math.max(0,...points.map(p=>p.value??0))/4));
+    const x=i=>points.length===1?350:65+i*570/(points.length-1), y=value=>208-value/max*176;
+    $('chart').innerHTML=points.some(p=>p.value!==null)?`<svg class="chart" viewBox="0 0 700 250" role="img" aria-label="Grafik ${esc(label)}. Nilai tersedia pada tabel rekap.">
+      ${Array.from({length:5},(_,i)=>{const n=i*max/4;return `<line class="grid" x1="60" x2="640" y1="${y(n)}" y2="${y(n)}"/><text x="51" y="${y(n)+4}" text-anchor="end">${n}${key==='percent'?'%':''}</text>`;}).join('')}
+      ${points.map(({d,value},i)=>{const prev=points[i-1]?.value;return `${prev!=null&&value!=null?`<path class="series" d="M${x(i-1)} ${y(prev)}L${x(i)} ${y(value)}"/>`:''}${value!=null?`<circle cx="${x(i)}" cy="${y(value)}" r="5"><title>${date(d)}: ${value}</title></circle>`:''}<text x="${x(i)}" y="235" text-anchor="middle">${d.slice(-2)} Nov</text>`;}).join('')}
+      </svg>`:'<p class="empty">Belum ada data lengkap untuk grafik ini. Ubah rentang tanggal atau pilih satu provinsi.</p>';
+  }
+  function render(){
+    ['table','chart','history'].forEach(view=>{$(`${view}-view`).hidden=tab!==view;});
+    document.querySelectorAll('[data-tab]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.tab===tab)));
+    const relevant=changes.filter(r=>r.day===(viewed||day));
+    $('date-label').textContent=`${viewed?'Rekap tersimpan':'Laporan terbaru'} · ${date(viewed||day)}`;
+    $('updated').textContent=relevant.length?`Terakhir diperbarui ${relevant.at(-1).time}`:'';
+    $('save-recap').hidden=!!viewed||recaps.has(demoDay);
+    $('latest').hidden=!viewed;
+    $('edit').hidden=!!draft||!!viewed;
+    $('edit-label').textContent=viewed?'Rekap baca saja':draft?'Mode Edit':'Mode lihat';
+    ['cancel','submit','add-prov'].forEach(id=>{$(id).hidden=!draft;});
+    if(tab==='table'){renderSummary();renderTable();}
+    if(tab==='chart')renderChart();
+    if(tab==='history')$('history').innerHTML=`<p class="muted">${date(viewed||day)}</p>`+relevant.slice().reverse().map(r=>`<article class="block"><h3>Revisi ${r.revision}</h3><time class="muted">${esc(r.time)}</time><p>${esc(r.label)}</p></article>`).join('');
+  }
+  function modal(title,content){
+    $('dialog-title').textContent=title;
+    $('dialog-body').innerHTML=content;
+    if(!$('dialog').open)$('dialog').showModal();
+  }
+  function ask(title,description,label,action){
+    $('confirm-title').textContent=title;$('confirm-copy').textContent=description;$('confirm-ok').textContent=label;
+    confirmAction=action;$('confirm').showModal();
+  }
+  const close=()=> $('dialog').close();
+  const formActions=label=>`<div class="dialogActions">${button('Tutup','close')}${viewed?'':`<button type="submit" class="primary">${label}</button>`}</div>`;
+  const readOnly=()=>viewed?'disabled':'';
+  const timestamps=p=>`<p class="muted">Ditambahkan pada ${esc(p.time||'Belum tersimpan')}<br>Nama terakhir diubah ${esc(p.changed||'Belum tersimpan')}${p.reason?'':`<br>Progres terakhir diperbarui ${esc(p.progressTime||'Belum tersimpan')}`}</p>`;
+  const phaseText=value=>['-','Proses','Selesai'][value];
+  const phases=p=>`<div class="line">${stages.map((stage,i)=>`<span class="state ${['none','process','good'][phase(p,i)]}">${stage}: ${phaseText(phase(p,i))}</span>`).join('')}</div>`;
+  const timeline=events=>events.slice().reverse().map(e=>`<li><strong>${esc(e.from)} → ${esc(e.to)}</strong><time class="muted">${esc(e.time)}</time>${e.note?`<p>${esc(e.note)}</p>`:''}</li>`).join('');
+  function workflow(row,stage){
+    const i=current().indexOf(row);
+    const cards=active(row).map(p=>{
+      const attrs=`${fieldAttrs(i,row.packages.indexOf(p))} data-stage="${stage}"`;
+      return `<article class="block"><h3>${esc(p.name)}</h3><p class="muted">${stages[stage]}: ${phaseText(phase(p,stage))}</p><p><strong>${flow[p.step]}</strong></p>
+        ${stage===3?`<section><h3>Riwayat perbaikan</h3>${p.events.some(e=>e.repair)?`<ol>${timeline(p.events.filter(e=>e.repair))}</ol>`:'<p class="muted">Belum ada riwayat perbaikan.</p>'}</section>`:''}
+        <details><summary>Riwayat perpindahan status (${p.events.length})</summary>${p.events.length?`<ol>${timeline(p.events)}</ol>`:'<p class="muted">Belum ada riwayat perpindahan status.</p>'}</details>
+        ${viewed?'':`<div class="dialogActions">${p.events.length||p.step||p.repair?button('Hapus progres','reset',attrs,'danger'):''}${[1,2].includes(p.step)?button('Kembalikan ke PU','return',attrs):''}${p.step<4?button(['PU selesai → BPKAD','BPKAD selesai → APIP','APIP selesai → Siap integrasi','Tandai diterima SIPD'][p.step],'advance',attrs,'primary'):''}</div>`}</article>`;
+    }).join('');
+    modal(`Progres ${stages[stage]} · ${row.name}`,`<p class="muted">PU → BPKAD → APIP → siap integrasi → diterima SIPD</p>${cards||'<p class="empty">Belum ada paket aktif. Tambahkan nama paket melalui kolom Nama Paket.</p>'}`);
+  }
+  function packagePanel(row,p){
+    modal(`Detail paket · ${row.name}`,`<form data-form="package" ${fieldAttrs(current().indexOf(row),row.packages.indexOf(p))}>
+      <label>Nama paket<input name="label" value="${esc(p.name)}" required maxlength="240" ${readOnly()}></label>
+      ${p.reason?`<p class="bad state">Alasan penonaktifan: ${esc(p.reason)}</p>`:`<p><strong>${flow[p.step]}</strong></p>${phases(p)}<p class="muted">Perbarui status proses paket di Tahap 4.</p><label>Catatan paket (opsional)<textarea name="note" maxlength="3000" ${readOnly()}>${esc(p.note)}</textarea></label>`}
+      ${timestamps(p)}${formActions('Simpan perubahan')}</form>`);
+  }
+  function accountFields(d={}){
+    return `<section class="block dataDetail"><label>Nama / label akun<input name="detailName" value="${esc(d.label)}" required></label><label>Instansi<input name="institution" value="${esc(d.institution)}"></label><label>Email (opsional)<input name="email" type="email" value="${esc(d.email)}"></label><label>Keterangan<textarea name="detailNote">${esc(d.note)}</textarea></label>${viewed?'':button('Hapus rincian akun','remove-account-detail','','danger')}</section>`;
+  }
+  function updateAccountForm(form){
+    const has=form.elements.state.value==='1';
+    form.elements.count.disabled=!has||!!viewed;
+    form.querySelector('[data-action="add-account-detail"]').disabled=!has||!!viewed;
+  }
+  function accountPanel(row,j){
+    const a=row.accounts[j];
+    modal(`${roles[j]} · ${row.name}`,`<form data-form="account" ${fieldAttrs(current().indexOf(row),j)}><p class="muted">T/C berarti sumber belum mencatat akun. Status ini tidak memastikan akun belum tersedia.</p>
+      <fieldset ${readOnly()} class="stack"><div class="formRow"><label>Status akun<select name="state">${['T/C - tidak tercatat','Ada','Tidak ada · sudah dikonfirmasi'].map((label,k)=>option(k,label,a.state)).join('')}</select></label><label>Jumlah akun<input name="count" type="number" min="1" value="${esc(a.count)}" placeholder="Belum diketahui"></label></div>
+      <label>Catatan peran<textarea name="note" maxlength="3000">${esc(a.note)}</textarea></label><h3>Rincian akun</h3>
+      <div class="stack" data-details>${a.details.length?a.details.map(accountFields).join(''):'<p class="muted">Rincian akun belum diisi.</p>'}</div>
+      <div class="line">${button('+ Tambah akun','add-account-detail')}${button('Hapus data akun','clear-account','','danger')}</div></fieldset>${formActions('Simpan perubahan')}</form>`);
+    updateAccountForm($('dialog-body').querySelector('form'));
+  }
+  function provincePanel(row){
+    const attrs=fieldAttrs(current().indexOf(row));
+    const ordered=row.packages.slice().sort((a,b)=>Number(!!a.reason)-Number(!!b.reason));
+    modal(row.name,`<div class="formRow"><dl class="metric"><dt>Total paket aktif</dt><dd>${active(row).length}</dd></dl><dl class="metric"><dt>Siap integrasi SIPD</dt><dd>${integrated(row)}</dd><small>Termasuk paket yang sudah diterima SIPD</small></dl></div>
+      <div class="line"><h3>Paket</h3>${viewed?'':button('+ Tambah paket','new-package',attrs)}</div>
+      <div class="stack">${ordered.length?ordered.map(p=>`<div class="block ${p.reason?'bad':''}">${button(esc(p.name||'Tambahkan nama paket'),'package',`${attrs} data-j="${row.packages.indexOf(p)}"`,'cell')}${p.reason?`<small>Alasan penonaktifan: ${esc(p.reason)}</small>`:`<p>${flow[p.step]}</p>`}${timestamps(p)}</div>`).join(''):'<p class="muted">Belum ada nama paket.</p>'}</div>
+      ${viewed?'':`<form data-form="note" ${attrs}><h3>Tambah catatan</h3><div class="formRow"><label>Analisis / kendala<textarea name="analysis" maxlength="3000"></textarea></label><label>Tindak lanjut<textarea name="follow" maxlength="3000"></textarea></label></div><p role="alert" class="formStatus"></p><div class="dialogActions">${button('Hapus data provinsi','clear-province',attrs,'danger')}<button class="primary" type="submit">Simpan catatan</button></div></form>`}
+      <details><summary>Riwayat catatan (${row.notes.length})</summary>${row.notes.length?row.notes.slice().reverse().map(n=>`<article class="block"><time class="muted">${esc(n.time)}</time>${n.analysis?`<p><b>Analisis / kendala</b><br>${esc(n.analysis)}</p>`:''}${n.follow?`<p><b>Tindak lanjut</b><br>${esc(n.follow)}</p>`:''}</article>`).join(''):'<p class="muted">Belum ada catatan tersimpan.</p>'}</details>`);
+  }
+
+  function save(label='Laporan diperbarui.'){
+    const empty=current().find(r=>r.packages.some(p=>!p.name.trim()));
+    if(empty){notice(`${empty.name}: isi atau hapus kartu paket kosong sebelum Submit.`);return false;}
+    if(draft){rows=draft;draft=null;}
+    sort();
+    const revision=(changes.filter(r=>r.day===day).at(-1)?.revision||0)+1;
+    changes.push({day,revision,label,time:now()});
+    notice(`${label} · Revisi ${revision}`);
+    render();
+    return true;
+  }
+  function commit(label){
+    if(draft){notice('Perubahan menunggu Submit.');render();}
+    else save(label);
+  }
+  function guard(next){
+    if(!draft||JSON.stringify(draft)===JSON.stringify(rows)){draft=null;render();next();return;}
+    modal('Perubahan belum disimpan',`<p>Simpan atau buang perubahan sebelum melanjutkan.</p><p role="alert" class="formStatus"></p><div class="dialogActions">${button('Kembali','close')}${button('Buang draft','discard')}${button('Simpan & lanjut','keep','','primary')}</div>`);
+    $('dialog').querySelector('[data-action="discard"]').onclick=()=>{draft=null;close();render();next();};
+    $('dialog').querySelector('[data-action="keep"]').onclick=()=>{
+      if(save()){close();next();}
+      else $('dialog').querySelector('.formStatus').textContent=$('notice').textContent;
+    };
+  }
+  function move(p,to,note,repair=false){
+    p.progressTime=now();
+    p.events.push({from:flow[p.step],to:flow[to],note,repair,time:p.progressTime});
+    p.step=to;
+    if(repair)p.repair=1;
+    else if(p.repair===1)p.repair=2;
+  }
+  const nameInput=(i,j)=>$('rows').querySelector(`[data-package-name][data-i="${i}"][data-j="${j}"]`);
+  $('close').onclick=close;
+  $('confirm-cancel').onclick=()=>$('confirm').close();
+  $('confirm-ok').onclick=()=>{$('confirm').close();confirmAction?.();};
+  $('edit').onclick=()=>{draft=structuredClone(rows);notice('');render();};
+  $('cancel').onclick=()=>guard(()=>notice(''));
+  $('submit').onclick=()=>save();
+  $('theme').onclick=()=>{
+    const dark=document.documentElement.dataset.theme!=='dark';
+    document.documentElement.dataset.theme=dark?'dark':'light';
+    $('theme').setAttribute('aria-pressed',String(dark));
+  };
+  $('latest').onclick=()=>{viewed='';notice('');render();};
+  $('save-recap').onclick=()=>guard(()=>{
+    day=demoDay;
+    recaps.set(day,structuredClone(rows));save('Rekap contoh tersimpan.');
+    notice('Rekap hari ini sudah tersimpan. Lihat perkembangannya di tab Perkembangan.');
+  });
+  $('query').oninput=renderTable;
+  $('stage').onchange=()=>{setStatuses();renderTable();};
+  $('status').onchange=renderTable;
+  for(const id of ['from','to','chart-prov','chart-metric']) $(id).onchange=renderChart;
+  $('add-prov').onclick=()=>modal('Tambah provinsi',`<form data-form="province"><label>Nama provinsi<input name="label" maxlength="120" required></label><p role="alert" class="formStatus"></p>${formActions('Tambah provinsi')}</form>`);
+  document.addEventListener('click',event=>{
+    const target=event.target.closest('button');
+    if(!target)return;
+    if(target.dataset.tab){
+      const next=target.dataset.tab;
+      if(next!==tab)guard(()=>{tab=next;notice('');render();target.focus();});
+      return;
+    }
+    const {action,i,j,stage,day:recapDay,title}=target.dataset;
+    if(!action)return;
+    const row=current()[Number(i)], p=row?.packages[Number(j)], attrs=fieldAttrs(i,j);
+    switch(action){
+      case 'close':close();break;
+      case 'file':guard(()=>modal(title,`<p>Aksi berkas tersedia di halaman /report. Pratinjau ini memakai data contoh di browser.</p><div class="dialogActions">${button('Tutup','close')}</div>`));break;
+      case 'logout':guard(()=>{$('app').hidden=true;$('login').hidden=false;$('pin').focus();});break;
+      case 'access':modal('Pengaturan PIN',`<p>Penggantian PIN tersedia di halaman /report.</p><fieldset disabled class="stack"><label>PIN admin baru<input type="password"></label><label>PIN penginput baru<input type="password"></label><button disabled>Simpan PIN</button></fieldset>`);break;
+      case 'open-recap':viewed=recapDay;tab='table';notice(`Sedang melihat rekap ${date(viewed)} dalam mode baca.`);render();break;
+      case 'toggle':{
+        const a=row.accounts[j];
+        if(a.state===1)Object.assign(a,account(),{note:a.note});
+        else a.state=1;
+        render();
+        $('rows').querySelector(`[data-action="toggle"][data-i="${i}"][data-j="${j}"]`)?.focus();
+        break;
+      }
+      case 'province':provincePanel(row);break;
+      case 'package':packagePanel(row,p);break;
+      case 'account':accountPanel(row,j);break;
+      case 'workflow':workflow(row,Number(j));break;
+      case 'advance':move(p,p.step+1);commit();workflow(row,Number(stage));break;
+      case 'return':modal(`Kembalikan ke PU · ${row.name}`,`<form data-form="return" ${attrs} data-stage="${stage}"><p>${esc(p.name)} kembali ke penyusunan oleh PU. Kolom Perbaikan menjadi aktif.</p><label>Catatan perbaikan (opsional)<textarea name="note" maxlength="3000"></textarea></label><div class="dialogActions">${button('Batal','workflow',fieldAttrs(i,stage))}<button class="primary" type="submit">Kembalikan ke PU</button></div></form>`);break;
+      case 'reset':ask('Hapus progres Tahap 4?','Status paket kembali ke PU. Riwayat perpindahan dan catatan perbaikan dihapus.','Hapus progres',()=>{p.step=p.repair=0;p.events=[];p.progressTime=now();commit();workflow(row,Number(stage));});break;
+      case 'add-package':row.packages.push(makePackage('',0,''));render();nameInput(i,row.packages.length-1)?.focus();break;
+      case 'new-package':modal(`Tambah paket · ${row.name}`,`<form data-form="new-package" ${fieldAttrs(i)}><label>Nama paket<input name="label" required maxlength="240"></label>${formActions('Simpan perubahan')}</form>`);break;
+      case 'archive-package':
+        if(!p.name.trim())ask('Hapus paket baru?','Paket kosong ini akan dihapus dari draft.','Hapus paket',()=>{row.packages.splice(j,1);render();});
+        else modal('Nonaktifkan paket?',`<form data-form="archive" ${attrs}><p>Paket dipindahkan ke arsip. Riwayat paket tetap tersimpan.</p><label>Alasan penonaktifan<input name="label" required maxlength="3000"></label>${formActions('Nonaktifkan paket')}</form>`);
+        break;
+      case 'restore-package':p.reason='';render();break;
+      case 'clear-province':
+        ask('Hapus data provinsi?','Data akun dan catatan dikosongkan. Paket aktif dipindahkan ke arsip nonaktif.','Hapus data',()=>{
+          row.accounts=roles.map(()=>account());row.notes=[];
+          row.packages=row.packages.filter(p=>p.name.trim());row.packages.forEach(p=>{p.reason||='Data provinsi dikosongkan.';});
+          commit();provincePanel(row);
+        });break;
+      case 'add-account-detail':{
+        const list=target.closest('form').querySelector('[data-details]');
+        list.querySelector('p')?.remove();list.insertAdjacentHTML('beforeend',accountFields());list.lastElementChild.querySelector('input').focus();break;
+      }
+      case 'remove-account-detail':ask('Hapus rincian akun?','Rincian ini dihapus saat perubahan disimpan.','Hapus rincian',()=>target.closest('.dataDetail').remove());break;
+      case 'clear-account':
+        ask('Hapus data akun?','Status menjadi T/C saat perubahan disimpan.','Hapus data',()=>{
+          const form=target.closest('form');form.elements.state.value='0';form.elements.count.value='';form.elements.note.value='';
+          form.querySelector('[data-details]').innerHTML='<p class="muted">Rincian akun belum diisi.</p>';updateAccountForm(form);
+        });break;
+    }
+  });
+  document.addEventListener('input',event=>{
+    const input=event.target;
+    if(!input.hasAttribute('data-package-name')||!draft)return;
+    const p=draft[input.dataset.i].packages[input.dataset.j];
+    p.name=input.value;p.changed=now();
+    if(p.name.trim()&&!p.time)Object.assign(p,makePackage(p.name));
+    renderSummary();
+  });
+  document.addEventListener('change',event=>{
+    const form=event.target.closest('form[data-form="account"]');
+    if(form)updateAccountForm(form);
+    
+  });
+  document.addEventListener('submit',event=>{
+    const form=event.target;
+    event.preventDefault();
+    if(form.id==='login-form'){
+      if($('pin').value!=='000000'){$('login-error').textContent='PIN salah. Coba lagi.';return;}
+      $('login-error').textContent='';$('pin').value='';$('login').hidden=true;$('app').hidden=false;$('edit').focus();return;
+    }
+    const {form:action,i,j,stage}=form.dataset;
+    if(!action||viewed)return;
+    const values=new FormData(form), get=key=>String(values.get(key)??'').trim(), label=get('label');
+    const row=current()[Number(i)], p=row?.packages[Number(j)];
+    if(form.elements.label&&!label){const input=form.elements.label;input.setCustomValidity('Isi kolom ini.');input.reportValidity();input.oninput=()=>input.setCustomValidity('');return;}
+    switch(action){
+      case 'province':
+        if(draft.some(r=>r.name.toLocaleLowerCase('id-ID')===label.toLocaleLowerCase('id-ID'))){form.querySelector('.formStatus').textContent='Nama provinsi sudah tercatat.';return;}
+        draft.push(makeProvince(label));break;
+      case 'archive':p.reason=label;break;
+      case 'package':if(p.name!==label)p.changed=now();p.name=label;if(!p.reason)p.note=get('note');break;
+      case 'new-package':row.packages.push(makePackage(label));break;
+      case 'return':move(p,0,get('note'),true);break;
+      case 'note':
+        if(!get('analysis')&&!get('follow')){form.querySelector('.formStatus').textContent='Isi analisis / kendala atau tindak lanjut.';return;}
+        row.notes.push({analysis:get('analysis'),follow:get('follow'),time:now()});break;
+      case 'account':{
+        const state=Number(get('state')), fields=key=>values.getAll(key).map(value=>String(value).trim());
+        const names=fields('detailName'), institutions=fields('institution'), emails=fields('email'), notes=fields('detailNote');
+        const details=names.map((label,k)=>({label,institution:institutions[k],email:emails[k],note:notes[k]}));
+        row.accounts[j]={state,count:state===1?get('count'):state===2?'0':'',note:get('note'),details:state===1?details:[]};break;
+      }
+    }
+    commit(action==='note'?'Catatan berhasil ditambahkan.':'Laporan diperbarui.');
+    if(action==='return')workflow(row,Number(stage));
+    else if(['note','new-package'].includes(action))provincePanel(row);
+    else close();
+  });
+  window.addEventListener('beforeunload',event=>{if(draft&&JSON.stringify(draft)!==JSON.stringify(rows))event.preventDefault();});
+  setStatuses();
+  render();
+})();
+</script>
+</body>
+</html>

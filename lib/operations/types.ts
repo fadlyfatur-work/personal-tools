@@ -1,0 +1,10 @@
+export type Service = { id: string; name: string }
+export type Environment = { id: string; name: string; service_id: string }
+export type Deployment = { id: string; service_id: string; environment_id: string; version: string; deployed_at: string; performer: string; status: string; changelog: string; configuration_notes: string; evidence_url: string; rollback_plan: string; revision: number }
+export type Rollback = { id: string; deployment_id: string; target_version: string; performed_at: string; performer: string; result: string; status: string }
+export type Inventory = { services: Service[]; environments: Environment[]; deployments: Deployment[]; rollbacks: Rollback[]; nextCursor?: string | null }
+export type Monitor = { id: string; name: string; url: string; service_id: string; environment_id: string; expected_statuses: number[]; interval_seconds: number; timeout_ms: number; failure_threshold: number; recovery_threshold: number; active: boolean; maintenance: boolean; maintenance_note: string; disabled_reason: string | null; revision: number; state: string; display_state: string; last_checked_at: string | null; created_at: string; stats: { uptime: number | null; coverage: number; unknownSeconds: number; excludedSeconds: number }; history: Check[] }
+export type Check = { id: string; monitor_id: string; scheduled_at: string; checked_at: string | null; outcome: string; http_status: number | null; response_ms: number | null; tls_expires_at: string | null; tls_valid: boolean | null; error_code: string | null; duration_seconds: number }
+export type Incident = { id: string; monitor_id: string; opened_at: string; recovered_at: string | null }
+export type Notification = { id: string; incident_id: string; kind: string; created_at: string; read_at: string | null }
+export type Dashboard = Inventory & { monitors: Monitor[]; incidents: Incident[]; notifications: Notification[]; range: { from: string; to: string } }

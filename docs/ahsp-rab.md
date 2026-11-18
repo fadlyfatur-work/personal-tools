@@ -1,5 +1,9 @@
 # Pencocokan RAB
 
+Jalur tambahan PDF/gambar, konfigurasi API AI, dan panel aktivitas dijelaskan di
+[Pembacaan AI untuk pencocokan RAB](ahsp-rab-ai.md). Aturan workbook di bawah
+tetap berlaku untuk Excel; dokumen AI memakai referensi halaman, bukan sel Excel.
+
 Halaman `/ahsp/rab` diakses melalui tombol **Pencocokan RAB** di sebelah
 **Rekapitulasi MPTK** pada katalog `/ahsp`. Fitur mencocokkan nama pekerjaan;
 pemilihan pasangan tidak menghitung ulang harga AHSP atau mengonversi satuan.

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { Check, Copy, WarningCircle } from '@phosphor-icons/react'
-import { AHSP_CATALOG_REGULATIONS, AHSP_ARCHIVED_REGULATION, AHSP_ARCHIVE_NOTICE, ahspPhraseSearchError, sipastiLabels, calculateAhsp, parseAhspNumber, parseAhspSearch, ahspTypeLabel, formatAhspItemCopy, type AhspSearchStats, type AhspTypeCount, type AhspItem, type AhspSummary, type AhspOptions, type AhspSource } from '@/lib/ahsp'
+import { AHSP_CATALOG_REGULATIONS, AHSP_ARCHIVED_REGULATION, AHSP_ARCHIVE_NOTICE, ahspPhraseSearchError, verificationLabels, ahspVerificationStatus, calculateAhsp, parseAhspNumber, parseAhspSearch, ahspTypeLabel, formatAhspItemCopy, type AhspSearchStats, type AhspTypeCount, type AhspItem, type AhspSummary, type AhspOptions, type AhspSource } from '@/lib/ahsp'
 import styles from './catalog.module.css'
 import swiss from './swiss-red.module.css'
 import AppearancePicker, { useAhspAppearance } from './appearance'
@@ -211,7 +211,7 @@ export default function AhspCatalog() {
     else if (!useAdvanced && JSON.stringify(filters) === JSON.stringify(appliedFilters)) setDraftAdvanced(false)
   }
   const close = () => { dialog.current?.close(); setSelected(null); setDetail(null) }
-  const reference = itemDetail?.analysis_reference
+  const reference = itemDetail?.analysis_origin === 'sipasti' ? null : itemDetail?.analysis_reference
   const detail = reference ? (referenceReady && referenceTarget ? referenceTarget : itemDetail ? { ...itemDetail, analysis_status: 'needs_review' as const } : null) : itemDetail
   const documentItem = sourceView === 'origin' && itemDetail && reference
     ? { ...itemDetail, source_id: reference.source_id, page_from: reference.source_page, page_to: reference.source_page, source_text: reference.citation }
@@ -239,8 +239,8 @@ export default function AhspCatalog() {
       <header className={styles.header} data-ahsp-header>
         <Link href="/menu" className={styles.back}>Personal Tools / Menu</Link>
         <AppearancePicker appearance={appearance} />
-        <div data-ahsp-heading><h1>Katalog AHSP</h1><p>Item pekerjaan, komponen analisis, dan perhitungan biaya.</p></div>
-        <div className={styles.regulation} data-ahsp-regulation><span>Regulasi aktif dan arsip</span><strong>Edisi 2026</strong><span>SE 47/2026 dan Permen PUPR 8/2023</span><span>Arsip SE 182/2025</span></div>
+        {/* <div data-ahsp-heading><h1>Katalog AHSP</h1><p>Item pekerjaan, komponen analisis, dan perhitungan biaya.</p></div> */}
+        <div className={styles.regulation} data-ahsp-regulation><strong>Edisi 2026</strong><span>SE 47/2026 dan Permen PUPR 8/2023</span></div>
       </header>
 
       <div className={styles.context} data-ahsp-navigation>
@@ -284,18 +284,19 @@ export default function AhspCatalog() {
               return <button key={field} type="button" aria-pressed={filters.field === field} onClick={() => changeField(field)}>{field} ({typeof count === 'number' ? number.format(count) : '…'})</button>
             })}
           </div>
-          <p className={styles.searchHelp}>Jumlah nama pekerjaan unik per bidang, termasuk arsip, sebelum filter pencarian. Nama yang sama ditampilkan dalam satu baris.</p>
+          {/* <p className={styles.searchHelp}>Jumlah nama pekerjaan unik per bidang, termasuk arsip, sebelum filter pencarian. Nama yang sama ditampilkan dalam satu baris.</p> */}
         </fieldset>
         <fieldset className={styles.sipastiFilters} aria-label="Kecocokan Data">
           <legend><span className={styles.matchHeading}>Kecocokan Data <button type="button" className={styles.helpButton} popoverTarget="ahsp-match-info" aria-label="Tentang Kecocokan Data"><span aria-hidden="true">?</span></button></span></legend>
           <div id="ahsp-match-info" popover="auto" className={styles.helpPopover} role="note" aria-labelledby="ahsp-match-info-title">
             <h3 id="ahsp-match-info-title">Kecocokan Data</h3>
-            <p>Verfied berarti item ada di katalog dan SIPASTI PU berdasarkan kode, bidang, dan regulasi. Status ini tidak menilai kelengkapan analisis.</p>
+            <p>Verified berarti identitas pekerjaan dan regulasinya lulus rekonsiliasi terhadap JSON SIPASTI serta rincian analisisnya lengkap. Item SMKK tidak diwajibkan memiliki komponen.</p>
+            <p>Need re-verified berarti terdapat perbedaan, pasangan yang belum pasti, atau rincian yang masih perlu diperiksa. Alasannya tersedia di rincian pekerjaan.</p>
             <p>Filter langsung memperbarui hasil. Klik filter aktif lagi untuk menampilkan semua status.</p>
             <button type="button" popoverTarget="ahsp-match-info" popoverTargetAction="hide">Tutup penjelasan</button>
           </div>
           <div className={styles.fieldOptions}>
-            {Object.entries(sipastiLabels).map(([status, label]) => <button key={status} type="button" disabled={loading} aria-pressed={appliedFilters.sipasti === status} onClick={() => changeMatchStatus(status)}>{loading && appliedFilters.sipasti === status && <span className={styles.spinner} aria-hidden="true" />}{label}</button>)}
+            {Object.entries(verificationLabels).map(([status, label]) => <button key={status} type="button" data-verification={status} disabled={loading} aria-pressed={appliedFilters.sipasti === status} onClick={() => changeMatchStatus(status)}>{loading && appliedFilters.sipasti === status && <span className={styles.spinner} aria-hidden="true" />}{label}</button>)}
             <span className={styles.loadingIndicator} role="status" aria-atomic="true">{loading && <>{!appliedFilters.sipasti && <span className={styles.spinner} aria-hidden="true" />}Memperbarui data…</>}</span>
           </div>
         </fieldset>
@@ -354,11 +355,12 @@ export default function AhspCatalog() {
               <div className={styles.item}>
                 <button type="button" className={styles.openItem} data-ahsp-open onClick={() => openItem(item)} aria-label={`Buka analisis ${item.code}: ${item.name}`} />
                 <span className={styles.code}>{item.code ? <button type="button" className={styles.textCopy} data-ahsp-copy onClick={() => copyText(item.code, `Kode ${item.code}`)} aria-label={`Salin kode ${item.code}`} title="Salin kode">{item.code}</button> : <strong>Tanpa kode</strong>}<small>{item.field}</small></span>
-                <div className={styles.name}><button type="button" className={styles.textCopy} data-ahsp-copy onClick={() => copyText(item.name, `Nama ${item.code || item.name}`)} aria-label={`Salin nama ${item.name}`} title="Salin nama pekerjaan">{item.name}</button>{item.sipasti_status && <small className={styles.sipastiTag} title="Status keberadaan item pada katalog dan ekspor SIPASTI PU">{sipastiLabels[item.sipasti_status]}</small>}{item.analysis_reference && <button type="button" className={styles.referenceLink} onClick={() => openItem(item)}>Analisis mengacu {item.analysis_reference.target_regulation} · {item.analysis_reference.target_code}{item.analysis_reference.status !== 'verified' && ' · Perlu ditinjau'}</button>}<small>{item.division || 'Tanpa klasifikasi divisi'}{` / ${ahspTypeLabel(item.ahsp_type)}`}</small>{!!item.matched_components?.length && <small className={styles.matches}>Komponen cocok: {item.matched_components.slice(0, 4).join('; ')}{item.matched_components.length > 4 && `; +${item.matched_components.length - 4} lainnya`}</small>}
+                <div className={styles.name}><button type="button" className={styles.textCopy} data-ahsp-copy onClick={() => copyText(item.name, `Nama ${item.code || item.name}`)} aria-label={`Salin nama ${item.name}`} title="Salin nama pekerjaan">{item.name}</button><small className={styles.sipastiTag} data-verification={ahspVerificationStatus(item)} title={item.verification_notes?.join(' ') || 'Lulus rekonsiliasi identitas, regulasi, dan kelengkapan analisis terhadap JSON SIPASTI.'}>{verificationLabels[ahspVerificationStatus(item)]}</small>{item.analysis_reference && <button type="button" className={styles.referenceLink} onClick={() => openItem(item)}>Analisis mengacu {item.analysis_reference.target_regulation} · {item.analysis_reference.target_code}{item.analysis_reference.status !== 'verified' && ' · Perlu ditinjau'}</button>}<small>{item.division || 'Tanpa klasifikasi divisi'}{` / ${ahspTypeLabel(item.ahsp_type)}`}</small>{!!item.matched_components?.length && <small className={styles.matches}>Komponen cocok: {item.matched_components.slice(0, 4).join('; ')}{item.matched_components.length > 4 && `; +${item.matched_components.length - 4} lainnya`}</small>}
                   {item.versions && item.versions.length > 1 && <details className={styles.versions}>
                     <summary>Versi dan sumber lainnya ({item.versions.length - 1})</summary>
                     <ul className={styles.versionList}>{item.versions.map(version => <li key={version.id}>
                       <strong>{version.regulation}</strong>
+                      <small className={styles.sipastiTag} data-verification={ahspVerificationStatus(version)}>{verificationLabels[ahspVerificationStatus(version)]}</small>
                       <small>{version.code || 'Tanpa kode'} · {version.field} · {version.unit || 'Satuan belum tersedia'} · {ahspTypeLabel(version.ahsp_type)}</small>
                       {version.regulation === AHSP_ARCHIVED_REGULATION && <small>{AHSP_ARCHIVE_NOTICE}</small>}
                       {version.id === item.id ? <small>Versi ditampilkan</small> : <button type="button" onClick={() => openItem(version)} aria-label={`Buka versi ${version.regulation} ${version.code || 'tanpa kode'} ${version.field} ${version.unit}: ${version.name}`}>Buka versi</button>}
@@ -389,6 +391,15 @@ export default function AhspCatalog() {
       {!detail && !detailError && <p className={styles.empty} role="status"><span className={styles.loadingIndicator}><span className={styles.spinner} aria-hidden="true" />Memuat komponen dan lampiran…</span></p>}
       {detailError && <div className={styles.notice} role="alert"><p>{detailError}</p><button type="button" onClick={() => { setDetailError(''); setDetailRetry(n => n + 1) }}>Muat ulang analisis</button></div>}
       {detail && <>
+        <section className={styles.verificationPanel} aria-label="Hasil verifikasi pekerjaan">
+          <strong className={styles.sipastiTag} data-verification={ahspVerificationStatus(itemDetail ?? detail)}>{verificationLabels[ahspVerificationStatus(itemDetail ?? detail)]}</strong>
+          {itemDetail?.verification_notes?.length ? <ul>{itemDetail.verification_notes.map(note => <li key={note}>{note}</li>)}</ul> : <p>{itemDetail?.verification_status === 'verified' ? 'Pekerjaan sudah diverifikasi dengan data SIPASTI.' : 'Pekerjaan ini belum verifikasi master terbaru.'}</p>}
+          {
+            itemDetail?.master_provenance && <p>
+            Diperiksa {new Date(itemDetail.master_provenance.checked_at).toLocaleDateString('id-ID')}.</p>
+          }
+          {itemDetail?.master_provenance?.differences?.length ? <details><summary>Perbedaan dengan katalog sebelumnya ({itemDetail.master_provenance.differences.length})</summary><ul>{itemDetail.master_provenance.differences.map((difference, index) => <li key={index}>{({ name: 'Nama pekerjaan', unit: 'Satuan pekerjaan', coefficient_difference: 'Koefisien berbeda', old_component_only: 'Komponen lama tidak ditemukan di JSON', component_multiplicity: 'Jumlah komponen sejenis berbeda' } as Record<string, string>)[difference.kind] ?? difference.kind}{difference.name ? `: ${difference.name}` : ''}{difference.before !== undefined && ` · Sebelumnya: ${JSON.stringify(difference.before)}`}{difference.after !== undefined && ` · JSON: ${JSON.stringify(difference.after)}`}</li>)}</ul></details> : null}
+        </section>
         {reference && <section className={styles.referencePanel} aria-label="Rujukan analisis">
           <h3>{itemDetail?.code} → {reference.target_code}</h3>
           <p>{referenceReady ? `Komponen dan kalkulator menggunakan ${reference.target_regulation}, kode ${reference.target_code}.` : 'Rujukan ditemukan, tetapi analisis belum lolos pemeriksaan. Kalkulator belum memakai acuan ini.'}</p>
@@ -400,11 +411,12 @@ export default function AhspCatalog() {
         <div className={styles.modalBody}>
           {tab === 'calculation' && <>
             <div className={styles.analysisInfo}><strong>{analysisLabels[detail.analysis_status]}</strong><span>{ahspTypeLabel(detail.ahsp_type)}{detail.regulation_status && ` / ${detail.regulation_status}`}</span></div>
-            {detail.analysis_status !== 'extracted' && <p className={styles.warning}>Komponen hasil ekstraksi perlu dilengkapi atau diperiksa terhadap lampiran. Total biaya belum dapat dihitung.</p>}
+            {detail.analysis_status !== 'extracted' && detail.field !== 'SMKK' && <p className={styles.warning}>Rincian analisis perlu dilengkapi atau diperiksa. Total biaya belum dapat dihitung.</p>}
+            {/* {detail.analysis_origin === 'sipasti' && <p className={styles.help}>Rincian komponen berasal dari JSON SIPASTI. Rumus ditampilkan sesuai sumber; nilai variabel tersimpan bukan harga dasar proyek.</p>} */}
             <div className={styles.calculatorInputs}><label>{detail.field === 'SMKK' ? 'Kuantitas biaya' : 'Volume pekerjaan'} ({detail.unit})<input inputMode="decimal" value={volume} onChange={e => setVolume(e.target.value)} /></label>{detail.field !== 'SMKK' && <label>Biaya umum dan keuntungan (%)<input inputMode="decimal" value={overhead} onChange={e => setOverhead(e.target.value)} placeholder={detail.overhead_min === null ? 'Isi sesuai ketentuan sumber' : `${detail.overhead_min} sampai ${detail.overhead_max}`} /></label>}</div>
             <p className={styles.help}>{detail.field === 'SMKK' ? 'Biaya SMKK = kuantitas × harga per unit. Harga contoh dalam PDF tidak digunakan.' : `Koefisien berlaku untuk ${number.format(detail.output_quantity)} ${detail.unit} hasil pekerjaan.`} Masukkan harga tanpa pemisah ribuan, misalnya 125000 atau 125000,50. Harga nol harus diisi sebagai 0.</p>
-            {detail.components.length === 0 ? <p className={styles.empty}>Rincian komponen belum berhasil diinventarisasi. Periksa tab lampiran.</p> : <div className={styles.components}>{(['tenaga', 'bahan', 'alat', 'smkk'] as const).filter(group => detail.field === 'SMKK' ? group === 'smkk' : group !== 'smkk').map(group => <section key={group}><h3>{groupNames[group]}</h3>{result?.rows.filter(row => row.group === group).map(row => <div className={styles.component} key={row.id}>
-              <div><strong>{row.name}</strong><small>{row.code || 'Tanpa kode komponen'} / {row.unit}</small>{row.expression && <small>Rumus sumber: {row.expression}</small>}</div>
+            {detail.components.length === 0 ? <p className={styles.empty}>{detail.field === 'SMKK' ? 'Item biaya SMKK ini tidak memiliki rincian komponen tenaga kerja, material, atau peralatan.' : 'Rincian komponen belum tersedia. Periksa tab lampiran.'}</p> : <div className={styles.components}>{(['tenaga', 'bahan', 'alat', 'smkk'] as const).filter(group => detail.field === 'SMKK' ? group === 'smkk' : group !== 'smkk').map(group => <section key={group}><h3>{groupNames[group]}</h3>{result?.rows.filter(row => row.group === group).map(row => <div className={styles.component} key={row.id}>
+              <div><strong>{row.name || 'Nama komponen belum tersedia'}</strong><small>{row.code || 'Tanpa kode komponen'} / {row.unit || 'Satuan belum tersedia'}</small>{row.expression && <small>Rumus sumber: {row.expression}</small>}{row.description && <small>{row.description}</small>}{!!row.variables?.length && <details><summary>Variabel sumber ({row.variables.length})</summary><ul className={styles.variableList}>{row.variables.map((variable, index) => <li key={index}><strong>{variable.code || variable.name || `Variabel ${index + 1}`}</strong>{variable.name && variable.code && ` · ${variable.name}`}{variable.unit && ` (${variable.unit})`}{variable.coefficient !== null && <small>Koefisien: {variable.coefficient}</small>}{variable.expression && <small>Rumus: {variable.expression}</small>}{variable.final_value !== null && <small>Nilai tersimpan: {variable.final_value}</small>}{variable.description && <small>{variable.description}</small>}{variable.var_description && <small>{variable.var_description}</small>}</li>)}</ul></details>}</div>
               <label>{detail.field === 'SMKK' ? 'Basis per unit biaya' : 'Koefisien'}{row.coefficient !== null ? <span className={styles.fixedValue}>{number.format(row.coefficient)}</span> : <input inputMode="decimal" value={coefficients[row.id] ?? ''} onChange={e => setCoefficients(c => ({ ...c, [row.id]: e.target.value }))} aria-label={`Koefisien ${row.name}`} />}</label>
               <label>Harga dasar (Rp/{row.unit})<input inputMode="decimal" value={prices[row.id] ?? ''} onChange={e => setPrices(p => ({ ...p, [row.id]: e.target.value }))} aria-label={`Harga dasar ${row.name}`} /></label>
               <span className={styles.amount}>{money(row.amount)}</span>
