@@ -14,7 +14,7 @@ const schema = z.object({
   scope: z.enum(['all', 'jobs', 'components']).default('all'),
   mode: z.enum(['single', 'multiple']).default('single'),
   match: z.enum(['like', 'exact', 'phrases']).default('like'),
-  sipasti: z.enum(['', 'database_only', 'sipasti_only', 'both']).default(''),
+  sipasti: z.enum(['', 'verified', 'needs_review']).default(''),
 })
 export async function GET(request: Request) {
   const parsed = schema.safeParse(Object.fromEntries(new URL(request.url).searchParams))
@@ -54,12 +54,19 @@ export async function GET(request: Request) {
       if (filters.regulation === AHSP_ARCHIVED_REGULATION && search.data.archive_supported !== true) throw { code: 'PGRST202' }
       if (filters.match === 'phrases' && search.data.search_stats?.match !== 'phrases') throw { code: 'PGRST202' }
       if (search.data.items.length) {
-        const references = await db.from('ahsp_items').select('id,analysis_reference').in('id', search.data.items.map((item: { id: string }) => item.id))
-        if (references.error && references.error.code !== '42703') throw references.error
-        if (references.data) search.data.items = search.data.items.map((item: { id: string }) => {
-          const ref = references.data.find(row => row.id === item.id)?.analysis_reference
-          return { ...item, analysis_reference: ref ? { ...ref, source_fingerprint: undefined, target_fingerprint: undefined } : null }
-        })
+        type Version = { id: string }
+        type SearchItem = Version & { versions?: Version[] }
+        const ids = [...new Set<string>(search.data.items.flatMap((item: SearchItem) => [item.id, ...(item.versions ?? []).map(version => version.id)]))]
+        const metadata = new Map<string, { verification_status: 'verified' | 'needs_review'; verification_notes: string[]; analysis_reference: unknown }>()
+        for (let start = 0; start < ids.length; start += 200) {
+          const references = await db.from('ahsp_items').select('id,analysis_reference,verification_status,verification_notes').in('id', ids.slice(start, start + 200))
+          if (references.error) throw references.error.code === '42703' ? { code: 'PGRST202' } : references.error
+          for (const row of references.data ?? []) {
+            const ref = row.analysis_reference
+            metadata.set(row.id, { verification_status: row.verification_status, verification_notes: row.verification_notes, analysis_reference: ref ? { ...ref, source_fingerprint: undefined, target_fingerprint: undefined } : null })
+          }
+        }
+        search.data.items = search.data.items.map((item: SearchItem) => ({ ...item, ...metadata.get(item.id), versions: item.versions?.map(version => ({ ...version, ...metadata.get(version.id) })) }))
       }
       let options = null
       if (filters.options === '1') {

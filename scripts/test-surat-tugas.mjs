@@ -1,9 +1,11 @@
-// Run with npm run dev active. No database writes or external requests.
+// Run against a configured test collection. Generated files stay under .next/.
 import assert from 'node:assert/strict'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import PizZip from 'pizzip'
+import { documentsLiveSession } from './helpers/documents-live-session.mjs'
 
-const base = process.env.DOCUMENTS_TEST_URL || 'http://localhost:3000'
+const { request, data } = await documentsLiveSession()
+const { version_id } = await data('/api/documents/templates/surat_tugas')
 const single = {
   nomor_surat: '123/ST/2026', menimbang_1: 'Pelaksanaan koordinasi teknis.', menimbang_2: '',
   dasar: 'Program kerja tahun 2026.', nama_acara: 'Koordinasi & evaluasi',
@@ -15,9 +17,9 @@ const employees = count => Array.from({ length: count }, (_, index) => ({
   nama_lengkap: `Pegawai Uji ${index + 1}`, golongan: 'III', sub_golongan: 'a',
   nip: `0000000000000000${String(index + 1).padStart(2, '0')}`, jabatan: 'Jabatan untuk pengujian template',
 }))
-const generate = (count, changes = {}) => fetch(`${base}/api/generate`, {
+const generate = (count, changes = {}) => request('/api/generate', {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ code: 'surat_tugas', single: { ...single, ...changes }, groups: { pegawai: employees(count) } }),
+  body: JSON.stringify({ code: 'surat_tugas', version_id, single: { ...single, ...changes }, groups: { pegawai: employees(count) } }),
 })
 mkdirSync('.next/surat-tugas-check', { recursive: true })
 for (const count of [1, 20]) {

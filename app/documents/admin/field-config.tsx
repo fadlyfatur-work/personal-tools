@@ -1,0 +1,28 @@
+'use client'
+import type { TemplateConfig, SingleField } from '@/types/templateSurat'
+import styles from '../documents.module.css'
+export function FieldConfig({ value, onChange }: { value: TemplateConfig; onChange: (value: TemplateConfig) => void }) {
+  const updateSingle = (index: number, field: SingleField) => onChange({ ...value, single: value.single.map((item, i) => i === index ? field : item) })
+  function fields(items: SingleField[], update: (i: number, f: SingleField) => void, remove: (i: number) => void, prefix: string, grouped = false) {
+    return items.map((field, index) => <div key={index} className={styles.entry}>
+      <div className={styles.grid}><label className={styles.label}>Variabel<input required className={styles.input} value={field.key} pattern="[a-zA-Z][a-zA-Z0-9_]{0,79}" onChange={e => update(index, { ...field, key: e.target.value })} /></label><label className={styles.label}>Label isian<input required className={styles.input} value={field.label} onChange={e => update(index, { ...field, label: e.target.value })} /></label></div>
+      <label className={styles.label}>Jenis isian<select className={styles.input} value={field.type || 'text'} onChange={e => update(index, { ...field, type: e.target.value as SingleField['type'] })}>{[['text','Teks'],['textarea','Teks panjang'],['date','Tanggal'],...(!grouped ? [['dateRange','Rentang tanggal']] : []),['select','Pilihan']].map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+      {field.type === 'select' && <label className={styles.label}>Pilihan (satu per baris)<textarea required className={styles.input} value={(field.options || []).join('\n')} onChange={e => update(index, { ...field, options: e.target.value.split('\n') })} /></label>}
+      <div className={styles.actions}><label className={styles.check}><input type="checkbox" checked={!!field.required} onChange={e => update(index, { ...field, required: e.target.checked })} />Wajib diisi</label><button type="button" className={styles.remove} onClick={() => remove(index)} aria-label={`Hapus isian ${prefix} ${field.label || index + 1}`}>Hapus isian</button></div>
+    </div>)
+  }
+  return <section className={styles.panel}><h2>Konfigurasi isian</h2><p className={styles.help}>Nama variabel harus sesuai dengan penanda pada file Word. Atur label yang akan dilihat pengisi surat.</p>
+    <h3>Data surat</h3>{fields(value.single, updateSingle, index => onChange({ ...value, single: value.single.filter((_,i) => i !== index) }), 'surat')}
+    <button type="button" className={styles.secondary} onClick={() => onChange({ ...value, single: [...value.single, { key: '', label: '', type: 'text' }] })}>Tambah isian</button>
+    {value.groups.map((group, index) => {
+      const update = (patch: Partial<typeof group>) => onChange({ ...value, groups: value.groups.map((item,i) => i === index ? { ...group, ...patch } : item) })
+      return <fieldset key={index} className={styles.entry}><legend>Grup {index + 1}</legend><div className={styles.grid}><label className={styles.label}>Variabel grup<input required className={styles.input} value={group.name} onChange={e => update({ name: e.target.value })} /></label><label className={styles.label}>Nama grup<input required className={styles.input} value={group.label} onChange={e => update({ label: e.target.value })} /></label><label className={styles.label}>Baris minimal<input type="number" min={0} max={group.maxItems} className={styles.input} value={group.minItems ?? 0} onChange={e => update({ minItems: Number(e.target.value) })} /></label><label className={styles.label}>Baris maksimal<input type="number" min={1} max={100} className={styles.input} value={group.maxItems} onChange={e => update({ maxItems: Number(e.target.value) })} /></label></div>
+      <label className={styles.check}><input type="checkbox" checked={!!group.repeatRows} onChange={e => update({ repeatRows: e.target.checked })} />Ulangi baris Word untuk setiap data</label>
+      <label className={styles.label}>Tanggal otomatis dari<select className={styles.input} value={group.autoDateFrom || ''} onChange={e => update({ autoDateFrom: e.target.value || undefined, autoDateField: e.target.value ? group.autoDateField || group.fields[0]?.key : undefined })}><option value="">Tanpa tanggal otomatis</option>{value.single.filter(field => field.type === 'dateRange').map(field => <option key={field.key} value={field.key}>{field.label}</option>)}</select></label>
+      {group.autoDateFrom && <label className={styles.label}>Isian tanggal tujuan<select required className={styles.input} value={group.autoDateField || ''} onChange={e => update({ autoDateField: e.target.value })}><option value="">Pilih isian</option>{group.fields.map(field => <option key={field.key} value={field.key}>{field.label}</option>)}</select></label>}
+      {fields(group.fields, (i,field) => update({ fields: group.fields.map((item,j) => i === j ? field : item) }), i => update({ fields: group.fields.filter((_,j) => i !== j) }), group.label, true)}
+      <div className={styles.actions}><button type="button" className={styles.secondary} onClick={() => update({ fields: [...group.fields, { key: '', label: '', type: 'text' }] })}>Tambah isian grup</button><button type="button" className={styles.remove} onClick={() => onChange({ ...value, groups: value.groups.filter((_,i) => i !== index) })}>Hapus grup</button></div></fieldset>
+    })}
+    <div className={styles.actions}><button type="button" className={styles.secondary} onClick={() => onChange({ ...value, groups: [...value.groups, { name: '', label: '', minItems: 1, maxItems: 20, repeatRows: true, fields: [{ key: '', label: '', type: 'text' }] }] })}>Tambah grup</button></div>
+  </section>
+}

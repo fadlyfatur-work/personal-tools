@@ -93,8 +93,12 @@ assert.equal(searchCall[2].p_scope, 'components')
 assert.equal(searchCall[2].p_analysis, 'extracted')
 assert.equal(searchCall[2].p_match, 'like')
 calls = []
-await route.GET(new Request('http://localhost/api/ahsp?sipasti=database_only'))
-assert.equal(calls.find(c => c[0] === 'rpc')[2].p_sipasti, 'database_only', 'SIPASTI status reaches the PostgreSQL search and statistics filter')
+await route.GET(new Request('http://localhost/api/ahsp?sipasti=verified'))
+assert.equal(calls.find(c => c[0] === 'rpc')[2].p_sipasti, 'verified', 'Verification status reaches the PostgreSQL search and statistics filter')
+calls = []
+await route.GET(new Request('http://localhost/api/ahsp?sipasti=needs_review'))
+assert.equal(calls.find(c => c[0] === 'rpc')[2].p_sipasti, 'needs_review')
+assert.equal((await route.GET(new Request('http://localhost/api/ahsp?sipasti=database_only'))).status, 400)
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?sipasti=invalid'))).status, 400)
 calls = []
 await route.GET(new Request('http://localhost/api/ahsp?q=Rambu%20Petunjuk&match=exact'))

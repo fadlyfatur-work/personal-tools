@@ -4,7 +4,7 @@ import { clearPinSession } from '@/lib/fintrackSession'
 
 export async function POST() {
   const supabase = await getSupabaseServer()
-  await supabase.auth.signOut()
+  await supabase.auth.signOut({ scope: 'local' })
   await clearPinSession()
   return NextResponse.json({ success: true })
 }

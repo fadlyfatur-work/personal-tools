@@ -1,35 +1,26 @@
-# Template surat
+# Template surat dan akses koleksi
 
-Menu membuka `/documents`, yang menggabungkan template bawaan dari `lib/documentTemplates.ts` dan tabel Supabase `templates`, diurutkan berdasarkan nama. Kode bawaan diprioritaskan jika duplikat. `/document` mengarah ke katalog yang sama. Tautan lama `/documents/[code]` tetap tersedia.
+Pembaruan: 27 Oktober 2026. `/documents` menampilkan katalog setelah pengunjung memasukkan PIN kelompok instansi/lembaga/divisi. Semua template terbit dengan tag akses tersebut muncul. `/document` tetap menjadi alias; tautan `/documents/[code]` dan `/api/generate` memeriksa akses yang sama.
 
-Surat Tugas (`/documents/surat_tugas`) disertakan bersama file `storage/data/surat_tugas.docx`, tanpa perubahan database. Template ini mendukung 1–20 pegawai, dua poin Menimbang yang diisi pengguna (poin kedua opsional), Dasar, dropdown transportasi darat/udara/air, nomor manual dan periode tanggal. Kop, penandatangan dan paraf mengikuti contoh. `repeatRows` pada grup menghasilkan baris Word dinamis, sedangkan template lama tetap memakai placeholder bernomor tetap.
+Pengguna tidak perlu akun. Login akun biasa tidak membuka koleksi. Pengelola dengan peran admin template masuk melalui `/documents/admin` untuk membuat tag/PIN, mengelola nama, jenis, instansi dan divisi, serta menambah, mengganti atau menghapus template secara logis. PIN tidak dapat dibaca kembali; admin dapat mengganti atau mencabutnya.
 
-Pengguna memilih template yang disediakan, mengisi field sesuai konfigurasi, lalu mengunduh Word. Fitur ini tidak mencakup unggah template oleh pengguna.
+## Mengelola template
 
-## Menambahkan pilihan template
+1. Buat kelompok akses dan PIN pada panel admin.
+2. Buat metadata template, pilih kelompok, unggah DOCX, lalu atur variabel isian melalui formulir konfigurasi.
+3. Uji versi yang dipilih, buka hasil Word, dan tandai sudah diperiksa sebelum menerbitkan.
+4. File pengganti menjadi draf; versi terbit sebelumnya tetap dipakai sampai penggantinya diterbitkan. Versi historis dapat diuji dan diterbitkan kembali.
 
-1. Simpan file `.docx` di `storage/data/` dan pastikan file ikut tersedia saat deployment.
-2. Tambahkan record pada tabel `templates`: `code` unik, `name` untuk tampilan, `file_path` sesuai nama file, dan `fields` sesuai `TemplateConfig` pada `types/templateSurat.ts`.
-3. Gunakan placeholder `{{nama_field}}` untuk field tunggal. Field grup memakai `{{nama_field_1}}`, `{{nama_field_2}}`, dan seterusnya hingga `maxItems`.
-4. Pastikan kebijakan SELECT Supabase yang berlaku mengizinkan pengguna aplikasi membaca template tersebut. Katalog memakai klien yang sama dengan editor lama.
+File berada di bucket privat. Katalog dan editor membaca API protected, bukan tabel `templates` lama. Jika versi berubah saat pengguna mengisi, generator meminta memuat versi terbaru. Ganti PIN yang gagal atau dibatalkan mempertahankan koleksi dan isian sebelumnya; pergantian berhasil mengganti cakupan akses.
 
-Contoh struktur `fields` untuk template surat sederhana:
+## Dua generator sebelumnya
 
-```json
-{
-  "single": [
-    { "key": "nomor_surat", "label": "Nomor surat", "type": "text" },
-    { "key": "tanggal_surat", "label": "Tanggal surat", "type": "date" },
-    { "key": "isi_surat", "label": "Isi surat", "type": "textarea" }
-  ],
-  "groups": []
-}
-```
+Surat Tugas dan Perjadin lama perlu diimpor menjadi draf pada katalog baru, diuji, lalu diterbitkan pada kelompok akses yang dipilih. Prosedur SQL, secret, admin, dan import ada di [panduan Office Suite](office-suite.md). Tidak ada fallback generator publik.
 
-Pilihan baru otomatis tampil; tidak perlu menambahkan tautan atau field pada kode frontend. Format khusus Perjadin (editor keterangan dan batas kegiatan hari kedua) hanya diterapkan pada kode `perjadin_2026`.
+Surat Tugas mempertahankan 1–20 pegawai, Menimbang, Dasar, transportasi darat/udara/air, nomor manual, periode tanggal, kop, penandatangan dan paraf. Isian khusus Perjadin tetap mengikuti kode `perjadin_2026`. Konfigurasi isian bertipe `TemplateConfig` di `types/templateSurat.ts`; file dan konfigurasi selalu mengikuti versi yang sama.
 
 ## Verifikasi
 
-Jalankan `npm run dev`, lalu `node scripts/test-documents.mjs`. Pemeriksaan memakai `.env.local`, membaca konfigurasi template yang tersedia, dan membuat dokumen dengan data uji tanpa menulis ke database. Periksa juga pencarian katalog, tampilan ponsel, fokus keyboard, dan pergantian template melalui browser.
+Tes tanpa Supabase: `node scripts/test-documents-access.mjs`, `node scripts/test-documents-api.mjs`, dan `node scripts/test-documents-ui.mjs`. Tes API menjalankan renderer DOCX serta batas akses menggunakan adapter penyimpanan uji.
 
-Jalankan `node scripts/test-surat-tugas.mjs` untuk menguji 1 dan 20 pegawai, periode satu hari/rentang/lintas bulan, pilihan transportasi, serta penolakan jumlah dan isian tidak valid. Dokumen uji disimpan di `.next/surat-tugas-check/`. Verifikasi struktural tidak menggantikan pemeriksaan halaman hasil render di Word/LibreOffice.
+Tes langsung: jalankan aplikasi yang sudah disiapkan, pasang `DOCUMENTS_TEST_PIN` untuk koleksi uji, lalu `node scripts/test-documents.mjs` atau `node scripts/test-surat-tugas.mjs`. Jangan masukkan PIN pada kode atau commit. Tes memakai cookie akses dan versi template terbit. Hasil uji Surat Tugas berada di `.next/surat-tugas-check/`. Pemeriksaan struktur DOCX tidak menggantikan pemeriksaan tata letak halaman di Word/LibreOffice.

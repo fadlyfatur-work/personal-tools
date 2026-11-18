@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import PizZip from 'pizzip'
+import { loadSuiteModule } from './helpers/load-suite-module.mjs'
+
+assert.ok(fs.existsSync('lib/documents/pin.ts'), 'PIN-per-tag verification must be implemented')
+const pins = loadSuiteModule('lib/documents/pin.ts')
+const policy = loadSuiteModule('lib/documents/policy.ts')
+assert.equal(pins.normalizePin(' 00123 '), '00123')
+for (const invalid of ['1234', '1'.repeat(13), '12 345', '１２３４５', 123456, null]) assert.throws(() => pins.normalizePin(invalid))
+const key = 'test-only-server-key-'.repeat(3)
+assert.equal(pins.pinDigest('00123', key), pins.pinDigest('00123', key))
+assert.notEqual(pins.pinDigest('00123', key), pins.pinDigest('12345', key))
+assert.notEqual(pins.pinDigest('00123', key), pins.pinDigest('00123', key + 'other'))
+const hash = await pins.hashPin('00123')
+assert.notEqual(hash, '00123')
+assert.equal(await pins.verifyPin('00123', hash), true)
+assert.equal(await pins.verifyPin('00124', hash), false)
+const token = await pins.createDocumentGrant({ tagId: 'pu', version: 2 }, key)
+assert.ok(!token.includes('00123'))
+const grant = await pins.readDocumentGrant(token, key)
+assert.equal(grant.tagId, 'pu')
+assert.equal(pins.grantMatchesTag(grant, { id: 'pu', access_version: 2, active: true }), true)
+assert.equal(pins.grantMatchesTag(grant, { id: 'pu', access_version: 3, active: true }), false)
+assert.equal(pins.grantMatchesTag(grant, { id: 'it', access_version: 2, active: true }), false)
+assert.equal(pins.grantMatchesTag(grant, { id: 'pu', access_version: 2, active: false }), false)
+assert.equal(await pins.readDocumentGrant(token, key + 'wrong'), null)
+assert.equal(await pins.readDocumentGrant(token.slice(0, -8), key), null)
+assert.equal(policy.templateAvailable({ status: 'published', access_tag_id: 'pu', active_version_id: 'v' }, 'pu'), true)
+assert.equal(policy.templateAvailable({ status: 'published', access_tag_id: 'it', active_version_id: 'v' }, 'pu'), false)
+assert.equal(policy.templateAvailable({ status: 'deleted', access_tag_id: 'pu', active_version_id: 'v' }, 'pu'), false)
+const fields = { single: [{ key: 'nama', label: 'Nama', required: true }], groups: [] }
+assert.equal(policy.validateTemplateFields(fields).single[0].key, 'nama')
+assert.throws(() => policy.validateTemplateFields({ single: [{ key: '__proto__', label: 'Bad' }], groups: [] }))
+assert.throws(() => policy.validateTemplateFields({ single: [{ key: 'x', label: 'X' }, { key: 'x', label: 'X' }], groups: [] }))
+const fakeDoc = new PizZip()
+fakeDoc.file('[Content_Types].xml', '<Types/>')
+fakeDoc.file('word/document.xml', '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>{{nama}}</w:t></w:r></w:p></w:body></w:document>')
+assert.deepEqual(Array.from(policy.inspectDocx(fakeDoc.generate({ type: 'nodebuffer' })).placeholders), ['nama'])
+fakeDoc.file('word/vbaProject.bin', 'macro')
+assert.throws(() => policy.inspectDocx(fakeDoc.generate({ type: 'nodebuffer' })))
+for (const file of ['app/documents/page.tsx', 'app/documents/[code]/page.tsx']) {
+  const code = fs.readFileSync(file, 'utf8')
+  assert.ok(!code.includes("from '@/lib/supabase'"), 'Client must not bypass protected API')
+  assert.ok(!code.includes("from '@/lib/documentTemplates'"), 'No public bundled fallback')
+}
+console.log('PASS: tag PIN verification, grant signatures/revocation, scoped templates, bounded DOCX and private client boundary.')

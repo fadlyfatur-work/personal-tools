@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.tools/ahsp-sql-test/
 /out/
 
 # production

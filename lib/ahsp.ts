@@ -4,6 +4,11 @@ export const AHSP_ARCHIVED_REGULATION = 'SE 182/2025'
 export const AHSP_CATALOG_REGULATIONS = [...AHSP_ACTIVE_REGULATIONS, AHSP_ARCHIVED_REGULATION]
 export const AHSP_ARCHIVE_NOTICE = 'Digantikan oleh SE 47/2026'
 export const sipastiLabels = { database_only: 'Hanya ada di Database', sipasti_only: 'Hanya ada di SIPASTI', both: 'Verfied' } as const
+export const verificationLabels = { verified: 'Verified', needs_review: 'Need re-verified' } as const
+export type AhspVerificationStatus = keyof typeof verificationLabels
+export function ahspVerificationStatus(item: { verification_status?: AhspVerificationStatus | null }): AhspVerificationStatus {
+  return item.verification_status === 'verified' ? 'verified' : 'needs_review'
+}
 export const reconciliationLabels: Record<string, string> = {
   cocok: 'Cocok', berbeda: 'Berbeda', belum_ditemukan: 'Belum ditemukan',
   perlu_ditinjau: 'Perlu ditinjau', hanya_regulasi: 'Hanya di regulasi',
@@ -11,11 +16,15 @@ export const reconciliationLabels: Record<string, string> = {
 export type AhspComponent = {
   id: string; group: 'tenaga' | 'bahan' | 'alat' | 'smkk'; name: string; code: string;
   unit: string; coefficient: number | null; expression: string; sourceLine: string;
+  description?: string; variables?: { code: string; name: string; unit: string; coefficient: number | null; expression: string; final_value: number | string | null; description: string; var_description: string }[];
 }
 export type AhspItem = {
   id: string; code: string; name: string; unit: string; field: string; division: string;
   regulation: string; ahsp_type: string; regulation_status: string;
   sipasti_status?: keyof typeof sipastiLabels | null;
+  verification_status?: AhspVerificationStatus; verification_notes?: string[];
+  analysis_origin?: 'pdf' | 'sipasti';
+  master_provenance?: { source_name: string; source_sha256: string; checked_at: string; matched: boolean; differences: { kind: string; name?: string; before?: unknown; after?: unknown }[] } | null;
   analysis_target_id?: string | null; analysis_reference?: AhspAnalysisReference | null;
   reconciliation_status: string; reconciliation_notes: string[];
   source_id: string | null; page_from: number | null; page_to: number | null;
@@ -28,7 +37,7 @@ export type AhspAnalysisReference = {
   status: 'verified' | 'review' | 'missing'; source_id: string; source_page: number; citation: string;
   notes: string[]; source_fingerprint?: string; target_fingerprint?: string;
 }
-export type AhspVersion = Pick<AhspItem, 'id' | 'code' | 'name' | 'unit' | 'field' | 'division' | 'regulation' | 'ahsp_type' | 'analysis_status' | 'source_id' | 'page_from' | 'page_to' | 'sipasti_status' | 'analysis_reference'>
+export type AhspVersion = Pick<AhspItem, 'id' | 'code' | 'name' | 'unit' | 'field' | 'division' | 'regulation' | 'ahsp_type' | 'analysis_status' | 'source_id' | 'page_from' | 'page_to' | 'sipasti_status' | 'analysis_reference' | 'verification_status' | 'verification_notes'>
 export type AhspSummary = AhspVersion & { matched_components?: string[]; versions?: AhspVersion[] }
 export function ahspAnalysisFingerprint(item: AhspItem) {
   return JSON.stringify([item.id, item.code, item.name, item.unit, item.regulation, item.source_id, item.page_from, item.page_to,
@@ -41,7 +50,7 @@ export function canUseAhspReference(item: AhspItem, target: AhspItem | null) {
     && ref.target_code === target.code && ref.target_regulation === target.regulation && target.analysis_status === 'extracted'
     && target.components.length && ref.source_fingerprint === ahspAnalysisFingerprint(item) && ref.target_fingerprint === ahspAnalysisFingerprint(target))
 }
-export type AhspSource = { id: string; title: string; annex: string; url: string; page_count: number; checked_at: string; sha256: string; assets: { url: string; page_start: number; page_end: number; preview_base_url?: string }[] }
+export type AhspSource = { id: string; title: string; annex: string; url: string; page_count: number; checked_at: string; sha256: string; assets: { url: string; page_start: number; page_end: number }[] }
 export type AhspOptions = {
   total: number; version_total?: number; fields: string[]; divisions: { field: string; division: string }[];
   units: string[]; statuses: { status: string; count: number }[];

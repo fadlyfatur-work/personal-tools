@@ -16,6 +16,7 @@ export type RabRow = {
   excluded: boolean; exclusion: string; status: 'pending' | 'review' | 'missing' | 'matched';
   candidate: RabCandidate | null; candidates: RabCandidate[]; manual: boolean; resolution: string;
   history: string[]; noMatch?: boolean;
+  document?: { kind: 'pdf' | 'image'; filename: string; page: number };
 }
 export const rabText = (value: string) => value.normalize('NFKC').toLocaleLowerCase('id-ID').replace(/\s+/g, ' ').trim()
 const rabUnitAliases = new Map([

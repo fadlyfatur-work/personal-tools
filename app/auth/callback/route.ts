@@ -33,10 +33,10 @@ export async function GET(req: NextRequest) {
     await bootstrapFintrackUser(user.id, user.email, displayName)
     const { data: profile } = await supabaseAdmin.from('fintrack_users').select('pin_version').eq('id', user.id).single()
     await createPinSession(user.id, Number(profile?.pin_version || 0))
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
   } catch (bootstrapError) {
     console.error(bootstrapError)
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: 'local' })
     return NextResponse.redirect(new URL('/fintrack/login?error=bootstrap', req.url))
   }
 
