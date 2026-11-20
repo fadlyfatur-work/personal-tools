@@ -1,7 +1,7 @@
 export const AHSP_REGULATION = 'SE 47/2026'
 export const AHSP_ACTIVE_REGULATIONS = ['SE 47/2026', 'PERMEN 08/2023']
 export const AHSP_ARCHIVED_REGULATION = 'SE 182/2025'
-export const AHSP_CATALOG_REGULATIONS = [...AHSP_ACTIVE_REGULATIONS, AHSP_ARCHIVED_REGULATION]
+export const AHSP_CATALOG_REGULATIONS = [...AHSP_ACTIVE_REGULATIONS, AHSP_ARCHIVED_REGULATION, 'SPTJM']
 export const AHSP_ARCHIVE_NOTICE = 'Digantikan oleh SE 47/2026'
 export const sipastiLabels = { database_only: 'Hanya ada di Database', sipasti_only: 'Hanya ada di SIPASTI', both: 'Verfied' } as const
 export const verificationLabels = { verified: 'Verified', needs_review: 'Need re-verified' } as const

@@ -1,5 +1,9 @@
 # Migrasi Supabase
 
+## Master SPTJM 19 November 2026
+
+Setelah migrasi katalog/verifikasi AHSP Oktober, jalankan `migrations/202611190001_ahsp_sptjm_catalog.sql` melalui SQL Editor agar SPTJM dapat dicari/dibuka. Migrasi hanya memperluas view katalog. Data master diimpor terpisah, tanpa komponen, dengan status Need re-verified. Lihat [prosedur dan bukti penerapan](../docs/ahsp-master-list.md).
+
 ## Laporan ASB
 
 Terapkan migration `202611110001_report.sql`, `202611170001_report_optional_correction.sql`, lalu `202611180001_report_recaps.sql` secara manual untuk `/report`, atau gunakan file lokal `.next/report-activation.sql` dari `node scripts/setup-report.mjs prepare` untuk menyiapkan schema, dua PIN dan sumber PDF awal. PIN awal dibaca dari environment/file lokal yang diabaikan Git; migration yang dikomit tidak memuat nilainya. File aktivasi privat, tidak menimpa PIN/laporan lama. Lihat [panduan laporan](../docs/report.md).

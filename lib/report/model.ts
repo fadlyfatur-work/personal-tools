@@ -44,6 +44,14 @@ export type ReportChange = {id:number;report_date:string;revision:number;created
 export type ReportHistoryPoint = {date:string;summary:{all:ReturnType<typeof summarize>;provinces:{id:string;total:number|null;integrated:number|null;percent:number|null;accounts:number}[]}}
 export const provinceName = (id:string,customName?:string) => PROVINCES.find(item=>item[0]===id)?.[1] || customName || id.replace(/^tambahan-/,'').replaceAll('-',' ').replace(/\b\p{L}/gu,letter=>letter.toUpperCase())
 export const accountLabel = (account:AccountInfo) => ({ada:'Ada',tc:'T/C',tidak_ada:'Tidak ada'})[account.status]
+export function recordedAccountCount(account:AccountInfo):number|null {
+  if(account.status==='tc')return null
+  if(account.status==='tidak_ada')return 0
+  return account.count ?? (account.details.filter(detail=>detail.label.trim()).length || null)
+}
+export function recordedAccountsByRole(doc:ReportDocument){
+  return ROLES.map(role=>doc.provinces.reduce((total,p)=>total+(recordedAccountCount(p.accounts[role])??0),0))
+}
 export const dateLabel = (value:string) => new Intl.DateTimeFormat('id-ID',{dateStyle:'long',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`))
 export const timeLabel = (value:string|null) => value ? `${new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Jakarta'}).format(new Date(value))} WIB` : 'Belum tersedia'
 export const today = () => new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
@@ -168,5 +176,5 @@ export function summarize(doc:ReportDocument) {
   const integratedCoverage=doc.provinces.length
   const totalPackages=doc.provinces.reduce((sum,p)=>sum+provinceSummary(p).totalPackages,0)
   const integratedPackages=doc.provinces.reduce((sum,p)=>sum+provinceSummary(p).integratedPackages,0)
-  return {provinceCount:doc.provinces.length,roles,provincesWithAccounts:doc.provinces.filter(p=>ROLES.some(role=>p.accounts[role].status==='ada')).length,accountCount:accountEntries.reduce((sum,a)=>sum+(a.count||0),0),accountCountComplete:accountEntries.every(a=>a.count!==null),packageCoverage,integratedCoverage,totalPackages,integratedPackages,integrationPercent:packageCoverage===doc.provinces.length&&integratedCoverage===doc.provinces.length?integration(totalPackages,integratedPackages):null,completedSteps:doc.provinces.reduce((sum,p)=>sum+provinceSummary(p).completedSteps,0)}
+  return {provinceCount:doc.provinces.length,roles,provincesWithAccounts:doc.provinces.filter(p=>ROLES.some(role=>p.accounts[role].status==='ada')).length,accountCount:accountEntries.reduce((sum,a)=>sum+(recordedAccountCount(a)??0),0),accountCountComplete:accountEntries.every(a=>a.count!==null),packageCoverage,integratedCoverage,totalPackages,integratedPackages,integrationPercent:packageCoverage===doc.provinces.length&&integratedCoverage===doc.provinces.length?integration(totalPackages,integratedPackages):null,completedSteps:doc.provinces.reduce((sum,p)=>sum+provinceSummary(p).completedSteps,0)}
 }

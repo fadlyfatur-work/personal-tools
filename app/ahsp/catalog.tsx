@@ -217,7 +217,7 @@ export default function AhspCatalog() {
     ? { ...itemDetail, source_id: reference.source_id, page_from: reference.source_page, page_to: reference.source_page, source_text: reference.citation }
     : sourceView === 'origin' ? itemDetail : referenceTarget ?? itemDetail
   const fieldSources: Record<string, string> = { 'Sumber Daya Air': '10901', 'Bina Marga': '10903', 'Cipta Karya / Perumahan': '10904', SMKK: '10899', Umum: 'permen08-2023' }
-  const source = options?.sources.find(s => s.id === documentItem?.source_id) ?? (documentItem?.regulation === AHSP_ARCHIVED_REGULATION ? undefined : options?.sources.find(s => s.id === (documentItem?.regulation === 'PERMEN 08/2023' ? 'permen08-2023' : fieldSources[documentItem?.field ?? ''])))
+  const source = options?.sources.find(s => s.id === documentItem?.source_id) ?? (documentItem?.regulation === AHSP_ARCHIVED_REGULATION || documentItem?.regulation === 'SPTJM' ? undefined : options?.sources.find(s => s.id === (documentItem?.regulation === 'PERMEN 08/2023' ? 'permen08-2023' : fieldSources[documentItem?.field ?? ''])))
   const result = detail ? calculateAhsp(detail, {
     volume: parseAhspNumber(volume), overhead: detail.field === 'SMKK' ? 0 : parseAhspNumber(overhead),
     prices: Object.fromEntries(Object.entries(prices).map(([id, value]) => [id, parseAhspNumber(value)])),
@@ -251,7 +251,7 @@ export default function AhspCatalog() {
       </div>
       {showSources && <section className={styles.sources} data-ahsp-panel aria-label="Sumber dan cakupan">
         <h2>Dokumen dan hasil inventarisasi</h2>
-        <p>Katalog memuat SE 47/2026 serta bidang Umum dan SMKK dari Permen 8/2023. SE 182/2025 tersedia sebagai arsip dari ekspor SIPASTI dan sudah digantikan oleh SE 47/2026. Pilih regulasi arsip untuk melihatnya. Rincian komponen dan halaman lampiran edisi arsip belum tersedia.</p>
+        <p>Katalog memuat SE 47/2026 serta bidang Umum dan SMKK dari Permen 8/2023. SE 182/2025 tersedia sebagai arsip. Master SPTJM dari ekspor SIPASTI tersedia melalui filter Regulasi dengan status Need re-verified; rincian komponen, koefisien, dan rumusnya belum tersedia.</p>
         {checkedAt && <p>Dokumen diperiksa: {new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeZone: 'Asia/Jakarta' }).format(new Date(checkedAt))}.</p>}
         {options?.analysis.map(a => <p key={a.status}>{analysisLabels[a.status as keyof typeof analysisLabels]}: {number.format(a.count)} item.</p>)}
         {!!options?.types?.length && <><h3 className={styles.typeHeading}>Jenis item dalam katalog</h3><p>{options.types.map(type => `${ahspTypeLabel(type.type)}: ${number.format(type.count)}`).join(' · ')}.</p><p>Normatif dan Informatif mengikuti daftar lampiran untuk item hasil inventarisasi, atau label ekspor untuk item tambahan SIPASTI. SMKK SE 47/2026 mengikuti kelompok A.7 pada daftar isi Lampiran V, halaman PDF 4. Jenis SMKK Permen 8/2023 mengikuti ekspor SIPASTI; rincian lampirannya belum terpetakan. Label yang belum terpetakan ditampilkan sebagai belum teridentifikasi.</p></>}
@@ -395,7 +395,7 @@ export default function AhspCatalog() {
           <strong className={styles.sipastiTag} data-verification={ahspVerificationStatus(itemDetail ?? detail)}>{verificationLabels[ahspVerificationStatus(itemDetail ?? detail)]}</strong>
           {itemDetail?.verification_notes?.length ? <ul>{itemDetail.verification_notes.map(note => <li key={note}>{note}</li>)}</ul> : <p>{itemDetail?.verification_status === 'verified' ? 'Pekerjaan sudah diverifikasi dengan data SIPASTI.' : 'Pekerjaan ini belum verifikasi master terbaru.'}</p>}
           {
-            itemDetail?.master_provenance && <p>
+            itemDetail?.master_provenance?.checked_at && <p>
             Diperiksa {new Date(itemDetail.master_provenance.checked_at).toLocaleDateString('id-ID')}.</p>
           }
           {itemDetail?.master_provenance?.differences?.length ? <details><summary>Perbedaan dengan katalog sebelumnya ({itemDetail.master_provenance.differences.length})</summary><ul>{itemDetail.master_provenance.differences.map((difference, index) => <li key={index}>{({ name: 'Nama pekerjaan', unit: 'Satuan pekerjaan', coefficient_difference: 'Koefisien berbeda', old_component_only: 'Komponen lama tidak ditemukan di JSON', component_multiplicity: 'Jumlah komponen sejenis berbeda' } as Record<string, string>)[difference.kind] ?? difference.kind}{difference.name ? `: ${difference.name}` : ''}{difference.before !== undefined && ` · Sebelumnya: ${JSON.stringify(difference.before)}`}{difference.after !== undefined && ` · JSON: ${JSON.stringify(difference.after)}`}</li>)}</ul></details> : null}

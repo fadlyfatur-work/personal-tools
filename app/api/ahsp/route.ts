@@ -9,7 +9,7 @@ const schema = z.object({
   division: z.string().max(240).default(''), unit: z.string().max(80).default(''),
   status: z.enum(['','cocok','berbeda','belum_ditemukan','perlu_ditinjau','hanya_regulasi']).default(''),
   options: z.enum(['0','1']).default('0'),
-  regulation: z.enum(['', 'SE 47/2026', 'PERMEN 08/2023', 'SE 182/2025']).default(''),
+  regulation: z.enum(['', 'SE 47/2026', 'PERMEN 08/2023', 'SE 182/2025', 'SPTJM']).default(''),
   analysis: z.enum(['', 'extracted', 'needs_review', 'unavailable']).default(''),
   scope: z.enum(['all', 'jobs', 'components']).default('all'),
   mode: z.enum(['single', 'multiple']).default('single'),

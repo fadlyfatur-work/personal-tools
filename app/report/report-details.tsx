@@ -1,18 +1,21 @@
 'use client'
 
-import {useEffect,useRef,useState,type ReactNode} from 'react'
+import {useEffect,useId,useRef,useState,type ReactNode} from 'react'
 import {Plus,Trash,X} from '@phosphor-icons/react'
-import {ROLES,ROLE_LABELS,STEPS,STEP_LABELS,WORKFLOW_STATUS,newPackage,setPackageName,provinceName,provinceSummary,timeLabel,workflowStatusOf,type ProvinceReport,type ReportPackage,type AccountRole,type AccountDetail} from '@/lib/report/model'
+import {ROLES,ROLE_LABELS,STEPS,STEP_LABELS,WORKFLOW_STATUS,newPackage,setPackageName,provinceName,provinceSummary,recordedAccountCount,timeLabel,workflowStatusOf,type ProvinceReport,type ReportPackage,type AccountRole,type AccountDetail} from '@/lib/report/model'
 import s from './report.module.css'
 
-export function ReportDialog({title,children,onClose,busy=false,onDelete,deletePrompt='Data ini akan dihapus dari draft.'}:{title:string;children:ReactNode;onClose:()=>void;busy?:boolean;onDelete?:()=>void;deletePrompt?:string}) {
+export function ReportDialog({title,children,onClose,busy=false,wide=false,progressLabel,onDelete,deletePrompt='Data ini akan dihapus dari draft.'}:{title:string;children:ReactNode;onClose:()=>void;busy?:boolean;wide?:boolean;progressLabel?:string;onDelete?:()=>void;deletePrompt?:string}) {
   const ref=useRef<HTMLDialogElement>(null)
+  const titleId=useId()
   const [confirmDelete,setConfirmDelete]=useState(false)
   useEffect(()=>{const dialog=ref.current;dialog?.showModal();return()=>{dialog?.close()}},[])
-  return <dialog ref={ref} className={s.dialog} aria-labelledby="report-dialog-title" onCancel={event=>{event.preventDefault();if(!busy)onClose()}}>
-    <header className={s.dialogHeader}><h2 id="report-dialog-title">{title}</h2><div className={s.dialogActions}>{onDelete&&<button className={s.dangerIconButton} type="button" onClick={()=>setConfirmDelete(true)} disabled={busy} aria-label="Hapus data provinsi" title="Hapus data provinsi"><Trash size={18}/></button>}<button className={s.iconButton} type="button" onClick={onClose} disabled={busy} aria-label="Tutup panel"><X size={20}/></button></div></header>
+  return <dialog ref={ref} className={wide?`${s.dialog} ${s.wideDialog}`:s.dialog} aria-labelledby={titleId} onCancel={event=>{event.preventDefault();if(!busy)onClose()}}>
+    <header className={s.dialogHeader}><h2 id={titleId}>{title}</h2><div className={s.dialogActions}>{onDelete&&<button className={s.dangerIconButton} type="button" onClick={()=>setConfirmDelete(true)} disabled={busy} aria-label="Hapus data provinsi" title="Hapus data provinsi"><Trash size={18}/></button>}<button className={s.iconButton} type="button" onClick={onClose} disabled={busy} aria-label="Tutup panel"><X size={20}/></button></div></header>
     <div className={s.dialogBody}>{confirmDelete&&onDelete?<section className={s.deleteConfirm} role="alertdialog" aria-label="Konfirmasi hapus data"><p>{deletePrompt}</p><div><button className={s.button} type="button" onClick={()=>setConfirmDelete(false)} disabled={busy}>Batal</button><button className={s.dangerButton} type="button" onClick={()=>{onDelete();setConfirmDelete(false)}} disabled={busy}><Trash size={16}/>Hapus data</button></div></section>:children}</div>
-    {busy&&<div className={s.dialogSavingOverlay} role="status" aria-live="polite"><span className={s.savingIndicator}>Menyimpan perubahan...</span></div>}
+    {busy&&<div className={s.dialogSavingOverlay} role="status" aria-live="polite">{progressLabel
+      ? <div className={s.importProgress}><strong>{progressLabel}</strong><progress aria-label={progressLabel}/></div>
+      : <span className={s.savingIndicator}>Menyimpan perubahan...</span>}</div>}
   </dialog>
 }
 export function ConfirmDialog({title,children,onClose,onConfirm,confirmLabel='Hapus data',busy=false,confirmDisabled=false}:{title:string;children:ReactNode;onClose:()=>void;onConfirm:()=>void;confirmLabel?:string;busy?:boolean;confirmDisabled?:boolean}){
@@ -32,7 +35,9 @@ export function AccountPanel({province,role,editable,canSave,onChange,onSave}:{p
     <p className={s.panelIntro}>{ROLE_LABELS[role]} di {provinceName(province.id,province.name)}. T/C berarti sumber belum mencatat akun. Status ini tidak memastikan akun belum tersedia.</p>
     <fieldset disabled={!editable} className={s.formFields}>
       <div className={s.formRow}><label>Status akun<select value={a.status} onChange={e=>onChange(p=>{const next=e.target.value as typeof a.status;p.accounts[role].status=next;p.accounts[role].count=next==='tidak_ada'?0:next==='tc'?null:p.accounts[role].count===0?null:p.accounts[role].count})}><option value="ada">Ada</option><option value="tc">T/C - tidak tercatat</option><option value="tidak_ada">Tidak ada · sudah dikonfirmasi</option></select></label>
-      <label>Jumlah akun<input type="number" min={a.status==='ada'?1:0} max={1000000} value={a.count??''} disabled={a.status!=='ada'} placeholder="Belum diketahui" onChange={e=>onChange(p=>{p.accounts[role].count=numeric(e.target.value)})}/></label></div>
+      <label>Jumlah akun<input type="number" min={a.status==='ada'?1:0} max={1000000} value={a.count??''} disabled={a.status!=='ada'} placeholder={recordedAccountCount(a)?.toString()??'Belum diketahui'} onChange={e=>onChange(p=>{p.accounts[role].count=numeric(e.target.value)})}/>
+        {a.status==='ada'&&a.count===null&&recordedAccountCount(a)!==null&&<small>Dihitung dari rincian akun yang sudah diberi nama.</small>}
+      </label></div>
       <label>Catatan peran<textarea rows={2} maxLength={3000} value={a.note} onChange={e=>onChange(p=>{p.accounts[role].note=e.target.value})}/></label>
       <div className={s.sectionHeader}><h3>Rincian akun</h3>{editable&&<button type="button" className={s.button} disabled={a.status!=='ada'} onClick={()=>onChange(p=>{p.accounts[role].details.push({id:crypto.randomUUID(),label:'',institution:'',email:'',note:''})})}><Plus size={16}/>Tambah akun</button>}</div>
       {!a.details.length&&<p className={s.quiet}>Rincian akun belum diisi. Data awal hanya mencatat status pembuatan akun.</p>}

@@ -276,8 +276,20 @@ assert.ok(text(find(tree, node => node.props.className === 'analysisInfo')).incl
 button(tree, 'Cara hitung dan lampiran').props.onClick(); tree = render()
 assert.equal(find(tree, node => node.type?.name === 'SourceReference').props.source, undefined, 'An archived master item cannot fall back to a latest-edition PDF')
 button(tree, 'Tutup').props.onClick(); tree = render()
+sampleItem.regulation = 'SPTJM'
+sampleItem.verification_status = 'needs_review'
+sampleItem.analysis_origin = 'sipasti'
+field(tree, 'Regulasi').props.onChange({ target: { value: 'SPTJM' } }); tree = render(); await drain(); tree = render()
+assert.ok(nodes(field(tree, 'Regulasi')).some(node => node.type === 'option' && node.props.value === 'SPTJM'))
+find(tree, node => node.props['aria-label'] === 'Buka analisis 1.22.(7a): Rambu Petunjuk').props.onClick(); tree = render()
+await new Promise(resolve => setImmediate(resolve)); tree = render()
+assert.ok(text(find(tree, node => node.props.className === 'verificationPanel')).includes('Need re-verified'))
+button(tree, 'Cara hitung dan lampiran').props.onClick(); tree = render()
+assert.equal(find(tree, node => node.type?.name === 'SourceReference').props.source, undefined, 'SPTJM tidak memakai fallback PDF SE 47/2026')
+button(tree, 'Tutup').props.onClick(); tree = render()
 sampleItem.regulation = 'SE 47/2026'
 sampleItem.analysis_status = 'extracted'
+sampleItem.analysis_origin = 'pdf'
 for (const effect of effects) effect?.cleanup?.()
 states.length = 0; effects.length = 0; jobs.length = 0; requests.length = 0
 catalogueFailure = true

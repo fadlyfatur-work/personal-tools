@@ -4,14 +4,23 @@ import {useCallback,useEffect,useRef,useState} from 'react'
 import dynamic from 'next/dynamic'
 import {ArrowClockwise,CaretDown,ChartLineUp,Check,Clock,DownloadSimple,Eye,FileXls,Gear,Minus,NotePencil,PencilSimple,Plus,SignOut,Table,Trash,UploadSimple,Warning,X} from '@phosphor-icons/react'
 import {SuiteSurface,ThemePicker} from '@/app/tools/components/suite-theme'
-import {ROLES,ROLE_LABELS,STEPS,STEP_LABELS,WORKFLOW_STATUS,accountLabel,dateLabel,newPackage,newProvince,provinceName,provinceSummary,setPackageName,sortProvinces,stepSummary,summarize,timeLabel,today,validateDocument,workflowStatusOf,type AccountRole,type ProvinceReport,type ReportPackage,type ReportDocument,type ReportSnapshot,type ReportHistoryPoint,type ReportChange,type Step,type WorkflowStatus} from '@/lib/report/model'
+import {ROLES,ROLE_LABELS,STEPS,STEP_LABELS,WORKFLOW_STATUS,accountLabel,dateLabel,newPackage,newProvince,provinceName,provinceSummary,recordedAccountCount,recordedAccountsByRole,setPackageName,sortProvinces,stepSummary,summarize,timeLabel,today,validateDocument,workflowStatusOf,type AccountRole,type ProvinceReport,type ReportPackage,type ReportDocument,type ReportSnapshot,type ReportHistoryPoint,type ReportChange,type Step,type WorkflowStatus} from '@/lib/report/model'
 import {ReportDialog,ConfirmDialog,AccountPanel,ProvincePanel,PackagePanel,AccessPanel} from './report-details'
+import {ReportImport,type ImportTarget} from './report-import'
+import {selectImportRows,type ImportMode,type ImportRow} from '@/lib/report/import'
 import s from './report.module.css'
 
 const ReportChart=dynamic(()=>import('./report-chart'),{loading:()=> <p role="status" className={s.notice}>Menyiapkan grafik perkembangan...</p>})
 type Payload={role:'admin'|'user';snapshot:ReportSnapshot|null;previous:ReportSnapshot|null;initial:ReportDocument|null;history:ReportHistoryPoint[];changes:ReportChange[];recapSavedForToday:boolean}
 type Modal={type:'account';id:string;role:AccountRole}|{type:'province';id:string}|{type:'package';id:string;packageId:string}|{type:'workflow';id:string;step:Step}|{type:'access'}|{type:'addProvince'}|null
 class ReportRequestError extends Error{constructor(message:string,public status:number){super(message)}}
+function SummaryValue({value,previous}:{value:number|null;previous?:number}){
+  const change=value!==null&&previous!==undefined?value-previous:0
+  return <strong>{value?.toLocaleString('id-ID')??'—'}{change!==0&&
+    <small className={s.reportSummaryDelta} aria-label={`Perubahan dibanding rekap sebelumnya: ${change>0?'+':''}${change}`}>
+      ({change>0?'+':''}{change.toLocaleString('id-ID')})
+    </small>}</strong>
+}
 function ReportLoader({checkingAccess}:{checkingAccess:boolean}){
   return <div className={s.reportLoader} role="status">
     <span className={s.srOnly}>{checkingAccess?'Memeriksa akses…':'Memuat laporan…'}</span>
@@ -119,20 +128,20 @@ function matchesQuickFilter(p:ProvinceReport,stage:FilterStage,status:FilterStat
 export default function ReportClient(){
   const [data,setData]=useState<Payload|null>(null),[role,setRole]=useState<'admin'|'user'|null>(null)
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[pin,setPin]=useState('')
-  const [draft,setDraft]=useState<ReportDocument|null>(null),[editing,setEditing]=useState(false),[order,setOrder]=useState<string[]>([]),[reason,setReason]=useState(''),[source,setSource]=useState<'manual'|'import'>('manual')
+  const [draft,setDraft]=useState<ReportDocument|null>(null),[editing,setEditing]=useState(false),[order,setOrder]=useState<string[]>([]),[reason,setReason]=useState('')
   const [modal,setModal]=useState<Modal>(null),[query,setQuery]=useState(''),[tab,setTab]=useState<'table'|'chart'|'history'>('table'),[filterStage,setFilterStage]=useState<FilterStage>('all'),[filterStatus,setFilterStatus]=useState<FilterStatus>('all')
-  const [range,setRange]=useState({from:'2026-11-10',to:today()}),[preview,setPreview]=useState<{document:ReportDocument;changes:string[]}|null>(null)
+  const [range,setRange]=useState({from:'2026-11-10',to:today()}),[importTarget,setImportTarget]=useState<ImportTarget|null>(null)
   const [viewingRecap,setViewingRecap]=useState('')
   const [pending,setPending]=useState<{action:(latest?:ReportSnapshot)=>void;label:string}|null>(null)
   const [newProvinceLabel,setNewProvinceLabel]=useState(''),[addProvinceError,setAddProvinceError]=useState('')
-  const fileInput=useRef<HTMLInputElement>(null),loadId=useRef(0)
+  const loadId=useRef(0)
   const maxDate=today(),date=data?.snapshot?.date||today(),document=draft||data?.snapshot?.document||data?.initial||null
   const labelProvince=(id:string)=>{const province=document?.provinces.find(row=>row.id===id);return provinceName(id,province?.name)}
   const baseline=data?.snapshot?.document||data?.initial
   const dirty=Boolean(draft&&baseline)&&JSON.stringify(draft)!==JSON.stringify(baseline)
   const applyPayload=useCallback((result:Payload)=>{
     const snapshot=result.snapshot?{...result.snapshot,document:validateDocument(result.snapshot.document)}:null,initial=result.initial?validateDocument(result.initial):null
-    setRole(result.role);setData({...result,snapshot,initial});setDraft(null);setEditing(false);setReason('');setSource('manual')
+    setRole(result.role);setData({...result,snapshot,initial});setDraft(null);setEditing(false);setReason('')
     setOrder(snapshot?sortProvinces(snapshot.document.provinces).map(p=>p.id):initial?sortProvinces(initial.provinces).map(p=>p.id):[])
   },[])
   const applyError=useCallback((error:unknown)=>{
@@ -163,7 +172,11 @@ export default function ReportClient(){
   },[applyPayload,applyError])
   useEffect(()=>{if(!dirty)return;const prevent=(event:BeforeUnloadEvent)=>{event.preventDefault()};window.addEventListener('beforeunload',prevent);return()=>window.removeEventListener('beforeunload',prevent)},[dirty])
   const summary=document?summarize(document):null
-  const previousSummary=data?.previous?.document?summarize(validateDocument(data.previous.document)):data?.history.filter(point=>point.date<(viewingRecap||data.snapshot?.date||today())).at(-1)?.summary.all||null
+  const previousDocument=data?.previous?validateDocument(data.previous.document):null
+  const previousPoint=data?.history.filter(point=>point.date<date).at(-1)
+  const previousSummary=previousDocument?summarize(previousDocument):previousPoint?.summary.all
+  const previousAccounts=previousDocument?recordedAccountsByRole(previousDocument):undefined
+  const accountCounts=document?recordedAccountsByRole(document):[]
   function updateProvince(id:string,update:(province:ProvinceReport)=>void){
     setDraft(current=>{if(!current)return current;const next=structuredClone(current),province=next.provinces.find(p=>p.id===id);if(province)update(province);return next});setNotice('')
   }
@@ -205,7 +218,7 @@ export default function ReportClient(){
     const document=validateDocument(saved.document),snapshot={...saved,document}
     const historyPoint:ReportHistoryPoint={date:saved.date,summary:{all:summarize(document),provinces:document.provinces.map(p=>{const summary=provinceSummary(p);return {id:p.id,total:summary.totalPackages,integrated:summary.integratedPackages,percent:summary.percent,accounts:ROLES.filter(accountRole=>p.accounts[accountRole].status==='ada').length}})}}
     const change:ReportChange={id:-saved.revision,report_date:saved.date,revision:saved.revision,created_at:saved.updated_at,actor_role:role||'user',source,reason,changed_provinces:changed}
-    setData(current=>current?{...current,snapshot,initial:null,history:[...current.history.filter(point=>point.date!==saved.date),historyPoint].sort((a,b)=>a.date.localeCompare(b.date)),changes:[change,...(current.snapshot?.date===saved.date?current.changes:[])].slice(0,50),recapSavedForToday:recapSaved||current.recapSavedForToday}:current)
+    setData(current=>current?{...current,snapshot,previous:current.snapshot&&current.snapshot.date<saved.date?current.snapshot:current.previous,initial:null,history:[...current.history.filter(point=>point.date!==saved.date),historyPoint].sort((a,b)=>a.date.localeCompare(b.date)),changes:[change,...(current.snapshot?.date===saved.date?current.changes:[])].slice(0,50),recapSavedForToday:recapSaved||current.recapSavedForToday}:current)
     setDraft(null);setEditing(false);setOrder(sortProvinces(document.provinces).map(p=>p.id))
   }
   async function save(propagateError=false,documentOverride?:ReportDocument):Promise<ReportSnapshot|null>{
@@ -219,8 +232,8 @@ export default function ReportClient(){
       validateDocument(documentToSave)
       const before=data?.snapshot?.document||data?.initial
       const changed=documentToSave.provinces.filter(p=>JSON.stringify(p)!==JSON.stringify(before?.provinces.find(row=>row.id===p.id))).map(p=>p.id)
-      const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({date,revision:data?.snapshot?.revision||0,document:documentToSave,source,reason})})
-      applySavedSnapshot(saved,source,changed,reason);setNotice(`Perubahan ${dateLabel(saved.date)} berhasil disimpan · Revisi ${saved.revision}.`);return saved
+      const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({date,revision:data?.snapshot?.revision||0,document:documentToSave,source:'manual',reason})})
+      applySavedSnapshot(saved,'manual',changed,reason);setNotice(`Perubahan ${dateLabel(saved.date)} berhasil disimpan · Revisi ${saved.revision}.`);return saved
     }catch(error){const message=error instanceof Error?error.message:'Perubahan belum tersimpan. Draft tetap tersedia.';setError(message);if(propagateError)throw new Error(message);return null}finally{setBusy('')}
   }
   async function saveProvinceNotes(provinceId:string,analysis:string,followUp:string):Promise<void>{
@@ -233,8 +246,8 @@ export default function ReportClient(){
     province.notesHistory.push({id:crypto.randomUUID(),analysis,followUp,createdAt:null})
     setBusy('note');setError('');setNotice('')
     try{
-      const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({date,revision:data?.snapshot?.revision||0,document:next,source,reason})})
-      applySavedSnapshot(saved,source,[provinceId],reason);setNotice(`Catatan ${labelProvince(provinceId)} tersimpan dalam riwayat. Revisi ${saved.revision}.`)
+      const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({date,revision:data?.snapshot?.revision||0,document:next,source:'manual',reason})})
+      applySavedSnapshot(saved,'manual',[provinceId],reason);setNotice(`Catatan ${labelProvince(provinceId)} tersimpan dalam riwayat. Revisi ${saved.revision}.`)
     }finally{setBusy('')}
   }
   function guard(label:string,action:(latest?:ReportSnapshot)=>void){if(dirty)setPending({label,action});else action()}
@@ -290,28 +303,45 @@ export default function ReportClient(){
     setBusy('pdf');setError('')
     try{const {createReportPdf}=await import('@/lib/report/pdf');createReportPdf(snapshot).save(`Laporan-ASB-${snapshot.date}.pdf`)}catch(error){setError(error instanceof Error?error.message:'PDF belum dapat dibuat.')}finally{setBusy('')}
   }
+  async function downloadTemplate(document:ReportDocument,date:string){
+    const {createReportWorkbook}=await import('@/lib/report/excel')
+    download(createReportWorkbook(document,date),`Template-ASB-${date}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  }
   async function template(latest?:ReportSnapshot){
     const snapshot=latest||data?.snapshot,templateDocument=snapshot?.document||data?.initial
     if(!templateDocument){setError('Data laporan belum tersedia untuk membuat template.');return}
     setBusy('excel');setError('')
-    try{const {createReportWorkbook}=await import('@/lib/report/excel');download(createReportWorkbook(templateDocument,snapshot?.date||today()),`Template-ASB-${snapshot?.date||today()}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}catch(error){setError(error instanceof Error?error.message:'Template belum dapat dibuat.')}finally{setBusy('')}
+    try{await downloadTemplate(templateDocument,snapshot?.date||today())}catch(error){setError(error instanceof Error?error.message:'Template belum dapat dibuat.')}finally{setBusy('')}
   }
-  async function importExcel(file:File){
-    const base=draft||data?.snapshot?.document||data?.initial
-    if(!base)return
-    setBusy('import');setError('')
-    try{
-      if(!file.name.toLowerCase().endsWith('.xlsx')||file.size>8*1024*1024)throw new Error('Pilih file .xlsx berukuran maksimal 8 MB.')
-      const {readReportWorkbook}=await import('@/lib/report/excel')
-      setPreview(await readReportWorkbook(new Uint8Array(await file.arrayBuffer()),base,date))
-    }catch(error){setError(error instanceof Error?error.message:'Excel belum dapat diimpor.')}finally{setBusy('');if(fileInput.current)fileInput.current.value=''}
+  function openImport(latest?:ReportSnapshot){
+    const snapshot=latest||data?.snapshot
+    const base=snapshot?.document||data?.initial
+    if(!base||viewingRecap)return
+    setImportTarget({document:base,date:snapshot?.date||date,revision:snapshot?.revision??0})
+  }
+  async function saveImport(rows:ImportRow[],selected:ReadonlySet<string>,mode:ImportMode){
+    if(!importTarget)throw new Error('Buka kembali pratinjau untuk menyimpan impor.')
+    const chosen=rows.filter(row=>row.changed&&selected.has(row.id))
+    if(!chosen.length)throw new Error('Pilih setidaknya satu provinsi.')
+    const document=selectImportRows(importTarget.document,chosen,selected)
+    const reason=mode==='excel'?'Impor Excel':'Impor JSON SIPASTI Pemda'
+    const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({
+      date:importTarget.date,revision:importTarget.revision,document,source:'import',reason,
+    })})
+    const accounts=chosen.flatMap(row=>row.accounts)
+    const sum=<T,>(values:T[],count:(value:T)=>number)=>values.reduce((total,value)=>total+count(value),0)
+    const accountsAdded=sum(accounts,a=>a.added.length), accountsUpdated=sum(accounts,a=>a.updated.length)
+    const packagesAdded=sum(chosen,row=>row.packages.added.length), packagesUpdated=sum(chosen,row=>row.packages.updated.length)
+    const roleChanges=accounts.filter(a=>a.summaryChanged).length
+    applySavedSnapshot(saved,'import',chosen.map(row=>row.id),reason)
+    setImportTarget(null);setTab('table');setError('')
+    setNotice(`Impor berhasil. ${chosen.length} provinsi diperbarui. Rincian akun: ${accountsAdded} baru, ${accountsUpdated} diperbarui. Paket: ${packagesAdded} baru, ${packagesUpdated} diperbarui.${roleChanges?` Ringkasan ${roleChanges} peran berubah.`:''}`)
   }
   async function logout(){setBusy('logout');try{await request('/auth',{method:'DELETE'});setRole(null);setData(null);setDraft(null);setEditing(false);setModal(null);setNotice('');setError('')}catch(error){setError(error instanceof Error?error.message:'Belum dapat keluar.')}finally{setBusy('')}}
   const selectedProvince=modal&&'id'in modal?document?.provinces.find(p=>p.id===modal.id):null
   const selectedPackage=modal?.type==='package'?selectedProvince?.packages.find(pkg=>pkg.id===modal.packageId):null
   const rows=document?order.map(id=>document.provinces.find(p=>p.id===id)!).filter(p=>p&&provinceName(p.id,p.name).toLowerCase().includes(query.toLowerCase())&&matchesQuickFilter(p,filterStage,filterStatus)):[]
   const canEditModal=Boolean(modal&&modal.type!=='access'&&modal.type!=='addProvince')&&!busy&&!viewingRecap
-  const overallSummary=document?summarize(document):null
   const filterStatusOptions: [FilterStatus,string][]=filterStage==='stage1'||filterStage==='stage2'||filterStage==='stage3'?[['all','Semua status'],['ada','Ada'],['tc','T/C'],['none','Tidak ada']]:filterStage==='stage4'?[['all','Semua status'],['selesai','Selesai'],['proses','Proses'],['not-started','- / Belum dimulai'],['nd','N/D']]:filterStage==='stage5'?[['all','Semua status'],['selesai','Selesai'],['proses','Proses'],['not-started','- / Belum dimulai'],['nd','N/D']]:[['all','Semua status'],['ada','Ada'],['tc','T/C'],['none','Tidak ada'],['selesai','Selesai'],['proses','Proses'],['not-started','- / Belum dimulai'],['nd','N/D']]
   return <SuiteSurface className={s.page}>
     <a className={s.skip} href="#report-content">Lewati ke laporan</a>
@@ -319,14 +349,36 @@ export default function ReportClient(){
       <main id="report-content">
         <h1 className={s.srOnly}>Laporan ASB Provinsi</h1>
         {loading?<ReportLoader checkingAccess={!role}/>:!role?<section className={s.login} aria-labelledby="report-login-title"><div className={s.loginMark}><Table size={28} weight="duotone"/></div><h2 id="report-login-title">Buka Laporan</h2><p>Masukkan PIN admin atau penginput untuk melihat laporan.</p><form onSubmit={async event=>{event.preventDefault();setBusy('login');setError('');try{const result=await request<{role:'admin'|'user'}>('/auth',{method:'POST',body:JSON.stringify({pin})});setRole(result.role);setPin('');await load(range.from,range.to)}catch(error){setError(error instanceof Error?error.message:'Akses belum dapat dibuka.')}finally{setBusy('')}}}><label htmlFor="report-pin">PIN</label><input id="report-pin" type="password" inputMode="numeric" pattern="[0-9]{6,12}" minLength={6} maxLength={12} autoComplete="current-password" value={pin} onChange={e=>setPin(e.target.value)} required aria-describedby="report-login-error"/>{error&&<p id="report-login-error" role="alert" className={s.error}>{error}</p>}<button className={s.primaryButton} disabled={Boolean(busy)} type="submit">{busy==='login'?'Memeriksa...':'Buka Laporan'}</button></form><p className={s.quiet}>Belum punya PIN? Hubungi admin laporan.</p></section>:<>
-          <div className={s.reportToolbar}><div className={s.latestLabel}><span>{viewingRecap?'Rekap tersimpan':'Laporan terbaru'}</span><strong>{data?.snapshot?dateLabel(data.snapshot.date):'Data sumber · belum ada rekapitulasi tersimpan'}</strong><small>Terakhir diperbarui {data?.snapshot?timeLabel(data.snapshot.updated_at):'Belum ada pembaruan'}</small></div><div className={s.toolActions} role="group" aria-label="Aksi laporan">{viewingRecap?<button type="button" className={s.button} onClick={()=>void load(range.from,range.to)} disabled={Boolean(busy)||loading}><ArrowClockwise size={17}/>Kembali ke terbaru</button>:!data?.recapSavedForToday&&<button type="button" className={s.primaryButton} onClick={()=>guard('simpan rekap',latest=>void saveRecap(latest))} disabled={Boolean(busy)||loading}><Check size={18}/>Simpan rekap</button>}<button type="button" className={s.iconButton} aria-label="Unduh template Excel" title="Unduh template Excel" disabled={!document||Boolean(busy)||loading} onClick={()=>guard('unduh template',latest=>void template(latest))}><FileXls size={19}/></button><button type="button" className={s.iconButton} aria-label="Impor Excel" title="Impor Excel" disabled={!document||Boolean(busy)||loading||Boolean(viewingRecap)} onClick={()=>guard('impor Excel',()=>fileInput.current?.click())}><UploadSimple size={19}/></button><button type="button" className={s.iconButton} aria-label={busy==='pdf'?'Membuat PDF':'Unduh PDF'} title={busy==='pdf'?'Membuat PDF':'Unduh PDF'} disabled={!data?.snapshot||Boolean(busy)||loading} onClick={()=>guard('unduh PDF',latest=>void exportPdf(latest))}><DownloadSimple size={19}/></button><ThemePicker/>{role==='admin'&&<button type="button" className={s.iconButton} aria-label="Pengaturan PIN laporan" title="Pengaturan PIN" onClick={()=>setModal({type:'access'})} disabled={Boolean(busy)}><Gear size={19}/></button>}{role&&<button type="button" className={s.iconButton} aria-label="Keluar dari laporan" title="Keluar" onClick={()=>guard('keluar',()=>void logout())} disabled={Boolean(busy)}><SignOut size={18}/></button>}</div><input ref={fileInput} type="file" accept=".xlsx" className={s.hidden} aria-label="Pilih file Excel laporan" onChange={e=>{const file=e.target.files?.[0];if(file)void importExcel(file)}}/></div>
+          <div className={s.reportToolbar}><div className={s.latestLabel}><span>{viewingRecap?'Rekap tersimpan':'Laporan terbaru'}</span><strong>{data?.snapshot?dateLabel(data.snapshot.date):'Data sumber · belum ada rekapitulasi tersimpan'}</strong><small>Terakhir diperbarui {data?.snapshot?timeLabel(data.snapshot.updated_at):'Belum ada pembaruan'}</small></div><div className={s.toolActions} role="group" aria-label="Aksi laporan">{viewingRecap?<button type="button" className={s.button} onClick={()=>void load(range.from,range.to)} disabled={Boolean(busy)||loading}><ArrowClockwise size={17}/>Kembali ke terbaru</button>:!data?.recapSavedForToday&&<button type="button" className={s.primaryButton} onClick={()=>guard('simpan rekap',latest=>void saveRecap(latest))} disabled={Boolean(busy)||loading}><Check size={18}/>Simpan rekap</button>}<button type="button" className={s.iconButton} aria-label="Unduh template Excel" title="Unduh template Excel" disabled={!document||Boolean(busy)||loading} onClick={()=>guard('unduh template',latest=>void template(latest))}><FileXls size={19}/></button><button type="button" className={s.iconButton} aria-label="Impor data" title="Impor Excel atau JSON" disabled={!document||Boolean(busy)||loading||Boolean(viewingRecap)} onClick={()=>guard('impor data',openImport)}><UploadSimple size={19}/></button><button type="button" className={s.iconButton} aria-label={busy==='pdf'?'Membuat PDF':'Unduh PDF'} title={busy==='pdf'?'Membuat PDF':'Unduh PDF'} disabled={!data?.snapshot||Boolean(busy)||loading} onClick={()=>guard('unduh PDF',latest=>void exportPdf(latest))}><DownloadSimple size={19}/></button><ThemePicker/>{role==='admin'&&<button type="button" className={s.iconButton} aria-label="Pengaturan PIN laporan" title="Pengaturan PIN" onClick={()=>setModal({type:'access'})} disabled={Boolean(busy)}><Gear size={19}/></button>}{role&&<button type="button" className={s.iconButton} aria-label="Keluar dari laporan" title="Keluar" onClick={()=>guard('keluar',()=>void logout())} disabled={Boolean(busy)}><SignOut size={18}/></button>}</div></div>
           {!viewingRecap&&data?.recapSavedForToday&&<p className={s.notice} role="status">Rekap hari ini sudah tersimpan. Lihat perkembangannya di tab Perkembangan</p>}
           {viewingRecap&&<p className={s.notice} role="status">Sedang melihat rekap {dateLabel(viewingRecap)} dalam mode baca.</p>}
           {error&&<div className={s.error} role="alert">{error} <button type="button" className={s.iconButton} aria-label="Muat ulang laporan" title="Muat ulang" disabled={Boolean(busy)} onClick={()=>guard('muat ulang',()=>void load(range.from,range.to))}><ArrowClockwise size={17}/></button></div>}
           {notice&&<p role="status" className={s.notice}>{notice}</p>}
           {data&&<>
             <div className={s.tabs} aria-label="Bagian laporan"><button type="button" aria-pressed={tab==='table'} onClick={()=>setTab('table')}><Table size={17}/>Tabel Progres</button><button type="button" aria-pressed={tab==='chart'} onClick={()=>guard('lihat perkembangan',()=>setTab('chart'))}><ChartLineUp size={17}/>Perkembangan</button>{role==='admin'&&<button type="button" aria-pressed={tab==='history'} onClick={()=>guard('lihat riwayat',()=>setTab('history'))}>Riwayat</button>}</div>
-            {tab==='table'&&overallSummary&&<details className={s.reportSummary}><summary><span>Ringkasan akun dan ASB</span><CaretDown size={16}/></summary><div className={s.reportSummaryGrid}>{ROLES.map((accountRole,index)=>{const change=previousSummary?overallSummary.roles[index]-previousSummary.roles[index]:null;return <article className={s.reportSummaryCard} key={accountRole}><span>{ROLE_LABELS[accountRole]}</span><strong>{overallSummary.roles[index]}{change!==null&&<small className={s.reportSummaryDelta}>({change>0?'+':''}{change})</small>}</strong><small>Provinsi dengan akun</small></article>})}<article className={s.reportSummaryCard}><span>Total ASB</span><strong>{overallSummary.totalPackages}{previousSummary&&<small className={s.reportSummaryDelta}>({overallSummary.totalPackages-previousSummary.totalPackages>0?'+':''}{overallSummary.totalPackages-previousSummary.totalPackages})</small>}</strong><small>Paket aktif bernama</small></article><article className={s.reportSummaryCard}><span>Paket integrasi SIPD</span><strong>{overallSummary.integratedPackages}{previousSummary&&<small className={s.reportSummaryDelta}>({overallSummary.integratedPackages-previousSummary.integratedPackages>0?'+':''}{overallSummary.integratedPackages-previousSummary.integratedPackages})</small>}</strong><small>Siap integrasi atau diterima SIPD</small></article></div></details>}
+            {tab==='table'&&summary&&<details className={s.reportSummary}>
+              <summary><span>Ringkasan akun dan ASB</span><CaretDown size={16}/></summary>
+              <div className={s.reportSummaryGrid}>
+                {ROLES.map((accountRole,index)=>{
+                  const count=accountCounts[index]
+                  const hasUncountedAccounts=count===0&&summary.roles[index]>0
+                  return <article className={s.reportSummaryCard} key={accountRole}>
+                    <span>{ROLE_LABELS[accountRole]}</span>
+                    <SummaryValue value={hasUncountedAccounts?null:count} previous={previousAccounts?.[index]}/>
+                    <small>{hasUncountedAccounts?'Jumlah akun belum diisi':'Akun tercatat'}</small>
+                    <small>{summary.roles[index]} provinsi dengan akun</small>
+                  </article>
+                })}
+                <article className={s.reportSummaryCard}><span>Total ASB</span>
+                  <SummaryValue value={summary.totalPackages} previous={previousSummary?.totalPackages}/>
+                  <small>Paket aktif bernama</small>
+                </article>
+                <article className={s.reportSummaryCard}><span>Paket integrasi SIPD</span>
+                  <SummaryValue value={summary.integratedPackages} previous={previousSummary?.integratedPackages}/>
+                  <small>Siap integrasi atau diterima SIPD</small>
+                </article>
+              </div>
+            </details>}
             {tab==='table'&&<>
               {!document?<section className={s.empty}><h2>Data rekap belum tersedia</h2><p>Muat ulang setelah rekap awal disiapkan.</p></section>:<>
                 <div className={s.tableBar}><h2 className={s.srOnly}>Progress provinsi</h2><div className={s.tableControls}><label className={s.searchLabel}>Cari provinsi<input type="search" placeholder="Ketik nama provinsi" value={query} onChange={e=>setQuery(e.target.value)}/></label><div className={s.quickFilters}><label>Tahap<select aria-label="Filter tahap" value={filterStage} onChange={e=>{setFilterStage(e.target.value as FilterStage);setFilterStatus('all')}}><option value="all">Semua Tahapan</option><option value="stage1">Tahap 1 · Sekda</option><option value="stage2">Tahap 2 · Pimpinan/APIP</option><option value="stage3">Tahap 3 · Penyusun</option><option value="stage4">Tahap 4 · Paket</option><option value="stage5">Tahap 5 · Integrasi</option></select></label><label>Status<select aria-label="Filter status" value={filterStatus} onChange={e=>setFilterStatus(e.target.value as FilterStatus)}>{filterStatusOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label></div><div className={s.editControl}><span>{viewingRecap?'Mode lihat':'Mode Edit'}</span><button type="button" className={editing?s.cancelButton:s.iconButton} aria-label={editing?'Submit perubahan':'Edit tabel'} title={viewingRecap?'Rekap tersimpan hanya untuk dilihat':editing?'Submit perubahan':'Edit tabel'} disabled={Boolean(busy)||Boolean(viewingRecap)||(editing&&!dirty)} onClick={()=>editing?void save():beginEdit()}>{editing?<><Check size={16}/>Submit</>:<PencilSimple size={19}/>}</button>{editing&&<button type="button" className={s.cancelButton} onClick={cancelEdit} disabled={Boolean(busy)}><X size={16}/>Batal</button>}</div></div></div>
@@ -341,7 +393,7 @@ export default function ReportClient(){
                   <tbody>{rows.map((p,index)=>{
                     const state=provinceSummary(p),hasNotes=Boolean(p.notes||p.followUp||p.notesHistory?.length)
                     return <tr key={p.id}><td className={s.numberCell}>{index+1}</td><th scope="row" className={s.provinceCell}><button type="button" title={hasNotes?"Ada catatan tersimpan":"Buka detail provinsi"} aria-label={`${provinceName(p.id)}${hasNotes?" memiliki catatan.":"."} Buka detail provinsi`} onClick={()=>openProvince(p.id)}>{provinceName(p.id,p.name)}{hasNotes&&<NotePencil size={14}/>}{editing&&<PencilSimple size={13}/>}</button></th><PackageCell province={p} editing={editing} onUpdate={(packageId,update)=>updateProvince(p.id,province=>{const pkg=province.packages.find(item=>item.id===packageId);if(pkg)update(pkg)})} onRemove={packageId=>removeDraftPackage(p.id,packageId)} onOpen={packageId=>openPackage(p.id,packageId)} onAdd={()=>updateProvince(p.id,province=>{province.packages.push(newPackage(''))})}/>
-                      {ROLES.map(accountRole=>{const a=p.accounts[accountRole],description=`${ROLE_LABELS[accountRole]}: ${accountLabel(a)}. Jumlah ${a.count??'belum diketahui'}. ${a.details.map(d=>d.label).slice(0,4).join(', ')}`;return <td key={accountRole} className={a.status==='ada'?s.complete:a.status==='tc'?s.warning:s.unknown}><div className={s.accountCell}>{editing?<button type="button" className={s.cellButton} title={a.status==='ada'?'Ubah menjadi T/C':'Ubah menjadi Ada'} aria-label={`Ubah status ${ROLE_LABELS[accountRole]} ${provinceName(p.id,p.name)} dari ${accountLabel(a)}`} onClick={()=>toggleAccount(p.id,accountRole)}><span className={s.statusText}>{a.status==='ada'?<Check size={14}/>:a.status==='tc'?<Warning size={14}/>:<Minus size={14}/>}{accountLabel(a)}</span></button>:<button type="button" className={s.cellButton} title={description} aria-label={`${description} Buka rincian`} onClick={()=>openAccount(p.id,accountRole)}><span className={s.statusText}>{a.status==='ada'?<Check size={14}/>:a.status==='tc'?<Warning size={14}/>:<Minus size={14}/>}{accountLabel(a)}</span></button>}<span className={s.hoverInfo} role="tooltip">{description}</span></div></td>})}
+                      {ROLES.map(accountRole=>{const a=p.accounts[accountRole],description=`${ROLE_LABELS[accountRole]}: ${accountLabel(a)}. Jumlah ${recordedAccountCount(a)??'belum diketahui'}. ${a.details.map(d=>d.label).slice(0,4).join(', ')}`;return <td key={accountRole} className={a.status==='ada'?s.complete:a.status==='tc'?s.warning:s.unknown}><div className={s.accountCell}>{editing?<button type="button" className={s.cellButton} title={a.status==='ada'?'Ubah menjadi T/C':'Ubah menjadi Ada'} aria-label={`Ubah status ${ROLE_LABELS[accountRole]} ${provinceName(p.id,p.name)} dari ${accountLabel(a)}`} onClick={()=>toggleAccount(p.id,accountRole)}><span className={s.statusText}>{a.status==='ada'?<Check size={14}/>:a.status==='tc'?<Warning size={14}/>:<Minus size={14}/>}{accountLabel(a)}</span></button>:<button type="button" className={s.cellButton} title={description} aria-label={`${description} Buka rincian`} onClick={()=>openAccount(p.id,accountRole)}><span className={s.statusText}>{a.status==='ada'?<Check size={14}/>:a.status==='tc'?<Warning size={14}/>:<Minus size={14}/>}{accountLabel(a)}</span></button>}<span className={s.hoverInfo} role="tooltip">{description}</span></div></td>})}
                       {STEPS.map(step=>{
                         const stage=stepSummary(p,step)
                         return <td key={step} className={`${s.stageCell} ${s[stageTone(stage,step)]}`}><button type="button" className={s.stageCellButton} aria-label={`Lihat progres ${STEP_LABELS[step]} ${provinceName(p.id,p.name)}: ${stage.label==='—'?'Belum ada status':stage.label}`} title={`Lihat progres ${STEP_LABELS[step]} per paket`} onClick={()=>openWorkflow(p.id,step)}><span>{stage.label}</span><Eye size={14}/></button></td>
@@ -359,7 +411,7 @@ export default function ReportClient(){
               </>}
             </>}
             {tab==='chart'&&<ReportChart history={data.history} provinces={document?.provinces||[]} from={range.from} to={range.to} maxDate={maxDate} onRange={(from,to)=>{setRange({from,to});void load(from,to)}} onOpenRecap={snapshotDate=>{setTab('table');void load(range.from,range.to,snapshotDate)}}/>}
-            {tab==='history'&&role==='admin'&&<section className={s.history}><h2>Riwayat revisi · {dateLabel(date)}</h2>{data.changes.length?data.changes.map(change=><article key={change.id}><strong>Revisi {change.revision}</strong><p>{timeLabel(change.created_at)} | {change.actor_role==='admin'?'Admin':'Penginput'} | {change.source==='import'?'Impor Excel':change.source==='recap'?'Simpan rekap':change.source==='seed'?'Data sumber awal':'Edit tabel'}</p><p>{change.reason||'Laporan diperbarui.'}</p>{change.changed_provinces.length>0&&<small>{change.changed_provinces.map(labelProvince).join(', ')}</small>}</article>):<p className={s.emptyDetail}>Belum ada perubahan tersimpan untuk tanggal ini.</p>}</section>}
+            {tab==='history'&&role==='admin'&&<section className={s.history}><h2>Riwayat revisi · {dateLabel(date)}</h2>{data.changes.length?data.changes.map(change=><article key={change.id}><strong>Revisi {change.revision}</strong><p>{timeLabel(change.created_at)} | {change.actor_role==='admin'?'Admin':'Penginput'} | {change.source==='import'?'Impor data':change.source==='recap'?'Simpan rekap':change.source==='seed'?'Data sumber awal':'Edit tabel'}</p><p>{change.reason||'Laporan diperbarui.'}</p>{change.changed_provinces.length>0&&<small>{change.changed_provinces.map(labelProvince).join(', ')}</small>}</article>):<p className={s.emptyDetail}>Belum ada perubahan tersimpan untuk tanggal ini.</p>}</section>}
           </>}
         </>}
       </main>
@@ -367,7 +419,7 @@ export default function ReportClient(){
     </div>
             {(['save','note','recap'].includes(busy)&&!modal)&&<div className={s.savingOverlay} role="status" aria-live="polite"><span className={s.savingIndicator}>Menyimpan perubahan...</span></div>}
             {modal&&<ReportDialog title={modal.type==='access'?'Pengaturan PIN':modal.type==='addProvince'?'Tambah provinsi':modal.type==='account'?`${ROLE_LABELS[modal.role]} · ${provinceName(modal.id,selectedProvince?.name)}`:modal.type==='package'?`Detail paket · ${selectedPackage?.name||provinceName(modal.id,selectedProvince?.name)}`:modal.type==='workflow'?`Progres ${STEP_LABELS[modal.step]} · ${provinceName(modal.id,selectedProvince?.name)}`:provinceName(modal.id,selectedProvince?.name)} onClose={()=>setModal(null)} busy={Boolean(busy)} onDelete={modal.type==='province'&&selectedProvince&&!viewingRecap?()=>clearProvinceData(selectedProvince.id):undefined} deletePrompt="Data akun dan catatan provinsi akan dikosongkan. Semua paket aktif dipindahkan ke arsip nonaktif; nama dan riwayatnya tetap tersimpan.">{modal.type==='access'?<AccessPanel onSave={body=>request('/access',{method:'PUT',body:JSON.stringify(body)})}/>:modal.type==='addProvince'?<form className={s.formFields} onSubmit={event=>{event.preventDefault();try{addProvince(newProvinceLabel)}catch(error){setAddProvinceError(error instanceof Error?error.message:'Provinsi belum dapat ditambahkan.')}}}><p className={s.panelIntro}>Provinsi tambahan masuk ke laporan ini dan akan dihitung dalam rekap.</p><label>Nama provinsi<input autoFocus value={newProvinceLabel} maxLength={120} onChange={event=>{setNewProvinceLabel(event.target.value);setAddProvinceError('')}} placeholder="Masukkan nama provinsi" required/></label>{addProvinceError&&<p role="alert" className={s.error}>{addProvinceError}</p>}<button className={s.primaryButton} type="submit">Tambah provinsi</button></form>:selectedProvince&&selectedPackage&&modal.type==='package'?<PackagePanel pkg={selectedPackage} provinceName={provinceName(selectedProvince.id,selectedProvince.name)} editable={canEditModal} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,province=>{const pkg=province.packages.find(item=>item.id===selectedPackage.id);if(pkg)update(pkg)})} onSave={saveModalChanges}/>:selectedProvince&&modal.type==='workflow'?<WorkflowPanel province={selectedProvince} step={modal.step} canTransition={!busy&&!viewingRecap} canDelete={!busy&&!viewingRecap} onAdvance={packageId=>advancePackage(selectedProvince.id,packageId)} onReturn={(packageId,note)=>returnPackage(selectedProvince.id,packageId,note)} onDelete={packageId=>resetWorkflow(selectedProvince.id,packageId)}/>:selectedProvince&&modal.type==='account'?<AccountPanel province={selectedProvince} role={modal.role} editable={canEditModal} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,update)} onSave={saveModalChanges}/>:selectedProvince&&<ProvincePanel province={selectedProvince} editable={canEditModal} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,update)} onSaveNotes={saveProvinceNotes} onSaveChanges={saveModalChanges}/>}</ReportDialog>}
-    {preview&&<ReportDialog title="Pratinjau impor Excel" onClose={()=>setPreview(null)}><p>{preview.changes.length} provinsi akan diperbarui pada {dateLabel(date)}.</p>{preview.changes.length>0?<ul className={s.previewList}>{preview.changes.map(name=><li key={name}>{name}</li>)}</ul>:<p>Tidak ada perbedaan dengan data saat ini.</p>}<p className={s.quiet}>Impor belum disimpan. Periksa draft, lalu pilih Submit perubahan.</p><div className={s.toolActions}><button className={s.button} type="button" onClick={()=>setPreview(null)}>Batal</button><button className={s.primaryButton} type="button" onClick={()=>{setDraft(preview.document);setEditing(true);setSource('import');setOrder(order.length?order:sortProvinces(preview.document.provinces).map(p=>p.id));setPreview(null);setTab('table');setNotice('Impor diterapkan ke draft. Periksa lalu pilih Submit perubahan.')}}>Terapkan ke draft</button></div></ReportDialog>}
+    {importTarget&&<ReportImport target={importTarget} onClose={()=>setImportTarget(null)} onTemplate={()=>downloadTemplate(importTarget.document,importTarget.date)} onSave={saveImport}/>}
     {pending&&<ReportDialog title="Perubahan belum disimpan" onClose={()=>setPending(null)} busy={Boolean(busy)}><p>Simpan atau buang perubahan sebelum {pending.label} dilanjutkan.</p>{error&&<p className={s.error} role="alert">{error}</p>}<div className={s.guardActions}><button className={s.button} disabled={Boolean(busy)} onClick={()=>setPending(null)}>Kembali</button><button className={s.button} disabled={Boolean(busy)} onClick={()=>void resolvePending(false)}>Buang draft</button><button className={s.primaryButton} disabled={Boolean(busy)} onClick={()=>void resolvePending(true)}>{busy?'Menyimpan...':'Simpan & lanjut'}</button></div></ReportDialog>}
   </SuiteSurface>
 }

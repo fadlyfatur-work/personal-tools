@@ -267,7 +267,21 @@
 .deleteConfirm{display:flex;flex-direction:column;gap:.55rem;width:100%;padding:.75rem;border:1px solid var(--suite-line);border-radius:8px;background:var(--suite-inset)}
 .deleteConfirm>p{margin:0;font-size:.8125rem;color:var(--suite-ink)}
 .deleteConfirm>div{display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap}
-.previewList{columns:2;padding-left:1.2rem;font-size:.875rem;line-height:1.8;max-height:320px;overflow:auto}
+.wideDialog{max-width:1120px}
+.importProgress{display:grid;gap:.65rem;width:min(100%,320px);padding:1rem;background:var(--suite-surface);border:1px solid var(--suite-line);border-radius:8px}
+.importProgress progress{width:100%;height:.65rem;accent-color:var(--suite-accent)}
+.importSelection{display:flex;align-items:center;gap:.35rem .8rem;flex-wrap:wrap;font-size:.8125rem}
+.importSelection .importChanged{padding:.15rem .4rem;border-radius:4px}
+.importTableScroll{overflow:auto;max-height:min(48dvh,420px);border:1px solid var(--suite-line);border-radius:6px}
+.importTable{width:100%;min-width:720px;border-spacing:0;text-align:left;font-size:.8125rem}
+.importTable :is(th,td){padding:.55rem .6rem;border-bottom:1px solid var(--suite-line);vertical-align:top}
+.importTable thead th{position:sticky;top:0;background:var(--suite-inset);z-index:1}
+.importTable tbody tr:last-child :is(th,td){border-bottom:0}
+.importTable small{display:block;font-size:.75rem;color:inherit}
+.importTable details{margin-top:.2rem;min-width:8rem}
+.importTable details p{margin:.35rem 0 0;overflow-wrap:anywhere;max-width:22rem}
+.importTable summary{cursor:pointer}
+.importChanged{background:var(--suite-selected);color:var(--suite-selected-ink)}
 .guardActions{display:flex;gap:.6rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1.5rem}
 .chartSection{padding:.3rem 0 1rem}
 .chartFilters{display:grid;grid-template-columns:160px 160px minmax(160px,1fr) minmax(160px,1fr);gap:1rem;margin:1.25rem 0}

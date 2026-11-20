@@ -44,7 +44,7 @@ async page => {
   await namePicker.getByText('Kolom tidak ditemukan. Coba huruf kolom atau kata dari header.', { exact: true }).waitFor();
   await page.keyboard.press('Escape');
   check(!await namePicker.isVisible() && await name.evaluate(el => document.activeElement === el), 'Escape closes nonmodal picker and returns focus');
-  await volume.click(); await page.getByRole('heading', { name: 'Pencocokan RAB', exact: true }).click();
+  await volume.click(); await page.getByRole('heading', { name: 'Pencocokan MASTER AHSP', exact: true }).click();
   await picker.waitFor({ state: 'hidden' });
   check(!await picker.isVisible(), 'Click outside dismisses anchored picker');
   const code = group.getByRole('button', { name: 'Ubah kolom Kode', exact: true });

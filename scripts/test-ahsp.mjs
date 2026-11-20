@@ -138,6 +138,11 @@ assert.equal((await route.GET(new Request(`http://localhost/api/ahsp?match=phras
 phraseSupport = true
 calls = []
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?regulation=SE%20182%2F2025'))).status, 200)
+calls = []
+assert.equal((await route.GET(new Request('http://localhost/api/ahsp?regulation=SPTJM'))).status, 200)
+assert.equal(calls.find(c => c[0] === 'rpc')[2].p_regulation, 'SPTJM')
+calls = []
+await route.GET(new Request('http://localhost/api/ahsp?regulation=SE%20182%2F2025'))
 assert.equal(calls.find(c => c[0] === 'rpc')[2].p_regulation, 'SE 182/2025')
 assert.equal((await route.GET(new Request('http://localhost/api/ahsp?regulation=SE%20147%2F2025'))).status, 400)
 archiveSupport = false

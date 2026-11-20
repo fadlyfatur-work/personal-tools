@@ -1,5 +1,5 @@
 import PizZip from 'pizzip'
-import {PROVINCES,ROLES,ROLE_LABELS,STEPS,STATUSES,STATUS_LABELS,WORKFLOW_STATUS,provinceName,newPackage,validateDocument,type ReportDocument,type AccountRole,type AccountDetail,type WorkflowStatus} from './model'
+import {PROVINCES,ROLES,ROLE_LABELS,STEPS,STATUSES,STATUS_LABELS,WORKFLOW_STATUS,provinceName,newPackage,validateDocument,workflowStatusOf,type ReportDocument,type AccountRole,type AccountDetail,type WorkflowStatus} from './model'
 
 const XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
 const NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main'
@@ -17,13 +17,13 @@ function worksheet(rows:Cell[][]){
 }
 export function createReportWorkbook(doc:ReportDocument,date:string):Uint8Array {
   const sheets:Record<string,Cell[][]>={
-    Petunjuk:[['REPORT_ASB_VERSION','3'],['TANGGAL_LAPORAN',date],['Cara mengisi','Edit data pada sheet Akun dan Paket. Jangan ubah header dan ID yang sudah terisi.'],['Jumlah paket','Total paket dan jumlah siap integrasi dihitung otomatis dari daftar paket aktif. Kolom pada sheet Provinsi hanya informasi.'],['Status akun','Ada / T/C / Tidak ada. Jumlah Tidak ada harus 0; T/C kosong.'],['Status paket','Selesai / Proses / -. Aktif: Ya / Tidak; nonaktif wajib alasan. Status Alur Tahap 4 mengikuti urutan PU, BPKAD, APIP, integrasi SIPD.'],['Paket atau akun baru','Isi provinsi dan nama. Kosongkan ID Paket/ID Akun agar dibuat otomatis.'],['Tanggal dan waktu','Kolom timestamp hanya informasi. Waktu perubahan ditetapkan server saat disimpan.'],['Impor','Impor ke tanggal yang sama, periksa pratinjau lalu Submit perubahan. Rumus tidak diterima.']],
+    Petunjuk:[['REPORT_ASB_VERSION','3'],['TANGGAL_LAPORAN',date],['Cara mengisi','Edit data pada sheet Akun dan Paket. Jangan ubah header dan ID yang sudah terisi.'],['Jumlah paket','Total paket dan jumlah siap integrasi dihitung otomatis dari daftar paket aktif. Kolom pada sheet Provinsi hanya informasi.'],['Status akun','Ada / T/C / Tidak ada. Jumlah Tidak ada harus 0; T/C kosong.'],['Status paket','Selesai / Proses / -. Aktif: Ya / Tidak; nonaktif wajib alasan. Paket baru dengan alur kosong mulai di PU.'],['Paket atau akun baru','Isi provinsi dan nama. Kosongkan ID untuk data baru. Email akun atau nama paket yang cocok dipakai kembali.'],['Tanggal dan waktu','Kolom timestamp hanya informasi. Waktu perubahan ditetapkan server saat disimpan.'],['Impor','Gunakan tanggal laporan yang sama. Pilih provinsi pada pratinjau, lalu pilih Simpan. Rumus tidak diterima.']],
     Provinsi:[HEADERS.Provinsi,...doc.provinces.map(p=>[p.id,provinceName(p.id,p.name),p.totalPackages,p.integratedPackages,p.notes,p.followUp,p.totalUpdatedAt,p.integrationUpdatedAt])],
     Akun:[HEADERS.Akun,...doc.provinces.flatMap(p=>ROLES.flatMap(role=>{
       const a=p.accounts[role],details:(AccountDetail|null)[]=a.details.length?a.details:[null]
       return details.map(d=>[p.id,provinceName(p.id,p.name),ROLE_LABELS[role],{ada:'Ada',tc:'T/C',tidak_ada:'Tidak ada'}[a.status],a.count,d?.id||'',d?.label||'',d?.institution||'',d?.email||'',d?.note||'',a.note,a.updatedAt])
     }))],
-    Paket:[HEADERS.Paket,...doc.provinces.flatMap(p=>p.packages.map(pkg=>[p.id,provinceName(p.id,p.name),pkg.id,pkg.name,...STEPS.map(step=>STATUS_LABELS[pkg[step]]),pkg.active?'Ya':'Tidak',pkg.inactiveReason,pkg.note,pkg.createdAt,pkg.nameUpdatedAt,pkg.statusUpdatedAt,WORKFLOW_STATUS[pkg.workflowStatus||'pu'],pkg.returnTarget==='pu'?'PU':pkg.returnTarget==='bpkad'?'BPKAD':'']))],
+    Paket:[HEADERS.Paket,...doc.provinces.flatMap(p=>p.packages.map(pkg=>[p.id,provinceName(p.id,p.name),pkg.id,pkg.name,...STEPS.map(step=>STATUS_LABELS[pkg[step]]),pkg.active?'Ya':'Tidak',pkg.inactiveReason,pkg.note,pkg.createdAt,pkg.nameUpdatedAt,pkg.statusUpdatedAt,WORKFLOW_STATUS[pkg.workflowStatus||'pu'],pkg.workflowStatus?.startsWith('returned_')?pkg.returnTarget?.toUpperCase()??'':'']))],
   }
   const zip=new PizZip(),names=Object.keys(sheets)
   zip.file('[Content_Types].xml',`${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${names.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`)
@@ -108,7 +108,7 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
   if(info.find(row=>row.cells[0]==='REPORT_ASB_VERSION')?.cells[1]!=='3')throw new Error('Versi template tidak cocok. Unduh template terbaru.')
   if(info.find(row=>row.cells[0]==='TANGGAL_LAPORAN')?.cells[1]!==date)throw new Error('Tanggal Excel berbeda dari tanggal laporan yang sedang dibuka.')
   const doc=validateDocument(base),owners=new Map(doc.provinces.flatMap(p=>p.packages.map(pkg=>[pkg.id,p.id])))
-  const seenProvinces=new Set<string>(),seenPackages=new Set<string>(),seenAccounts=new Set<string>(),groups=new Map<string,{summary:string;hasEmpty:boolean}>()
+  const provinceIds=new Set<string>(),seenProvinces=new Set<string>(),seenPackages=new Set<string>(),seenAccounts=new Set<string>(),groups=new Map<string,{summary:string;hasEmpty:boolean}>()
   function province(row:string[]){
     let key=(row[0]||'').trim()
     if(!key){const name=(row[1]||'').trim().toLowerCase().replace(/^provinsi /,'');key=PROVINCES.find(([id,label])=>id===name||label.toLowerCase()===name||(name==='bangka belitung'&&id==='kepulauan-bangka-belitung'))?.[0]||''}
@@ -123,6 +123,7 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
     for(const {number:rowNumber,cells:r} of content){
       try{
         const p=province(r)
+        provinceIds.add(p.id)
         if(name==='Provinsi'){
           if(seenProvinces.has(p.id))throw new Error('Provinsi ganda.')
           seenProvinces.add(p.id);p.notes=r[4]||'';p.followUp=r[5]||''
@@ -135,35 +136,51 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
           if(group&&(group.summary!==summary||group.hasEmpty||!r[6]?.trim()))throw new Error('Ringkasan peran ganda atau tidak konsisten.')
           groups.set(key,{summary,hasEmpty:!r[6]?.trim()});account.status=accountStatus;account.count=count;account.note=r[10]||''
           if(r[6]?.trim()){
-            const detailId=r[5]?.trim()||crypto.randomUUID()
+            const email=r[8]?.trim()||''
+            const matches=account.details.filter(d=>email?d.email.toLowerCase()===email.toLowerCase():!d.email&&d.label.toLowerCase()===r[6].trim().toLowerCase())
+            const detailId=r[5]?.trim()||(matches.length===1?matches[0].id:crypto.randomUUID())
             if(seenAccounts.has(detailId))throw new Error('ID akun ganda.')
             seenAccounts.add(detailId)
-            const detail={id:detailId,label:r[6].trim(),institution:r[7]||'',email:r[8]||'',note:r[9]||''}
+            const detail={id:detailId,label:r[6].trim(),institution:r[7]||'',email,note:r[9]||''}
             const existing=account.details.findIndex(d=>d.id===detailId)
             if(existing>=0)account.details[existing]=detail;else account.details.push(detail)
           }else if(r[5]?.trim())throw new Error('Nama akun wajib untuk ID akun yang terisi.')
         }else{
           if(!r[3]?.trim())throw new Error('Nama paket wajib diisi.')
-          const packageId=r[2]?.trim()||crypto.randomUUID()
+          const matches=p.packages.filter(pkg=>pkg.name.toLowerCase()===r[3].trim().toLowerCase())
+          const packageId=r[2]?.trim()||(matches.length===1?matches[0].id:crypto.randomUUID())
           if(seenPackages.has(packageId))throw new Error('ID paket ganda.')
           if(owners.has(packageId)&&owners.get(packageId)!==p.id)throw new Error('ID paket milik provinsi lain.')
           seenPackages.add(packageId)
-          let pkg=p.packages.find(item=>item.id===packageId)
-          if(!pkg){pkg=newPackage(r[3].trim(),packageId);p.packages.push(pkg)}
+          const existing=p.packages.find(item=>item.id===packageId)
+          const pkg=existing??newPackage(r[3].trim(),packageId)
+          if(!existing)p.packages.push(pkg)
           pkg.name=r[3].trim()
-          STEPS.forEach((step,i)=>{const value=r[i+4]?.trim().toLowerCase()||'-';if(!STATUSES.includes(value as typeof STATUSES[number]))throw new Error(`Status ${step} harus Selesai, Proses, atau -.`);pkg![step]=value as typeof STATUSES[number]})
-          const workflowLabel=(r[14]||'').trim(),workflow=Object.entries(WORKFLOW_STATUS).find(([,label])=>label===workflowLabel)?.[0] as WorkflowStatus|undefined
-          if(!workflow)throw new Error('Status Alur Tahap 4 harus diisi sesuai daftar status pada template terbaru.')
-          pkg.workflowStatus=workflow;pkg.repairStatus=pkg.perbaikan;pkg.returnTarget=workflow==='returned_pu'?'pu':workflow==='returned_bpkad'?'bpkad':null
-          if(r[15]&&(!['PU','BPKAD'].includes(r[15].trim())||!workflow.startsWith('returned_')))throw new Error('Tujuan Perbaikan hanya PU/BPKAD dan hanya untuk paket yang dikembalikan.')
+          let stepsChanged=false
+          STEPS.forEach((step,i)=>{
+            const value=r[i+4]?.trim().toLowerCase()
+            if(!value)return
+            const stepStatus=STATUSES.find(status=>status===value)
+            if(!stepStatus)throw new Error(`Status ${step} harus Selesai, Proses, atau -.`)
+            if(pkg[step]!==stepStatus)stepsChanged=true
+            pkg[step]=stepStatus
+          })
+          const workflowLabel=(r[14]||'').trim()
+          const workflow=workflowLabel?Object.entries(WORKFLOW_STATUS).find(([,label])=>label===workflowLabel)?.[0] as WorkflowStatus|undefined
+            :workflowStatusOf(stepsChanged?{...pkg,workflowStatus:undefined}:pkg)
+          if(!workflow)throw new Error('Status Alur Tahap 4 tidak sesuai pilihan pada template.')
+          if(workflow!==pkg.workflowStatus)pkg.returnTarget=null
+          pkg.workflowStatus=workflow;pkg.repairStatus=pkg.perbaikan
+          if(r[15]?.trim()&&!['PU','BPKAD'].includes(r[15].trim()))throw new Error('Tujuan Perbaikan hanya PU atau BPKAD.')
           if(workflow.startsWith('returned_')){pkg.repairStatus='proses';pkg.perbaikan='proses';pkg.returnTarget=(r[15]?.trim().toLowerCase()==='bpkad'||workflow==='returned_bpkad')?'bpkad':'pu'}
           if(r[8]&&!['ya','tidak'].includes(r[8].trim().toLowerCase()))throw new Error('Aktif harus Ya atau Tidak.')
-          pkg.active=(r[8]?.trim().toLowerCase()||'ya')==='ya';pkg.inactiveReason=r[9]||'';pkg.note=r[10]||''
+          if(r[8]?.trim())pkg.active=r[8].trim().toLowerCase()==='ya'
+          pkg.inactiveReason=r[9]??pkg.inactiveReason;pkg.note=r[10]??pkg.note
         }
       }catch(error){throw new Error(`Sheet ${name}, baris ${rowNumber}: ${error instanceof Error?error.message:'isian tidak valid'}`)}
     }
   }
-  validateDocument(doc)
-  const changes=doc.provinces.filter(p=>JSON.stringify(p)!==JSON.stringify(base.provinces.find(item=>item.id===p.id))).map(p=>provinceName(p.id,p.name))
-  return {document:doc,changes}
+  const document=validateDocument(doc)
+  const changes=document.provinces.filter(p=>JSON.stringify(p)!==JSON.stringify(base.provinces.find(item=>item.id===p.id))).map(p=>provinceName(p.id,p.name))
+  return {document,changes,provinceIds:[...provinceIds]}
 }

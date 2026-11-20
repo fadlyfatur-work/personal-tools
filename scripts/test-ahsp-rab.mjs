@@ -172,7 +172,7 @@ const ranges = []
 let allowed = true
 const query = {
   select(columns) { assert.equal(columns.includes('components'), false); return query },
-  in(column, regulations) { assert.equal(column, 'regulation'); assert.equal(regulations.length, 3); return query },
+  in(column, regulations) { assert.equal(column, 'regulation'); assert.deepEqual(Array.from(regulations), ['SE 47/2026','PERMEN 08/2023','SE 182/2025','SPTJM']); return query },
   order(column) { assert.equal(column, 'id'); return query },
   async range(start, end) { ranges.push([start, end]); return { data: Array.from({ length: start === 0 ? 1000 : 1 }, (_, i) => ({ ...candidate, id: String(start + i) })), error: null } },
 }

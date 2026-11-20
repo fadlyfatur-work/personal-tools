@@ -18,7 +18,7 @@ async function main() {
   const results = []
   try {
     await page.goto(origin + '/ahsp/rab')
-    await page.getByRole('heading', { name: 'Pencocokan RAB', exact: true }).waitFor()
+    await page.getByRole('heading', { name: 'Pencocokan MASTER AHSP', exact: true }).waitFor()
     await page.addScriptTag({ content: fs.readFileSync('node_modules/pizzip/dist/pizzip.min.js', 'utf8') })
     await page.evaluate(({ core, rab, excel }) => {
       const execute = (code, imports) => { const exports = {}; new Function('require', 'exports', code)(name => imports[name], exports); return exports }
@@ -240,7 +240,7 @@ async function main() {
     await page.getByRole('button', { name: 'Lanjutkan pencocokan', exact: true }).click()
     await page.getByText(/^Pencocokan selesai\. Periksa/).waitFor({ timeout: 60000 })
     await page.goto(origin + '/ahsp')
-    await page.getByRole('link', { name: 'Pencocokan RAB', exact: true }).click()
+    await page.getByRole('link', { name: 'Pencocokan MASTER AHSP', exact: true }).click()
     await page.waitForURL('**/ahsp/rab')
     assert.deepEqual(errors, [])
     console.log('PASS: six real samples, live catalog, nine normalized unit filter groups, loading spinners/reduced motion, optional reason confirmation, floating move notifications, recap help/keyboard, exclusion/restore, responsive themes, sheet/row caps, 1003-item detail and Final RAB export, error/retry and navigation.', results)

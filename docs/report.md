@@ -34,6 +34,7 @@ Sesi berlaku delapan jam dalam cookie HttpOnly. Mengganti PIN membatalkan sesi l
 - Klik nama provinsi/nama paket untuk membuka nama, proses paket, timestamp, analisis/kendala dan tindak lanjut. Klik status akun untuk jumlah dan identitas akun opsional. Hover menyediakan ringkasan tambahan.
 - Catatan analisis/kendala dan tindak lanjut ditambahkan dari modal provinsi. **Simpan catatan** membuat entri riwayat baru bertimestamp server, tanpa menimpa entri sebelumnya. Status Perbaikan tidak mewajibkan catatan paket.
 - Checklist tercentang berarti akun Ada. Jika hendak mengosongkan, pilih T/C atau Tidak ada melalui panel supaya tidak menyamakan belum tercatat dan terkonfirmasi nol.
+- Kartu peran menampilkan jumlah akun tercatat dan selisihnya dari rekap sebelumnya. Jika jumlah belum diisi, rincian akun yang sudah diberi nama ikut dihitung. Jumlah provinsi dengan akun tampil terpisah.
 - **Submit perubahan** menyimpan satu revisi utuh. Simpan rekap membuat catatan sumber `recap` pada riwayat revisi. Impor, ekspor dan keluar dengan draft menampilkan pilihan simpan/buang/kembali. Tab yang ditutup dengan draft mendapat peringatan browser.
 - Koreksi pada laporan tanggal terbaru tidak mewajibkan catatan alasan. Konflik revisi tidak menimpa data sesi lain; draft tetap tersedia untuk diperiksa.
 
@@ -55,7 +56,11 @@ Sumber awal membuktikan 20 akun provinsi pada 15 provinsi, dengan rekap keberada
 
 Template `.xlsx` versi 3 memuat Petunjuk, Provinsi, Akun dan Paket, termasuk data tanggal tersimpan. Pertahankan header/ID. Kosongkan ID untuk rincian akun/paket baru. Kolom total paket dan siap integrasi adalah hasil hitung otomatis dan diabaikan saat impor. Menghapus baris dari workbook tidak menghapus catatan lama; paket dinonaktifkan melalui kolom Aktif dan alasan.
 
-Impor file divalidasi, ditampilkan pratinjau provinsi yang berubah, lalu diterapkan ke draft. Gunakan Submit perubahan untuk menyimpan. Batas: file 8 MB, 150 bagian ZIP, maksimal 16 MB per bagian XML/32 MB keseluruhan saat benar-benar didekompresi, 10.000 baris per sheet. DTD, rumus, ID ganda/asing dan jumlah tidak valid ditolak. Penguraian XML di browser dan dekompresi streaming native tidak memerlukan dependensi produksi baru; gunakan Chrome/Edge modern.
+Impor menerima Excel serta hierarki akun JSON SIPASTI Pemda melalui file `.json`/`.txt` atau teks yang ditempel. Admin SKPD Provinsi dipetakan ke Sekda, dan Kepala Dinas PU ke Kepala Dinas. Impor JSON hanya mengisi akun provinsi yang sesuai dengan enam peran laporan. Akun Stranas PK, Testing, wilayah latihan, dan kabupaten/kota dilewati. Akun dicocokkan melalui ID atau email dalam provinsi dan peran yang sama. Data yang tidak tercantum di file dipertahankan.
+
+Pratinjau menandai sel yang berubah dan menyediakan checkbox per provinsi serta **Pilih semua**. **Simpan** langsung mencatat provinsi yang dipilih sebagai satu revisi dan memberi rincian jumlah provinsi, akun, serta paket yang masuk. Tombol unduh template Excel tersedia di tab Excel. PDF dan Excel tetap menjadi format unduhan.
+
+Batas impor 8 MB. Excel mendukung 150 bagian ZIP, maksimal 16 MB per bagian XML/32 MB keseluruhan saat benar-benar didekompresi, dan 10.000 baris per sheet. DTD, rumus, ID ganda dan jumlah tidak valid ditolak. Penguraian XML dan dekompresi memakai fitur bawaan browser. Gunakan Chrome atau Edge modern.
 
 PDF A3 lanskap menggunakan data tersimpan. Ringkasan mendatar memuat jumlah provinsi yang memiliki akun per peran, total ASB aktif, dan paket integrasi SIPD. Tabel mengikuti kolom dan warna status Tahap 4 di web. Lampiran menampilkan kartu provinsi berisi total paket, tanggal pencatatan, tanggal status PU/BPKAD/APIP yang sudah berjalan, serta riwayat catatan. Tanggal tahap mengikuti riwayat paket dalam siklus berjalan.
 

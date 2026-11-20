@@ -59,7 +59,7 @@ export default function AiImport({ source, disabled, onAccept, onBusy, onClear }
     }
   }
   return <section className={styles.root} data-rab-panel aria-labelledby="ai-import-title">
-    <div className={styles.heading}><div><h2 id="ai-import-title">Pembacaan PDF & gambar</h2><p>Halaman sumber → teks → JSON pekerjaan → pencocokan RAB.</p></div><button type="button" disabled={busy || disabled} onClick={() => setSettings(true)}><GearSix size={18} aria-hidden="true" />Pengaturan AI</button></div>
+    <div className={styles.heading}><div><h2 id="ai-import-title">Pembacaan PDF & gambar</h2><p>Halaman sumber → teks → JSON pekerjaan → pencocokan Master AHSP.</p></div><button type="button" disabled={busy || disabled} onClick={() => setSettings(true)}><GearSix size={18} aria-hidden="true" />Pengaturan AI</button></div>
     {!unlocked ? <details className={styles.access} open={!!source}><summary><LockKey size={16} aria-hidden="true" />Akses pengelola untuk API AI</summary>
       <p className={styles.help}>Excel tetap dibaca langsung di browser. Pemanggilan AI dan pengaturan profil memerlukan kunci akses pengelola.</p>
       {configured === false && <p className={styles.error}>Konfigurasi server belum lengkap. Siapkan AHSP_AI_ADMIN_TOKEN, AHSP_AI_ENCRYPTION_KEY, dan migrasi profil AI. Petunjuk tersedia pada dokumentasi OCR RAB.</p>}

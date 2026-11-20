@@ -1,5 +1,7 @@
 # Rekonsiliasi master AHSP
 
+Pembaruan 19 November 2026: [impor master tanpa rincian analisis](ahsp-master-list.md) menambahkan 233 SPTJM dan 20 versi pekerjaan berlabel SE dengan status Need re-verified. Angka Oktober di bawah merupakan hasil historis rekonsiliasi komponen; penambahan master terbaru tidak mengubah komponen atau status versi lama.
+
 Diperiksa 27 Oktober 2026. Katalog menggunakan dua status: **Verified** (hijau) dan **Need re-verified** (merah). Status berlaku per versi pekerjaan, bukan seluruh nama yang dikelompokkan. Nilai asal `sipasti_status` lama tetap tersimpan sebagai riwayat internal; UI dan filter memakai `verification_status`.
 
 ## Sumber dan kontrak
