@@ -1,0 +1,9 @@
+.pager { display:grid; grid-template-columns:minmax(0,1fr); justify-items:center; gap:8px; padding:14px 16px; border-top:1px solid var(--line); }
+.rail { display:flex; align-items:center; gap:4px; width:min(100%,560px); padding-inline:calc(50% - 22px); overflow-x:auto; overscroll-behavior-inline:contain; scroll-snap-type:x mandatory; scroll-padding-inline:calc(50% - 22px); scrollbar-width:thin; scrollbar-color:var(--control) transparent; }
+.rail button { display:grid; place-items:center; flex:0 0 44px; width:44px; height:44px; padding:0; border:1px solid transparent; border-radius:var(--controlRadius,0); background:transparent; color:var(--ink); font-size:13px; font-variant-numeric:tabular-nums; scroll-snap-align:center; }
+.rail button:hover:not(:disabled) { background:var(--tint); border-color:var(--line); }
+.rail button[aria-current=page] { border-color:var(--action); background:var(--action); color:var(--actionInk); font-weight:650; }
+.rail button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.rail button:disabled { opacity:.55; }
+.status { min-height:18px; color:var(--muted); font-size:12px; text-align:center; }
+@media(prefers-reduced-motion:reduce) { .rail { scroll-behavior:auto; } }

@@ -113,7 +113,35 @@
 .modalHeader>div { min-width:0; }
 .modalHeader h2 { font-size:clamp(17px,2vw,23px); line-height:1.4; overflow-wrap:anywhere; margin:6px 0; }
 .modalHeader p,.eyebrow { font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
-.close { flex-shrink:0; }
+.modalActions { display:flex; flex-shrink:0; gap:4px; }
+.page button.close,.page button.repairAction,.page button.archiveAction { display:grid; place-items:center; flex:0 0 44px; width:44px; height:44px; padding:0; border:1px solid transparent; background:transparent; color:var(--muted); }
+.page button.close:hover:not(:disabled) { border-color:var(--control); background:var(--tint); color:var(--ink); }
+.page button.repairAction { border-color:var(--action); background:var(--action); color:var(--actionInk); }
+.page button.repairAction:hover:not(:disabled),.page button.repairAction[data-expanded=true] { border-color:var(--accent); background:var(--accent); color:var(--actionInk); }
+.page button.archiveAction { border-color:var(--control); color:var(--ink); }
+.page button.archiveAction:hover:not(:disabled) { background:var(--tint); }
+.modalActions :is(.close,.repairAction,.archiveAction):focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.archiveDialog { box-sizing:border-box; width:min(480px,calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; overscroll-behavior:contain; margin:auto; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); box-shadow:0 20px 64px #0005; }
+.archiveDialog::backdrop { background:rgb(5 10 18 / .72); }
+.archiveDialog form { display:grid; gap:16px; padding:24px; }
+.archiveHeading { display:grid; grid-template-columns:44px minmax(0,1fr); align-items:start; gap:14px; }
+.archiveGlyph { display:grid; place-items:center; width:44px; height:44px; border:1px solid color-mix(in srgb,var(--action) 24%,var(--line)); border-radius:var(--controlRadius,0); background:color-mix(in srgb,var(--action) 10%,var(--surface)); color:var(--action); }
+.archiveHeading h2 { margin:1px 0 0; font-size:19px; font-weight:650; line-height:1.3; letter-spacing:-.02em; }
+.archiveHeading p { margin-top:5px; color:var(--muted); font-size:13px; line-height:1.45; overflow-wrap:anywhere; }
+.archiveItem { display:grid; gap:4px; min-width:0; padding:12px 14px; border-left:3px solid var(--action); border-radius:var(--controlRadius,0); background:var(--tint); }
+.archiveItem strong { color:var(--accent,var(--action)); font-size:12px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.archiveItem p { font-size:14px; font-weight:550; line-height:1.5; overflow-wrap:anywhere; }
+.archiveDialog .archiveNote { color:var(--muted); font-size:12px; line-height:1.45; }
+.archiveDialog label { display:grid; gap:6px; font-size:12px; font-weight:600; }
+.archiveDialog input { width:100%; min-width:0; min-height:46px; padding:10px 12px; border:1px solid var(--control); border-radius:var(--controlRadius,0); background:var(--surface); color:var(--ink); font:inherit; }
+.archiveActions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:2px; padding-top:16px; border-top:1px solid var(--line); }
+.archiveActions button { min-width:0; min-height:46px; }
+.page.page .archiveActions .archiveCancel { border-color:var(--control); background:var(--surface); color:var(--ink); }
+.page.page .archiveActions .archiveCancel:hover:not(:disabled) { background:var(--tint); }
+.page.page .archiveActions .archiveConfirm { border-color:var(--action); background:var(--action); color:var(--actionInk); font-weight:650; }
+.page.page .archiveActions .archiveConfirm:hover:not(:disabled) { filter:brightness(.94); }
+.archiveError { padding:10px 12px; border-left:3px solid var(--warning); background:var(--warningBg); color:var(--warning); font-size:13px; }
+@media(max-width:420px) { .archiveDialog form { gap:14px; padding:18px; } .archiveHeading { grid-template-columns:40px minmax(0,1fr); gap:11px; } .archiveGlyph { width:40px; height:40px; } .archiveHeading h2 { font-size:17px; } .archiveActions { gap:8px; } }
 .tabs { display:flex; flex-wrap:wrap; padding:8px 12px; gap:4px; border-bottom:1px solid var(--line); background:var(--canvas); }
 .page .tabs button { border:0; font-size:12px; background:transparent; }
 .page .tabs button[aria-pressed=true] { background:var(--action); color:var(--actionInk); }
@@ -147,13 +175,16 @@
 .pdf { width:100%; min-height:600px; border:1px solid var(--control); border-radius:4px; background:var(--canvas); }
 .sourceText summary { cursor:pointer; min-height:44px; padding:10px 0; }
 .sourceText pre { font-family:var(--font-geist-mono),monospace; font-size:11px; line-height:1.7; background:var(--canvas); padding:16px; max-width:100%; overflow-x:auto; border:1px solid var(--control); border-radius:4px; }
-.manual { margin-top:24px; border-top:1px solid var(--line); padding-top:12px; }
+.manual { margin-top:24px; border-top:1px solid var(--line); padding-top:12px; scroll-margin-top:16px; }
 .manual>summary { cursor:pointer; min-height:44px; padding:10px 0; color:var(--accent,var(--action)); font-weight:600; }
 .manualRows { margin:20px 0; }
 .manualRow { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; border:1px solid var(--line); border-radius:8px; margin:16px 0; padding:16px; min-width:0; }
 .manualRow legend { padding:0 8px; font-size:12px; font-weight:600; }
 .manualName { grid-column:1/-1; }
 .manualRow button { align-self:end; }
+.componentSuggestions { grid-column:1/-1; display:grid; gap:4px; margin-top:-8px; }
+.page .componentSuggestions button { min-height:40px; text-align:left; font-size:12px; }
+.componentSuggestions small { padding:6px; }
 .page .confirm { flex-direction:row; align-items:center; font-size:13px; font-weight:400; margin-top:20px; min-height:44px; }
 .page .confirm input { width:20px; height:20px; min-height:20px; flex-shrink:0; }
 @media(min-width:680px) { .page { padding:32px 28px 48px; } .header { flex-direction:row; justify-content:space-between; align-items:center; } .filters { padding:20px; } .search { grid-column:1/-1; } .calculatorInputs { grid-template-columns:repeat(2,minmax(0,1fr)); } .component { grid-template-columns:minmax(0,1fr) minmax(100px,.4fr) minmax(160px,.6fr); } .component>div { grid-column:1; } .amount { grid-column:3; text-align:right; } .modalHeader,.modalBody { padding:24px; } .reference { flex-direction:row; justify-content:space-between; align-items:center; } }

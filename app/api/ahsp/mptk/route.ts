@@ -6,7 +6,7 @@ const schema = z.object({
   q: z.string().trim().max(240).default(''),
   group: z.enum(['', 'tenaga', 'bahan', 'alat']).default(''),
   field: z.string().max(100).default(''), unit: z.string().max(80).default(''),
-  regulation: z.enum(['', 'SE 47/2026', 'PERMEN 08/2023', 'SE 182/2025']).default(''),
+  regulation: z.enum(['', 'SE 47/2026', 'PERMEN 08/2023', 'SE 182/2025', 'SPTJM']).default(''),
   analysis: z.enum(['', 'extracted', 'needs_review', 'unavailable']).default(''),
   page: z.coerce.number().int().min(1).max(10000).default(1),
   key: z.string().regex(/^[a-f0-9]{32}$/).optional(),

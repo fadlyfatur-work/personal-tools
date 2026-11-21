@@ -20,13 +20,13 @@ export async function POST(request: Request) {
   if (!input.success) return Response.json({ error: 'Pilih 1–100 identitas pekerjaan yang valid per permintaan.' }, { status: 400 })
   try {
     const db = getSupabaseAdmin(), ids = [...new Set(input.data.ids)]
-    const result = await db.from('ahsp_items').select('*').in('id', ids).in('regulation', AHSP_CATALOG_REGULATIONS)
+    const result = await db.from('ahsp_items').select('*').in('id', ids).in('regulation', AHSP_CATALOG_REGULATIONS).is('archived_at', null)
     if (result.error) throw result.error
     const items = (result.data ?? []) as AhspItem[]
     const targetIds = [...new Set(items.flatMap(item => item.analysis_target_id ? [item.analysis_target_id] : []))]
     let targets: AhspItem[] = []
     if (targetIds.length) {
-      const result = await db.from('ahsp_items').select('*').in('id', targetIds).in('regulation', AHSP_CATALOG_REGULATIONS)
+      const result = await db.from('ahsp_items').select('*').in('id', targetIds).in('regulation', AHSP_CATALOG_REGULATIONS).is('archived_at', null)
       if (result.error) throw result.error
       targets = result.data ?? []
     }

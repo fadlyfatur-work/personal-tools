@@ -1,0 +1,173 @@
+GLOSARIUM SIPASTI DAN PENYUSUNAN PERKIRAAN BIAYA
+Disusun dari materi pelatihan SIPASTI dan sumber resmi pemerintah
+Catatan: Istilah dan tata cara dapat berubah mengikuti regulasi serta versi aplikasi. Untuk keputusan resmi, rujuk peraturan dan pedoman yang berlaku.
+
+ISTILAH UTAMA
+
+AHSP - Analisis Harga Satuan Pekerjaan
+Perhitungan kebutuhan biaya tenaga kerja, bahan, dan peralatan untuk memperoleh harga satuan bagi satu jenis pekerjaan tertentu. AHSP menjadi dasar perhitungan HPP, RAB, atau HPS pekerjaan konstruksi.
+
+AHSD - Analisis Harga Satuan Dasar
+Analisis untuk menghitung harga satuan dasar komponen pekerjaan, seperti tenaga kerja, bahan, dan peralatan. Istilah ini digunakan di sejumlah dokumen teknis SIPASTI.
+
+Biaya Penerapan SMKK
+Biaya yang diperlukan untuk menerapkan Sistem Manajemen Keselamatan Konstruksi pada pekerjaan. Permen PUPR 8/2023 memasukkan analisis biaya penerapan SMKK dalam penyusunan perkiraan biaya pekerjaan.
+
+Biaya tidak langsung
+Biaya yang bukan biaya langsung untuk menghasilkan suatu mata pembayaran, tetapi tetap diperlukan dalam pelaksanaan pekerjaan. Komponen dan perlakuannya mengikuti pedoman serta jenis pekerjaan yang berlaku.
+
+Dashboard
+Halaman ringkasan informasi pada SIPASTI. Diagram proses dalam materi menunjukkan dashboard sebagai tampilan yang dapat digunakan oleh semua pengguna untuk melihat informasi sistem.
+
+Database SIPASTI
+Penyimpanan data terstruktur dalam SIPASTI, termasuk data harga satuan serta data HPS. Data ini mendukung proses penyusunan, pemantauan, dan penelusuran informasi.
+
+DKH - Daftar Kuantitas Harga
+Daftar rincian pekerjaan yang disusun menurut kelompok atau bagian pekerjaan dan memuat kuantitas setiap jenis pekerjaan. Dalam dokumen pemilihan, daftar ini membantu menjelaskan item dan volume yang ditawarkan.
+
+E-Katalog LKPP
+Sistem informasi elektronik yang menyediakan katalog produk dan jasa untuk pengadaan pemerintah. Pada diagram proses SIPASTI, E-Katalog LKPP ditunjukkan sebagai salah satu sumber/integrasi data.
+
+E-purchasing
+Tata cara membeli atau memperoleh barang/jasa melalui sistem katalog elektronik.
+
+Early Warning System (EWS)
+Fitur/peringatan dini yang ditampilkan dalam diagram SIPASTI. Secara praktis, istilah ini merujuk pada sistem yang membantu menandai kondisi atau data yang perlu dicermati lebih lanjut.
+
+HPP - Harga Perkiraan Perancang
+Perhitungan perkiraan biaya pekerjaan yang dihitung secara profesional oleh perancang dan digunakan sebagai salah satu acuan untuk menghitung HPS. Dalam alur pelatihan SIPASTI, perancang atau konsultan perancang menyusun HPP terlebih dahulu.
+
+HPS - Harga Perkiraan Sendiri
+Perkiraan harga barang/jasa yang ditetapkan oleh Pejabat Pembuat Komitmen (PPK) dengan memperhitungkan komponen biaya sesuai ketentuan, termasuk biaya tidak langsung, keuntungan, dan Pajak Pertambahan Nilai (PPN). HPS dihitung secara keahlian menggunakan data yang dapat dipertanggungjawabkan.
+
+Fungsi HPS
+Menurut Perpres PBJ konsolidasi 2025, HPS antara lain digunakan untuk menilai kewajaran harga penawaran/harga satuan, menjadi dasar batas tertinggi penawaran yang sah untuk barang, pekerjaan konstruksi, dan jasa lainnya, serta membantu menentukan beberapa jaminan dan batas persyaratan tertentu. Nilai HPS tidak rahasia, sedangkan rincian HPS bersifat rahasia. HPS tidak menjadi dasar penghitungan besaran kerugian negara.
+
+Perbedaan HPP dan HPS
+HPP disusun oleh perancang sebagai estimasi profesional dan menjadi salah satu acuan. HPS ditetapkan oleh PPK untuk proses pengadaan. Dalam alur SIPASTI pada materi pelatihan, HPP dapat digunakan sebagai sumber/bahan dalam penyusunan HPS.
+
+HSD - Harga Satuan Dasar
+Harga satuan untuk suatu komponen pembentuk pekerjaan, seperti tenaga kerja, bahan, atau peralatan. HSD digunakan dalam analisis untuk menghitung harga satuan pekerjaan.
+
+HSP - Harga Satuan Pekerjaan
+Harga untuk satu satuan jenis pekerjaan. Secara umum, HSP dihitung dari komponen tenaga kerja, bahan, dan peralatan berdasarkan koefisien dan HSD yang relevan.
+
+HSPW - Harga Satuan Pokok Wilayah
+Data harga satuan pokok yang dikelompokkan menurut wilayah. Materi SIPASTI menampilkan HSPW sebagai data yang berkaitan dengan pengumpulan dan penggunaan harga satuan wilayah.
+
+Harga pasar
+Harga yang diperoleh dari pengumpulan atau pengamatan harga di pasar/lokasi yang relevan. Harga pasar dapat menjadi sumber data untuk menilai kewajaran harga satuan sesuai pedoman yang berlaku.
+
+Harga satuan pokok
+Harga dasar komponen yang digunakan dalam perhitungan pekerjaan. Dalam konteks SIPASTI, data harga satuan pokok perlu didukung sumber dan wilayah yang relevan.
+
+KAK - Kerangka Acuan Kerja
+Dokumen yang menjelaskan kebutuhan, ruang lingkup, tujuan, keluaran, dan ketentuan suatu pekerjaan atau kegiatan. KAK membantu memastikan perkiraan biaya sesuai kebutuhan yang akan dilaksanakan.
+
+K/L/Pemda
+Kementerian/Lembaga/Pemerintah Daerah. SiRUP memuat rencana pengadaan yang akan dilaksanakan oleh K/L/Perangkat Daerah.
+
+LKPP
+Lembaga Kebijakan Pengadaan Barang/Jasa Pemerintah, lembaga pemerintah yang menjalankan tugas kebijakan dan pembinaan pengadaan barang/jasa pemerintah.
+
+PA - Pengguna Anggaran
+Pejabat pemegang kewenangan penggunaan anggaran pada Kementerian/Lembaga/Perangkat Daerah sesuai ketentuan.
+
+KPA - Kuasa Pengguna Anggaran
+Pejabat yang menerima kuasa dari PA untuk melaksanakan sebagian kewenangan dan tanggung jawab penggunaan anggaran.
+
+Pagu anggaran
+Batas tertinggi anggaran yang tersedia untuk suatu kegiatan atau paket pengadaan sesuai dokumen anggaran. Pagu berbeda dari HPS: HPS merupakan perkiraan harga yang disusun untuk keperluan pengadaan.
+
+PPK - Pejabat Pembuat Komitmen
+Pejabat yang diberi kewenangan oleh PA/KPA untuk mengambil keputusan dan/atau tindakan yang dapat mengakibatkan pengeluaran anggaran negara/daerah. Dalam proses SIPASTI, PPK berperan dalam penugasan, peninjauan, dan penetapan HPS sesuai kewenangannya.
+
+PPK Perencana
+Peran PPK pada alur penyusunan HPP yang ditampilkan dalam materi pelatihan. Pada diagram, PPK Perencana dapat menugaskan konsultan perancang dan mengelola akses/kode HPP sesuai masa penugasan.
+
+Konsultan perancang
+Pihak profesional yang membantu perancang/PPK Perencana menyusun HPP sesuai penugasan. Materi pelatihan menyebut akun konsultan perancang dibuat oleh PPK Perencana dan masa penggunaannya dibatasi sesuai masa kontrak.
+
+Koefisien
+Angka kebutuhan tenaga kerja, bahan, atau peralatan untuk menghasilkan satu satuan pekerjaan. Koefisien dikalikan dengan harga satuan dasar komponen untuk memperoleh biaya komponen pekerjaan.
+
+Lumpsum
+Bentuk pekerjaan atau kontrak dengan ruang lingkup dan jumlah harga yang ditetapkan untuk jangka waktu tertentu sesuai ketentuan kontrak. Pada analisis pekerjaan lumpsum, perlakuan komponen biaya mengikuti pedoman yang berlaku.
+
+Monitoring
+Pemantauan proses atau data dalam SIPASTI. Diagram proses menunjukkan monitoring, termasuk screening harga, sebagai fungsi pendukung proses penyusunan dan reviu.
+
+Perancang
+Tenaga atau pihak yang menyusun perhitungan perkiraan biaya pekerjaan secara profesional. Hasil perhitungan perancang dapat menjadi HPP.
+
+PPN - Pajak Pertambahan Nilai
+Pajak atas konsumsi barang/jasa kena pajak sesuai ketentuan perpajakan. HPS menurut definisi pada regulasi pengadaan memperhitungkan PPN.
+
+Pokja Pemilihan
+Kelompok kerja yang melaksanakan pemilihan penyedia dalam proses pengadaan. Pada alur SIPASTI, Pokja dapat terlibat dalam reviu HPS bersama PPK.
+
+PUH - Pembahas Usulan HPS
+Peran/tim pembahas usulan HPS pada alur SIPASTI dalam materi pelatihan. Pembahasan dilakukan sebelum penetapan dan reviu sesuai proses yang berlaku.
+
+RAB - Rencana Anggaran Biaya
+Perkiraan/rincian biaya untuk melaksanakan pekerjaan atau kegiatan. Permen PUPR 8/2023 menyebut hasil penyusunan perkiraan biaya dapat berupa HPP, RAB, atau HPS.
+
+Reviu HPS
+Pemeriksaan terhadap usulan atau dokumen HPS untuk memastikan perhitungan, dasar data, dan kesesuaiannya dengan ketentuan. Dalam diagram SIPASTI, reviu melibatkan PPK dan Pokja.
+
+RUP - Rencana Umum Pengadaan
+Daftar rencana pengadaan barang/jasa yang akan dilaksanakan oleh Kementerian/Lembaga/Perangkat Daerah. RUP diumumkan melalui aplikasi SiRUP.
+
+SiRUP/SIRUP - Sistem Informasi Rencana Umum Pengadaan
+Aplikasi/sistem informasi untuk mengumumkan RUP. SiRUP memuat informasi rencana pengadaan K/L/Pemda. SiRUP digunakan pada tahap perencanaan dan pengumuman rencana, sedangkan SIPASTI digunakan untuk mendukung penyusunan perkiraan biaya konstruksi. Keduanya memiliki fungsi berbeda.
+
+SIPASTI
+Dalam materi dan penggunaan Kementerian PU saat ini, nama lengkapnya digunakan sebagai Sistem Informasi Perkiraan Biaya Pekerjaan Konstruksi Terintegrasi. SIPASTI mendukung penyusunan HPS pekerjaan konstruksi melalui pengolahan item pekerjaan, komponen tenaga kerja, peralatan, bahan, dan koefisien, serta proses pembahasan, penetapan, reviu, database, dan monitoring. Sejumlah dokumen lama menyebut kepanjangannya sebagai Sistem Informasi Harga Perkiraan Sendiri Terintegrasi.
+
+SPSE - Sistem Pengadaan Secara Elektronik
+Sistem untuk melaksanakan proses pengadaan secara elektronik. Dalam diagram SIPASTI, SPSE LKPP ditunjukkan sebagai sistem yang terintegrasi dengan proses SIPASTI.
+
+SMKK - Sistem Manajemen Keselamatan Konstruksi
+Bagian dari sistem manajemen pelaksanaan pekerjaan konstruksi untuk mengendalikan keselamatan konstruksi. Biaya penerapan SMKK diperhitungkan dalam perkiraan biaya sesuai pedoman yang berlaku.
+
+Survey pasar
+Pengumpulan informasi harga dari pasar atau sumber yang relevan. Informasi ini dapat mendukung pemeriksaan kewajaran harga satuan, dengan tetap memperhatikan metode dan ketentuan yang berlaku.
+
+Usulan HPS
+Rancangan/perhitungan HPS yang diajukan untuk dibahas sebelum ditetapkan. Dalam alur SIPASTI, tahap ini diikuti pembahasan, penetapan, dan reviu.
+
+Kode HPP
+Kode yang dihasilkan atau digunakan dalam alur SIPASTI untuk menghubungkan hasil HPP dengan proses lanjutan. Pada simulasi, PPK memasukkan kode tersebut untuk mengambil atau menggunakan HPP dalam penyusunan HPS.
+
+Status HPS
+Tahapan kemajuan proses HPS yang terlihat pada materi pelatihan: usulan HPS, pembahasan dan penetapan HPS, reviu HPS, serta HPS siap tender. Status aktual mengikuti alur dan versi aplikasi.
+
+RINGKASAN ALUR SIPASTI
+
+1. Perancang menyusun HPP berdasarkan data teknis, kuantitas pekerjaan, AHSP, dan data harga yang relevan.
+2. HPP diselesaikan dan kode HPP digunakan sesuai alur aplikasi.
+3. PPK menggunakan HPP sebagai salah satu acuan dalam menyusun atau mengajukan HPS.
+4. Usulan HPS dibahas, ditetapkan, dan direviu oleh pihak yang berwenang.
+5. HPS yang siap digunakan diteruskan ke proses pengadaan dan didukung pencatatan, database, serta monitoring.
+
+SUMBER RUJUKAN RESMI
+
+1. Permen PUPR Nomor 8 Tahun 2023 tentang Pedoman Penyusunan Perkiraan Biaya Pekerjaan Konstruksi Bidang PUPR:
+https://jdih.pu.go.id/detail-dokumen/PermenPUPR-nomor-8-tahun-2023-Pedoman-Penyusunan-Perkiraan-Biaya-Pekerjaan-Konstruksi-Bidang-Pekerjaan-Umum-dan-Perumahan-Rakyat
+
+2. Perpres Nomor 46 Tahun 2025, perubahan kedua atas Perpres Nomor 16 Tahun 2018 tentang Pengadaan Barang/Jasa Pemerintah, konsolidasi JDIH LKPP:
+https://jdih.lkpp.go.id/regulation/konsolidasi/konsolidasi-nomor-46-tahun-2025
+
+3. Informasi SiRUP pada PPID LKPP:
+https://ppid.lkpp.go.id/information/public/136/sistem-informasi-rencana-umum-pengadaan
+
+4. Layanan LKPP untuk mengumumkan RUP:
+https://lkpp.go.id/layanan/mengumumkan-rencana-umum-pengadaan-rup-2
+
+5. Surat Edaran Direktur Jenderal Bina Konstruksi Nomor 47/SE/DK/2026 tentang tata cara penyusunan perkiraan biaya pekerjaan konstruksi bidang pekerjaan umum:
+https://binakonstruksi.pu.go.id/produk/produk-hukum/surat-edaran-direktur-jenderal-bina-konstruksi-nomor-47-se-dk-2026/
+
+6. Materi pelatihan: Penjelasan Umum Fitur SIPASTI.pptx (file yang diberikan pengguna).
+
+Catatan penggunaan:
+Glosarium ini untuk membantu memahami istilah dalam pelatihan. Jika definisi ringkas di sini berbeda dengan bunyi peraturan, pedoman resmi atau petunjuk versi SIPASTI yang berlaku menjadi rujukan utama.

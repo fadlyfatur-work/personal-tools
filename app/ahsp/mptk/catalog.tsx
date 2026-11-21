@@ -8,6 +8,7 @@ import base from '../catalog.module.css'
 import styles from './catalog.module.css'
 import swiss from '../swiss-red.module.css'
 import AppearancePicker, { useAhspAppearance } from '../appearance'
+import PageSlider from '../page-slider'
 
 const number = new Intl.NumberFormat('id-ID', { maximumSignificantDigits: 12 })
 const initialFilters = { q: '', group: '', field: '', unit: '', regulation: '', analysis: '' }
@@ -137,7 +138,7 @@ export default function MptkCatalog() {
               <span className={styles.count}><strong>{number.format(component.job_count)} pekerjaan</strong><span>{number.format(component.occurrence_count)} kemunculan</span>{component.review_count > 0 && <small>{number.format(component.review_count)} perlu ditinjau</small>}<span className={styles.disclosure}>Lihat penggunaan</span></span>
             </button>
           </li>)}</ul>}
-        {!error && !!data?.total && <nav className={styles.pagination} aria-label="Halaman komponen"><button type="button" disabled={loading || page <= 1} onClick={() => turnPage(page - 1)}>Sebelumnya</button><span>Halaman {page} dari {pages}</span><button type="button" disabled={loading || page >= pages} onClick={() => turnPage(page + 1)}>Berikutnya</button></nav>}
+        {!error && !!data?.total && <PageSlider page={page} pages={pages} label="Halaman komponen" loading={loading} onPageChange={turnPage} />}
       </section>
     </div>
     <dialog id="mptk-detail" ref={dialog} className={`${base.dialog} ${styles.modal}`} aria-labelledby="mptk-detail-title" aria-describedby="mptk-detail-help" onClose={() => setSelected(null)} onKeyDown={keepModalFocus}>
@@ -158,7 +159,8 @@ export default function MptkCatalog() {
                   {usage.category_corrected && <p className={styles.warning}>Kategori sumber terbaca sebagai {mptkGroups[usage.original_group]}; dikoreksi menjadi {mptkGroups[usage.component_group]} berdasarkan penanda kelompok pada baris sumber.</p>}
                   {usage.source_url ? <a className={styles.source} href={`${usage.source_url}${usage.page_from ? `#page=${usage.page_from}` : ''}`} target="_blank" rel="noopener noreferrer">{usage.annex || usage.source_title || 'Lampiran sumber'}{usage.page_from ? ` · Halaman PDF ${usage.page_from}${usage.page_to && usage.page_to !== usage.page_from ? `–${usage.page_to}` : ''}` : ' · Halaman belum terpetakan'}</a> : <p className={styles.warning}>Rujukan lampiran belum tersedia.</p>}
                 </li>)}</ul>
-                <nav className={styles.pagination} aria-label="Halaman penggunaan"><button type="button" disabled={detailPage <= 1} onClick={() => turnDetailPage(detailPage - 1)}>Penggunaan sebelumnya</button><span role="status">Halaman {detailPage} dari {usagePages} · {number.format(detail.usage_total)} kemunculan</span><button type="button" disabled={detailPage >= usagePages} onClick={() => turnDetailPage(detailPage + 1)}>Penggunaan berikutnya</button></nav></>}
+                <PageSlider page={detailPage} pages={usagePages} label="Halaman penggunaan" detail={`${number.format(detail.usage_total)} kemunculan`} onPageChange={turnDetailPage} />
+                </>}
         </section>
       </>}
     </dialog>

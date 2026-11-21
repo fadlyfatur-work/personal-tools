@@ -13,29 +13,44 @@ export function useRabComponents(ids: string[]) {
   const [error, setError] = useState('')
   const [revision, setRevision] = useState(0)
   const cache = useRef<Record<string, RabUsageAnalysis | null>>({})
+  const inFlight = useRef(new Map<string, Promise<void>>())
+  const mounted = useRef(false)
   const key = JSON.stringify([...new Set(ids)].sort())
   useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
+  useEffect(() => {
     const requested: string[] = JSON.parse(key)
+    let active = true
+    setData(current => ({ ...current, ...cache.current }))
     const missing = requested.filter(id => !(id in cache.current))
     if (!missing.length) { setLoading(false); setError(''); return }
-    const controller = new AbortController()
-    async function load() {
-      setLoading(true); setError('')
-      try {
-        for (let start = 0; start < missing.length; start += 100) {
-          const batch = missing.slice(start, start + 100)
-          const response = await fetch('/api/ahsp/rab/components', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: batch }), signal: controller.signal })
-          const body = await response.json()
-          if (!response.ok || !Array.isArray(body.analyses)) throw new Error(body.error || 'Informasi MPTK belum dapat dimuat.')
-          if (controller.signal.aborted) return
-          for (const id of batch) cache.current[id] = body.analyses.find((a: RabUsageAnalysis) => a.item.id === id) ?? null
-          setData({ ...cache.current })
-        }
-      } catch (error) { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Informasi MPTK belum dapat dimuat.') }
-      finally { if (!controller.signal.aborted) setLoading(false) }
+    setLoading(true); setError('')
+    for (let start = 0; start < missing.length; start += 100) {
+      const batch = missing.slice(start, start + 100).filter(id => !inFlight.current.has(id))
+      if (!batch.length) continue
+      const task = (async () => {
+        const response = await fetch('/api/ahsp/rab/components', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: batch }) })
+        const body = await response.json()
+        if (!response.ok || !Array.isArray(body.analyses)) throw new Error(body.error || 'Informasi MPTK belum dapat dimuat.')
+        for (const id of batch) cache.current[id] = body.analyses.find((a: RabUsageAnalysis) => a.item.id === id) ?? null
+        if (mounted.current) setData({ ...cache.current })
+      })()
+      for (const id of batch) inFlight.current.set(id, task)
+      void task.then(() => {
+        for (const id of batch) if (inFlight.current.get(id) === task) inFlight.current.delete(id)
+      }, () => {
+        for (const id of batch) if (inFlight.current.get(id) === task) inFlight.current.delete(id)
+      })
     }
-    void load()
-    return () => controller.abort()
+    const pending = missing.map(id => inFlight.current.get(id)).filter((task): task is Promise<void> => !!task)
+    void Promise.all(pending).then(() => {
+      if (active && mounted.current) { setData({ ...cache.current }); setError(''); setLoading(false) }
+    }).catch(error => {
+      if (active && mounted.current) { setError(error instanceof Error ? error.message : 'Informasi MPTK belum dapat dimuat.'); setLoading(false) }
+    })
+    return () => { active = false }
   }, [key, revision])
   return { data, loading, error, reload: () => { for (const id of JSON.parse(key)) delete cache.current[id]; setRevision(n => n + 1) } }
 }

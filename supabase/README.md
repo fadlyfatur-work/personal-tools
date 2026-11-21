@@ -1,5 +1,9 @@
 # Migrasi Supabase
 
+## Arsip item pekerjaan AHSP
+
+Setelah migrasi `202611210001_ahsp_analysis_approvals.sql`, jalankan `migrations/202611210002_ahsp_item_archiving.sql` lewat SQL Editor. Migrasi ini menambah penanda soft delete, daftar arsip privat, dan fungsi arsip untuk service role. PIN admin tetap memakai konfigurasi approval AHSP yang sudah ada. Jangan hapus baris sumber secara langsung.
+
 ## Master SPTJM 19 November 2026
 
 Setelah migrasi katalog/verifikasi AHSP Oktober, jalankan `migrations/202611190001_ahsp_sptjm_catalog.sql` melalui SQL Editor agar SPTJM dapat dicari/dibuka. Migrasi hanya memperluas view katalog. Data master diimpor terpisah, tanpa komponen, dengan status Need re-verified. Lihat [prosedur dan bukti penerapan](../docs/ahsp-master-list.md).

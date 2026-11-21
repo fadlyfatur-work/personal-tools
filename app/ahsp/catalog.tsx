@@ -2,15 +2,17 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { Check, Copy, WarningCircle } from '@phosphor-icons/react'
+import { Check, Copy, Hammer, ListChecks, Trash, WarningCircle, X } from '@phosphor-icons/react'
 import { AHSP_CATALOG_REGULATIONS, AHSP_ARCHIVED_REGULATION, AHSP_ARCHIVE_NOTICE, ahspPhraseSearchError, verificationLabels, ahspVerificationStatus, calculateAhsp, parseAhspNumber, parseAhspSearch, ahspTypeLabel, formatAhspItemCopy, type AhspSearchStats, type AhspTypeCount, type AhspItem, type AhspSummary, type AhspOptions, type AhspSource } from '@/lib/ahsp'
 import styles from './catalog.module.css'
 import swiss from './swiss-red.module.css'
 import AppearancePicker, { useAhspAppearance } from './appearance'
-import ManualAnalysis from './manual-analysis'
+import AnalysisSubmission from './analysis-submission'
 import SourcePages from './source-pages'
 import SearchSummary from './search-summary'
 import InitialPreloader from './initial-preloader'
+import PageSlider from './page-slider'
+import ArchiveAction from './archive-action'
 
 const number = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 5 })
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 2 })
@@ -42,6 +44,7 @@ export default function AhspCatalog() {
   const [copiedId, setCopiedId] = useState('')
   const [copyNotice, setCopyNotice] = useState<{ text: string; error: boolean } | null>(null)
   const [selected, setSelected] = useState<AhspSummary | null>(null)
+  const [submissionOpen, setSubmissionOpen] = useState(false)
   const [itemDetail, setDetail] = useState<AhspItem | null>(null)
   const [referenceTarget, setReferenceTarget] = useState<AhspItem | null>(null)
   const [referenceReady, setReferenceReady] = useState(false)
@@ -130,7 +133,7 @@ export default function AhspCatalog() {
     setUseAdvanced(false)
     setDraftAdvanced(false)
   }
-  const openItem = (item: AhspSummary) => { setDetail(null); setReferenceTarget(null); setReferenceReady(false); setSourceView('analysis'); setDetailError(''); setTab('calculation'); setPrices({}); setCoefficients({}); setVolume('1'); setOverhead(''); setSelected(item) }
+  const openItem = (item: AhspSummary) => { setDetail(null); setReferenceTarget(null); setReferenceReady(false); setSourceView('analysis'); setDetailError(''); setTab('calculation'); setPrices({}); setCoefficients({}); setVolume('1'); setOverhead(''); setSubmissionOpen(false); setSelected(item) }
   const copyText = async (text: string, label: string, id = '') => {
     try {
       await navigator.clipboard.writeText(text)
@@ -142,8 +145,7 @@ export default function AhspCatalog() {
     }
   }
   const copyItem = (item: AhspSummary) => {
-    const source = options?.sources.find(s => s.id === item.source_id)
-    return copyText(formatAhspItemCopy(item, source?.annex), `Data ${item.code || item.name}`, item.id)
+    return copyText(formatAhspItemCopy(item), `Data ${item.code || item.name}`, item.id)
   }
   const changeFilter = (key: keyof typeof filters, value: string) => {
     setSearchValidation('')
@@ -210,7 +212,7 @@ export default function AhspCatalog() {
     if (!showAdvanced) setDraftAdvanced(true)
     else if (!useAdvanced && JSON.stringify(filters) === JSON.stringify(appliedFilters)) setDraftAdvanced(false)
   }
-  const close = () => { dialog.current?.close(); setSelected(null); setDetail(null) }
+  const close = () => { dialog.current?.close(); setSelected(null); setDetail(null); setSubmissionOpen(false) }
   const reference = itemDetail?.analysis_origin === 'sipasti' ? null : itemDetail?.analysis_reference
   const detail = reference ? (referenceReady && referenceTarget ? referenceTarget : itemDetail ? { ...itemDetail, analysis_status: 'needs_review' as const } : null) : itemDetail
   const documentItem = sourceView === 'origin' && itemDetail && reference
@@ -238,7 +240,11 @@ export default function AhspCatalog() {
     <div className={styles.container} inert={preloading} aria-busy={preloading}>
       <header className={styles.header} data-ahsp-header>
         <Link href="/menu" className={styles.back}>Personal Tools / Menu</Link>
-        <AppearancePicker appearance={appearance} />
+        <div className={swiss.headerTools}>
+          <AppearancePicker appearance={appearance} />
+          <Link href="/ahsp/approval" className={swiss.approvalIcon} aria-label="Approval analisis" title="Approval analisis"><ListChecks size={20} aria-hidden="true" /></Link>
+          <Link href="/ahsp/arsip" className={swiss.approvalIcon} aria-label="Lihat arsip item pekerjaan" title="Arsip item pekerjaan"><Trash size={20} aria-hidden="true" /></Link>
+        </div>
         {/* <div data-ahsp-heading><h1>Katalog AHSP</h1><p>Item pekerjaan, komponen analisis, dan perhitungan biaya.</p></div> */}
         <div className={styles.regulation} data-ahsp-regulation><strong>Edisi 2026</strong><span>SE 47/2026 dan Permen PUPR 8/2023</span></div>
       </header>
@@ -372,7 +378,7 @@ export default function AhspCatalog() {
               </div>
               <button type="button" className={styles.copyButton} data-ahsp-icon onClick={() => copyItem(item)} aria-label={`Salin data ${item.code}: ${item.name}`} title={copiedId === item.id ? 'Data tersalin' : 'Salin data item'}>{copiedId === item.id ? <Check size={18} aria-hidden="true" /> : <Copy size={18} aria-hidden="true" />}</button>
             </li>)}</ul></>}
-        {!error && !loading && total > 0 && <nav className={styles.pagination} aria-label="Halaman katalog"><button type="button" disabled={page <= 1} onClick={() => { beginList(); setPage(p => p - 1) }}>Sebelumnya</button><span>Halaman {page} dari {pages}</span><button type="button" disabled={page >= pages} onClick={() => { beginList(); setPage(p => p + 1) }}>Berikutnya</button></nav>}
+        {!error && !loading && total > 0 && <PageSlider page={page} pages={pages} label="Halaman katalog" loading={loading} onPageChange={next => { beginList(); setPage(next) }} />}
         </div>
         </div>
       </section>
@@ -386,8 +392,8 @@ export default function AhspCatalog() {
       <p className={styles.footnote}>Harga dasar mengikuti wilayah dan periode yang Anda gunakan. Hasil kalkulator belum termasuk PPN dan biaya SMKK terpisah.</p>
     </div>
 
-    <dialog ref={dialog} className={styles.dialog} aria-labelledby="ahsp-dialog-title" onClose={() => { setSelected(null); setDetail(null) }} onClick={e => { if (e.target === e.currentTarget) { const rect = e.currentTarget.getBoundingClientRect(); if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) close() } }}>
-      <div className={styles.modalHeader}><div><span className={styles.eyebrow}>{selected?.code} / {selected?.field}</span><h2 id="ahsp-dialog-title">{selected?.name}</h2><p>{selected?.regulation} / Satuan {selected?.unit || 'belum tersedia'}</p>{selected?.regulation === AHSP_ARCHIVED_REGULATION && <p className={styles.archiveTag}>{AHSP_ARCHIVE_NOTICE}. Data ini merupakan arsip regulasi.</p>}</div><button type="button" autoFocus onClick={close} className={styles.close}>Tutup</button></div>
+    <dialog ref={dialog} className={styles.dialog} aria-labelledby="ahsp-dialog-title" onClose={() => { setSelected(null); setDetail(null); setSubmissionOpen(false) }} onClick={e => { if (e.target === e.currentTarget) { const rect = e.currentTarget.getBoundingClientRect(); if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) close() } }}>
+      <div className={styles.modalHeader}><div><span className={styles.eyebrow}>{selected?.code} / {selected?.field}</span><h2 id="ahsp-dialog-title">{selected?.name}</h2><p>{selected?.regulation} / Satuan {selected?.unit || 'belum tersedia'}</p>{selected?.regulation === AHSP_ARCHIVED_REGULATION && <p className={styles.archiveTag}>{AHSP_ARCHIVE_NOTICE}. Data ini merupakan arsip regulasi.</p>}</div><div className={styles.modalActions}>{detail && detail.analysis_status !== 'extracted' && detail.field !== 'SMKK' && !reference && <button type="button" className={styles.repairAction} data-expanded={submissionOpen} aria-label="Usulkan rincian analisis" title="Usulkan rincian analisis" aria-expanded={submissionOpen} aria-controls={`submission-${detail.id}`} onClick={() => { if (tab !== 'calculation') { setTab('calculation'); setSubmissionOpen(true) } else setSubmissionOpen(open => !open) }}><Hammer size={20} aria-hidden="true" /></button>}{itemDetail && <ArchiveAction key={itemDetail.id} item={itemDetail} theme={appearance.mode} palette={appearance.palette} onArchived={() => { close(); beginList(); setPage(1); setRetry(value => value + 1) }} onCancel={close} />}<button type="button" autoFocus onClick={close} className={styles.close} aria-label="Tutup rincian item pekerjaan" title="Tutup"><X size={20} aria-hidden="true" /></button></div></div>
       {!detail && !detailError && <p className={styles.empty} role="status"><span className={styles.loadingIndicator}><span className={styles.spinner} aria-hidden="true" />Memuat komponen dan lampiran…</span></p>}
       {detailError && <div className={styles.notice} role="alert"><p>{detailError}</p><button type="button" onClick={() => { setDetailError(''); setDetailRetry(n => n + 1) }}>Muat ulang analisis</button></div>}
       {detail && <>
@@ -407,7 +413,7 @@ export default function AhspCatalog() {
           <details><summary>Teks rujukan dalam SE</summary><p>{reference.citation}</p></details>
           <div>{referenceTarget && <button type="button" onClick={() => openItem(referenceTarget)}>Buka analisis acuan</button>}<button type="button" onClick={() => { setSourceView('origin'); setTab('source') }}>Lihat rujukan dalam SE</button><button type="button" disabled={!referenceTarget} onClick={() => { setSourceView('analysis'); setTab('source') }}>Lampiran analisis Permen</button></div>
         </section>}
-        <nav className={styles.tabs} aria-label="Rincian pekerjaan">{([['calculation', 'Komponen dan kalkulator'], ['source', 'Cara hitung dan lampiran']] as const).map(([key, label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>)}</nav>
+        <nav className={styles.tabs} aria-label="Rincian pekerjaan">{([['calculation', 'Komponen dan kalkulator'], ['source', 'Cara hitung dan lampiran']] as const).map(([key, label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => { setTab(key); if (key !== 'calculation') setSubmissionOpen(false) }}>{label}</button>)}</nav>
         <div className={styles.modalBody}>
           {tab === 'calculation' && <>
             <div className={styles.analysisInfo}><strong>{analysisLabels[detail.analysis_status]}</strong><span>{ahspTypeLabel(detail.ahsp_type)}{detail.regulation_status && ` / ${detail.regulation_status}`}</span></div>
@@ -422,13 +428,13 @@ export default function AhspCatalog() {
               <span className={styles.amount}>{money(row.amount)}</span>
             </div>)}{!detail.components.some(c => c.group === group) && <p className={styles.help}>Tidak ada komponen {groupNames[group].toLowerCase()} yang tercatat pada tabel ini.</p>}</section>)}</div>}
             <section className={styles.result} aria-label="Hasil kalkulator" aria-live="polite"><h3>Perhitungan biaya</h3><dl>{detail.field !== 'SMKK' && <><div><dt>Biaya langsung (A + B + C)</dt><dd>{money(result?.direct ?? null)}</dd></div><div><dt>Biaya umum dan keuntungan</dt><dd>{money(result?.overheadAmount ?? null)}</dd></div></>}<div><dt>Harga satuan per {detail.unit}</dt><dd>{money(result?.unitPrice ?? null)}</dd></div><div className={styles.total}><dt>Total × {detail.field === 'SMKK' ? 'kuantitas' : 'volume'}</dt><dd>{money(result?.total ?? null)}</dd></div></dl>{!!result?.errors.length && <p>{Array.from(new Set(result.errors)).slice(0, 3).join(' ')}{result.errors.length > 3 && ' Lengkapi harga dan koefisien komponen lainnya.'}</p>}</section>
-            {detail.analysis_status !== 'extracted' && detail.field !== 'SMKK' && !reference && <ManualAnalysis key={detail.id} item={detail} />}
           </>}
           {tab === 'source' && <><h3>Cara hitung sesuai lampiran</h3><p>{detail.field === 'SMKK' ? 'Biaya SMKK = kuantitas biaya × harga per unit. Tentukan kuantitas sesuai kebutuhan pengendalian risiko proyek dan gunakan harga yang dapat dipertanggungjawabkan.' : 'Biaya langsung = jumlah (koefisien × harga dasar) seluruh komponen. Tambahkan biaya umum dan keuntungan sesuai tabel, lalu bagi dengan basis volume analisis untuk mendapatkan harga satuan. Total pekerjaan = harga satuan × volume pekerjaan.'}</p>
             {documentItem && <SourceReference source={source} item={documentItem} />}
             {source && documentItem && <SourcePages key={documentItem.id} source={source} item={documentItem} />}
             {documentItem?.source_text ? <details className={styles.sourceText} open><summary>Teks tabel, asumsi, dan catatan sumber</summary><pre>{documentItem.source_text}</pre></details> : <p className={styles.warning}>Halaman analisis belum terpetakan. Pencocokan nama atau kode saja belum membuktikan bahwa koefisiennya sesuai.</p>}
           </>}
+          {detail.analysis_status !== 'extracted' && detail.field !== 'SMKK' && !reference && <AnalysisSubmission key={detail.id} item={detail} expanded={submissionOpen && tab === 'calculation'} />}
         </div>
       </>}
     </dialog>

@@ -23,8 +23,8 @@ export type AhspItem = {
   regulation: string; ahsp_type: string; regulation_status: string;
   sipasti_status?: keyof typeof sipastiLabels | null;
   verification_status?: AhspVerificationStatus; verification_notes?: string[];
-  analysis_origin?: 'pdf' | 'sipasti';
-  master_provenance?: { source_name: string; source_sha256: string; checked_at: string; matched: boolean; differences: { kind: string; name?: string; before?: unknown; after?: unknown }[] } | null;
+  analysis_origin?: 'pdf' | 'sipasti' | 'manual';
+  master_provenance?: { source_name?: string; source_sha256?: string; submission_id?: string; source_reference?: string; checked_at: string; matched: boolean; differences: { kind: string; name?: string; before?: unknown; after?: unknown }[] } | null;
   analysis_target_id?: string | null; analysis_reference?: AhspAnalysisReference | null;
   reconciliation_status: string; reconciliation_notes: string[];
   source_id: string | null; page_from: number | null; page_to: number | null;
@@ -65,10 +65,9 @@ export type AhspSearchStats = {
   terms: { term: string; exact_count: number; like_count: number }[]; match: 'like' | 'exact' | 'phrases';
 }
 export function ahspTypeLabel(type: string) { return type || 'Belum teridentifikasi' }
-export function formatAhspItemCopy(item: Pick<AhspItem, 'code' | 'name' | 'field' | 'division' | 'unit' | 'ahsp_type' | 'regulation' | 'page_from' | 'page_to'>, annex = '') {
-  const pages = item.page_from ? `${item.page_from}${item.page_to && item.page_to !== item.page_from ? `-${item.page_to}` : ''}` : ''
-  return [item.code, item.name, item.field, item.division, item.unit, ahspTypeLabel(item.ahsp_type), item.regulation, annex, pages]
-    .map(value => value.replace(/[\t\r\n]+/g, ' ')).join('\t')
+export function formatAhspItemCopy(item: Pick<AhspItem, 'field' | 'code' | 'name' | 'unit' | 'regulation'>) {
+  return [item.field, item.code, item.name, item.unit, item.regulation]
+    .map(value => (value ?? '').replace(/[\t\r\n]+/g, ' ')).join(', ')
 }
 export type CalculationInput = { volume: number | null; overhead: number | null; prices: Record<string, number | null>; coefficients: Record<string, number | null> }
 

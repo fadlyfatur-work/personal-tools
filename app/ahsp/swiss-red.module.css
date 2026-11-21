@@ -50,6 +50,9 @@
   }
 }
 .appearance { display:flex; align-items:center; gap:4px; min-width:0; grid-column:2; grid-row:1; justify-self:end; }
+.headerTools { display:flex; align-items:center; gap:4px; min-width:0; grid-column:2; grid-row:1; justify-self:end; }
+.page.page .approvalIcon { display:inline-flex; align-items:center; justify-content:center; flex:0 0 44px; width:44px; height:44px; border:1px solid transparent; color:var(--muted); text-decoration:none; }
+.page.page .approvalIcon:hover { color:var(--ink); background:var(--tint); }
 .page.page [data-ahsp-header] { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px 24px; }
 .page.page [data-ahsp-header]>a { display:flex; align-items:center; min-height:44px; justify-self:start; }
 .page.page [data-ahsp-heading] { grid-column:1; grid-row:2; }

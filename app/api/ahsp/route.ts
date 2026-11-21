@@ -31,12 +31,12 @@ export async function GET(request: Request) {
   try {
     const db = getSupabaseAdmin()
     if (filters.id) {
-      const { data, error } = await db.from('ahsp_items').select('*').eq('id', filters.id).in('regulation', AHSP_CATALOG_REGULATIONS).maybeSingle()
+      const { data, error } = await db.from('ahsp_items').select('*').eq('id', filters.id).in('regulation', AHSP_CATALOG_REGULATIONS).is('archived_at', null).maybeSingle()
       if (error) throw error
       if (!data) return Response.json({ error: 'Item pekerjaan tidak ditemukan.' }, { status: 404 })
       let target = null
       if (data.analysis_target_id) {
-        const result = await db.from('ahsp_items').select('*').eq('id', data.analysis_target_id).in('regulation', AHSP_CATALOG_REGULATIONS).maybeSingle()
+        const result = await db.from('ahsp_items').select('*').eq('id', data.analysis_target_id).in('regulation', AHSP_CATALOG_REGULATIONS).is('archived_at', null).maybeSingle()
         if (result.error) throw result.error
         target = result.data
       }
@@ -59,8 +59,8 @@ export async function GET(request: Request) {
         const ids = [...new Set<string>(search.data.items.flatMap((item: SearchItem) => [item.id, ...(item.versions ?? []).map(version => version.id)]))]
         const metadata = new Map<string, { verification_status: 'verified' | 'needs_review'; verification_notes: string[]; analysis_reference: unknown }>()
         for (let start = 0; start < ids.length; start += 200) {
-          const references = await db.from('ahsp_items').select('id,analysis_reference,verification_status,verification_notes').in('id', ids.slice(start, start + 200))
-          if (references.error) throw references.error.code === '42703' ? { code: 'PGRST202' } : references.error
+          const references = await db.from('ahsp_items').select('id,analysis_reference,verification_status,verification_notes').in('id', ids.slice(start, start + 200)).is('archived_at', null)
+          if (references.error) throw references.error
           for (const row of references.data ?? []) {
             const ref = row.analysis_reference
             metadata.set(row.id, { verification_status: row.verification_status, verification_notes: row.verification_notes, analysis_reference: ref ? { ...ref, source_fingerprint: undefined, target_fingerprint: undefined } : null })
@@ -83,6 +83,7 @@ export async function GET(request: Request) {
     const message = typeof failure?.message === 'string' ? failure.message : ''
     const reason = code === '57014' ? 'SEARCH_TIMEOUT'
       : ['PGRST202', 'PGRST203', '42883'].includes(code) ? 'SEARCH_FUNCTION_UNAVAILABLE'
+      : code === '42703' ? 'SCHEMA_MIGRATION_REQUIRED'
       : /fetch failed|network|ECONN|ENOTFOUND|ETIMEDOUT/i.test(message) ? 'DATABASE_CONNECTION_FAILED'
       : message.startsWith('Missing NEXT_PUBLIC_SUPABASE_URL') ? 'DATABASE_CONFIGURATION_MISSING'
       : 'CATALOG_FAILED'
@@ -91,6 +92,7 @@ export async function GET(request: Request) {
     const explanation = reason === 'SEARCH_TIMEOUT' ? 'Pencarian melewati batas waktu database. Kurangi jumlah istilah atau persempit filter.'
       : reason === 'DATABASE_CONNECTION_FAILED' ? 'Koneksi server ke database terputus. Coba ulang pencarian.'
       : reason === 'SEARCH_FUNCTION_UNAVAILABLE' ? 'Fungsi pencarian database belum tersedia. Konfigurasi database perlu diperiksa.'
+      : reason === 'SCHEMA_MIGRATION_REQUIRED' ? 'Struktur database katalog belum diperbarui. Jalankan migrasi AHSP terbaru melalui Supabase SQL Editor.'
       : 'Katalog belum dapat dimuat. Coba ulang pencarian.'
     return Response.json({ error: explanation, code: reason, reference }, { status: 503 })
   }
