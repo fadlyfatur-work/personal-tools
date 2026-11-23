@@ -1,8 +1,8 @@
 'use client'
 
 import {useEffect,useId,useRef,useState,type ReactNode} from 'react'
-import {Plus,Trash,X} from '@phosphor-icons/react'
-import {PACKAGE_EVIDENCE_URL_LIMIT,PACKAGE_PIC_NAME_LIMIT,PACKAGE_PIC_PHONE_LIMIT,packageEvidenceComplete,packageEvidenceLink} from '@/lib/report/model'
+import {CaretDown,Plus,Trash,X} from '@phosphor-icons/react'
+import {PACKAGE_EVIDENCE_URL_LIMIT,PACKAGE_PIC_NAME_LIMIT,PACKAGE_PIC_PHONE_LIMIT,packageEvidenceLink} from '@/lib/report/model'
 import {ROLES,ROLE_LABELS,STEPS,STEP_LABELS,WORKFLOW_STATUS,newPackage,setPackageName,provinceName,provinceSummary,recordedAccountCount,timeLabel,workflowStatusOf,type ProvinceReport,type ReportPackage,type AccountRole,type AccountDetail} from '@/lib/report/model'
 import s from './report.module.css'
 
@@ -55,8 +55,8 @@ function EvidenceCheck({pkg,onChange}:EvidenceProps){
     <input type="checkbox" checked={pkg.evidenceChecked} aria-label={`Bukti dukung ${pkg.name||'paket baru'} tersedia`}
       onChange={event=>{const checked=event.target.checked;onChange(item=>{item.evidenceChecked=checked})}}/>
     Tersedia
-  </label>:<span className={s.evidenceStatus} data-complete={packageEvidenceComplete(pkg)}>
-    {packageEvidenceComplete(pkg)?'Lengkap':'Belum lengkap'}
+  </label>:<span className={s.evidenceStatus} data-checked={pkg.evidenceChecked}>
+    {pkg.evidenceChecked?'Ditandai tersedia':'Belum ditandai'}
   </span>
 }
 function EvidenceUrl({pkg,onChange}:EvidenceProps){
@@ -68,9 +68,8 @@ function EvidenceUrl({pkg,onChange}:EvidenceProps){
 }
 function PackageEvidenceFields(props:EvidenceProps){
   return <div className={s.packageEvidenceFields}>
-    <div>Bukti dukung<EvidenceCheck {...props}/></div>
-    {props.onChange?<label>URL bukti dukung<EvidenceUrl {...props}/></label>:<EvidenceUrl {...props}/>}
-    {props.onChange&&!props.pkg.createdAt&&<small className={s.evidenceHelp}>Isi URL dan centang bukti dukung sebelum menyimpan paket baru.</small>}
+    <div>{props.onChange?'Bukti dukung (opsional)':'Bukti dukung'}<EvidenceCheck {...props}/></div>
+    {props.onChange?<label>URL bukti dukung (opsional)<EvidenceUrl {...props}/></label>:<EvidenceUrl {...props}/>}
   </div>
 }
 function PackagePic({pkg,onChange}:EvidenceProps){
@@ -105,7 +104,9 @@ export function PackagePanel({pkg,provinceName,editable,canSave,onChange,onSave}
 }
 export function ProvincePanel({province,editable,canSave,onChange,onSaveNotes,onSaveChanges}:{province:ProvinceReport;editable:boolean;canSave:boolean;onChange:(update:(p:ProvinceReport)=>void)=>void;onSaveNotes:(provinceId:string,analysis:string,followUp:string)=>Promise<void>;onSaveChanges:()=>Promise<void>}) {
   const {totalPackages,integratedPackages}=provinceSummary(province)
-  const orderedPackages=[...province.packages.filter(pkg=>pkg.active),...province.packages.filter(pkg=>!pkg.active)]
+  const activePackages=province.packages.filter(pkg=>pkg.active)
+  const inactivePackages=province.packages.filter(pkg=>!pkg.active)
+  const [newPackageId,setNewPackageId]=useState('')
   const [analysis,setAnalysis]=useState(''),[followUp,setFollowUp]=useState(''),[noteError,setNoteError]=useState(''),[noteStatus,setNoteStatus]=useState(''),[savingNote,setSavingNote]=useState(false)
   const [savingChanges,setSavingChanges]=useState(false),[changeMessage,setChangeMessage]=useState('')
   const notesHistory=province.notesHistory||[]
@@ -116,33 +117,64 @@ export function ProvincePanel({province,editable,canSave,onChange,onSaveNotes,on
     try{await onSaveNotes(province.id,nextAnalysis,nextFollowUp);setAnalysis('');setFollowUp('');setNoteStatus('Catatan berhasil ditambahkan.')}catch(error){setNoteError(error instanceof Error?error.message:'Catatan belum dapat disimpan.')}finally{setSavingNote(false)}
   }
   async function saveChanges(){setSavingChanges(true);setChangeMessage('');try{await onSaveChanges();setChangeMessage('Perubahan tersimpan.')}catch(error){setChangeMessage(error instanceof Error?error.message:'Perubahan belum dapat disimpan.')}finally{setSavingChanges(false)}}
+  function addPackage(){
+    const pkg=newPackage('')
+    onChange(p=>{p.packages.push(pkg)})
+    setNewPackageId(pkg.id)
+  }
+  function renderPackage(pkg:ReportPackage){
+    const updatePackage=editable?(update:(item:ReportPackage)=>void)=>onChange(p=>{
+      const item=p.packages.find(row=>row.id===pkg.id)
+      if(item)update(item)
+    }):undefined
+    return <details className={`${s.packageModalCard} ${!pkg.active?s.packageInactive:''}`} key={pkg.id} open={pkg.id===newPackageId&&!pkg.createdAt}>
+      <summary className={s.modalDisclosureSummary}>{pkg.name||'Paket baru'}<CaretDown aria-hidden="true" size={16}/></summary>
+      <div className={s.modalDisclosureBody}>
+        {updatePackage&&<label>Nama paket<input value={pkg.name} maxLength={240} onChange={event=>{
+          const name=event.target.value
+          updatePackage(item=>setPackageName(item,name))
+        }}/></label>}
+        {pkg.active&&<>
+          <div><span className={`${s.workflowStatus} ${s.incomplete}`}>{WORKFLOW_STATUS[workflowStatusOf(pkg)]}</span></div>
+          <PackageEvidenceFields pkg={pkg} onChange={updatePackage}/>
+          <PackagePic pkg={pkg} onChange={updatePackage}/>
+          <div className={s.packageStageList}>{STEPS.map(step=><div className={s.packageStageRow} key={step}><span>{STEP_LABELS[step]}</span><strong className={pkg[step]==='selesai'?s.complete:pkg[step]==='proses'?s.incomplete:s.packageStageNone}>{pkg[step]==='selesai'?'Selesai':pkg[step]==='proses'?'Proses':'-'}</strong></div>)}</div>
+          {updatePackage?<label>Catatan paket<textarea rows={2} maxLength={3000} value={pkg.note} onChange={event=>{
+            const note=event.target.value
+            updatePackage(item=>{item.note=note})
+          }}/></label>:pkg.note&&<p className={s.packageNote}>{pkg.note}</p>}
+        </>}
+        {!pkg.active&&pkg.inactiveReason&&<small className={s.packageReason}>Alasan penonaktifan: {pkg.inactiveReason}</small>}
+        <p className={s.packageTimestamps}>Diinput {timeLabel(pkg.createdAt)} · Nama diubah {timeLabel(pkg.nameUpdatedAt)} · Progres diubah {timeLabel(pkg.statusUpdatedAt)}</p>
+      </div>
+    </details>
+  }
   return <>
     <p className={s.panelIntro}>Paket aktif dan progres integrasinya di {provinceName(province.id,province.name)}.</p>
     <fieldset disabled={!editable} className={s.formFields}>
       <div className={s.packageMetrics} aria-label="Ringkasan paket"><article><span>Total paket aktif</span><strong>{totalPackages}</strong></article><article><span>Siap integrasi SIPD</span><strong>{integratedPackages}</strong><small>Termasuk paket yang sudah diterima SIPD</small></article></div>
-      <div className={s.sectionHeader}><h3>Paket</h3>{editable&&<button type="button" className={s.button} onClick={()=>onChange(p=>{p.packages.push(newPackage(''))})}><Plus size={16}/>Tambah paket</button>}</div>
-      {!province.packages.length&&<p className={s.emptyDetail}>Belum ada nama paket. {editable?'Pilih Tambah paket untuk mulai mengisi.':'Buka rincian provinsi untuk menambahkan paket.'}</p>}
-      {orderedPackages.map((pkg,index)=><section className={`${s.packageModalCard} ${!pkg.active?s.packageInactive:''}`} key={pkg.id}>
-        <div className={s.packageModalHeading}><h4>{pkg.name||`Paket ${index+1}`}</h4>{pkg.active&&<span className={`${s.workflowStatus} ${s.incomplete}`}>{WORKFLOW_STATUS[workflowStatusOf(pkg)]}</span>}</div>
-        {editable?<label>Nama paket<input value={pkg.name} maxLength={240} onChange={e=>onChange(p=>{setPackageName(p.packages.find(item=>item.id===pkg.id)!,e.target.value)})}/></label>:<p className={s.packageModalName}>{pkg.name||'Tambahkan nama paket'}</p>}
-        {pkg.active&&<PackageEvidenceFields pkg={pkg} onChange={editable?update=>onChange(p=>{const item=p.packages.find(item=>item.id===pkg.id);if(item)update(item)}):undefined}/>}
-        {pkg.active&&<PackagePic pkg={pkg} onChange={editable?update=>onChange(p=>{const item=p.packages.find(item=>item.id===pkg.id);if(item)update(item)}):undefined}/>}
-        {pkg.active&&<div className={s.packageStageList}>{STEPS.map(step=><div className={s.packageStageRow} key={step}><span>{STEP_LABELS[step]}</span><strong className={pkg[step]==='selesai'?s.complete:pkg[step]==='proses'?s.incomplete:s.packageStageNone}>{pkg[step]==='selesai'?'Selesai':pkg[step]==='proses'?'Proses':'-'}</strong></div>)}</div>}
-        {pkg.active&&(editable?<label>Catatan paket<textarea rows={2} maxLength={3000} value={pkg.note} onChange={e=>onChange(p=>{p.packages.find(item=>item.id===pkg.id)!.note=e.target.value})}/></label>:pkg.note&&<p className={s.packageNote}>{pkg.note}</p>)}
-        {!pkg.active&&pkg.inactiveReason&&<small className={s.packageReason}>Alasan penonaktifan: {pkg.inactiveReason}</small>}
-        <p className={s.packageTimestamps}>Diinput {timeLabel(pkg.createdAt)} · Nama diubah {timeLabel(pkg.nameUpdatedAt)} · Progres diubah {timeLabel(pkg.statusUpdatedAt)}</p>
-      </section>)}
-      {editable&&<section className={s.noteComposer} aria-label="Catatan laporan">
-        <h3>Tambah catatan</h3>
-        <label>Analisis / kendala<textarea rows={3} maxLength={3000} value={analysis} onChange={e=>{setAnalysis(e.target.value);setNoteStatus('')}} placeholder="Tulis analisis atau kendala" disabled={savingNote}/></label>
-        <label>Tindak lanjut<textarea rows={3} maxLength={3000} value={followUp} onChange={e=>{setFollowUp(e.target.value);setNoteStatus('')}} placeholder="Tulis tindak lanjut" disabled={savingNote}/></label>
-        {noteError&&<p role="alert" className={s.error}>{noteError}</p>}{noteStatus&&<p role="status" className={s.notice}>{noteStatus}</p>}
-        <button className={s.primaryButton} type="button" onClick={()=>void saveNote()} disabled={savingNote||(!analysis.trim()&&!followUp.trim())}>{savingNote?'Menyimpan...':'Simpan catatan'}</button>
-      </section>}
+      <div className={s.sectionHeader}><h3>Paket aktif</h3>{editable&&<button type="button" className={s.button} onClick={addPackage}><Plus size={16}/>Tambah paket</button>}</div>
+      {activePackages.length?activePackages.map(renderPackage):<p className={s.emptyDetail}>Belum ada paket aktif. {editable&&'Pilih Tambah paket untuk mulai mengisi.'}</p>}
+      {(editable||savingChanges)&&<div className={s.modalSave}>
+        {changeMessage&&<p role={changeMessage.includes('tersimpan')?'status':'alert'} className={changeMessage.includes('tersimpan')?s.notice:s.error}>{changeMessage}</p>}
+        <button className={s.primaryButton} type="button" disabled={savingChanges||savingNote||!canSave} onClick={()=>void saveChanges()}>{savingChanges?'Menyimpan...':'Simpan perubahan'}</button>
+      </div>}
+      {!!inactivePackages.length&&<>
+        <div className={s.sectionHeader}><h3>Paket nonaktif</h3></div>
+        {inactivePackages.map(renderPackage)}
+      </>}
+      {(editable||savingNote)&&<details className={s.noteComposer}>
+        <summary className={s.modalDisclosureSummary}>Tambah catatan<CaretDown aria-hidden="true" size={16}/></summary>
+        <div className={s.modalDisclosureBody}>
+          <label>Analisis / kendala<textarea rows={3} maxLength={3000} value={analysis} onChange={e=>{setAnalysis(e.target.value);setNoteStatus('')}} placeholder="Tulis analisis atau kendala" disabled={savingNote}/></label>
+          <label>Tindak lanjut<textarea rows={3} maxLength={3000} value={followUp} onChange={e=>{setFollowUp(e.target.value);setNoteStatus('')}} placeholder="Tulis tindak lanjut" disabled={savingNote}/></label>
+          {noteError&&<p role="alert" className={s.error}>{noteError}</p>}{noteStatus&&<p role="status" className={s.notice}>{noteStatus}</p>}
+          <div><button className={s.primaryButton} type="button" onClick={()=>void saveNote()} disabled={savingNote||(!analysis.trim()&&!followUp.trim())}>{savingNote?'Menyimpan...':'Simpan catatan'}</button></div>
+        </div>
+      </details>}
       <section className={s.noteHistory} aria-label="Riwayat catatan"><h3>Riwayat catatan</h3>
         {notesHistory.length?notesHistory.slice().reverse().map(entry=><article key={entry.id}><time>Dicatat {timeLabel(entry.createdAt)}</time>{entry.analysis&&<p><strong>Analisis / kendala</strong>{entry.analysis}</p>}{entry.followUp&&<p><strong>Tindak Lanjut</strong>{entry.followUp}</p>}</article>):province.notes||province.followUp?<article><time>Tanggal catatan lama tidak tersedia</time>{province.notes&&<p><strong>Analisis / kendala</strong>{province.notes}</p>}{province.followUp&&<p><strong>Tindak Lanjut</strong>{province.followUp}</p>}</article>:<p className={s.quiet}>Belum ada catatan tersimpan.</p>}
       </section>
-      {editable&&<div className={s.modalSave}>{changeMessage&&<p role={changeMessage.includes('tersimpan')?'status':'alert'} className={changeMessage.includes('tersimpan')?s.notice:s.error}>{changeMessage}</p>}<button className={s.primaryButton} type="button" disabled={savingChanges||savingNote||!canSave} onClick={()=>void saveChanges()}>{savingChanges?'Menyimpan...':'Simpan perubahan'}</button></div>}
     </fieldset>
     <p className={s.quiet}>Alur paket: PU → BPKAD → APIP. Jika dikembalikan untuk perbaikan, proses dimulai lagi dari PU. Catatan paket tidak wajib.</p>
   </>

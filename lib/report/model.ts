@@ -79,19 +79,6 @@ export function packageEvidenceLink(value:string|undefined):string|null {
     return url.username||url.password?null:url.href
   }catch{return null}
 }
-export function packageEvidenceComplete(pkg:ReportPackage){
-  return pkg.evidenceChecked&&packageEvidenceLink(pkg.evidenceUrl)!==null
-}
-export function assertPackageEvidence(document:ReportDocument,previous:ReportDocument|undefined){
-  const prior=new Map(previous?.provinces.flatMap(p=>p.packages.map(pkg=>[pkg.id,pkg] as const)))
-  for(const province of document.provinces)for(const pkg of province.packages){
-    if(!pkg.active||packageEvidenceComplete(pkg))continue
-    const before=prior.get(pkg.id)
-    const changed=!before?.active||before.name!==pkg.name||Boolean(before.evidenceChecked)!==pkg.evidenceChecked
-      ||(before.evidenceUrl||'')!==pkg.evidenceUrl
-    if(changed)throw new Error(`${provinceName(province.id,province.name)}: centang bukti dukung dan isi URL http/https untuk paket “${pkg.name}”.`)
-  }
-}
 export function newPackage(name:string,id:string=crypto.randomUUID()):ReportPackage {
   return {id,name,evidenceChecked:false,evidenceUrl:'',picName:'',picPhone:'',pu:name.trim()?'proses':'-',bpkad:'-',apip:'-',perbaikan:'-',workflowStatus:'pu',repairStatus:'-',returnTarget:null,workflowHistory:name.trim()?[{id:crypto.randomUUID(),from:null,to:'pu',kind:'created',note:'',createdAt:null}]:[],active:true,inactiveReason:'',note:'',createdAt:null,updatedAt:null,nameUpdatedAt:null,statusUpdatedAt:null}
 }
@@ -158,7 +145,6 @@ const accountValue = (a:AccountInfo) => JSON.stringify({status:a.status,count:a.
 const packageValue = (p:ReportPackage) => JSON.stringify({name:p.name,evidenceChecked:p.evidenceChecked??false,evidenceUrl:p.evidenceUrl??'',picName:p.picName??'',picPhone:p.picPhone??'',active:p.active,inactiveReason:p.inactiveReason,note:p.note,workflowStatus:p.workflowStatus,repairStatus:p.repairStatus,returnTarget:p.returnTarget,workflowHistory:p.workflowHistory,...Object.fromEntries(STEPS.map(step=>[step,p[step]]))})
 export function prepareDocument(value:unknown, previous:ReportDocument, now:string, reportDate:string):ReportDocument {
   const doc=validateDocument(value)
-  assertPackageEvidence(doc,previous)
   doc.source=previous.source
   if(previous.provinces.some(old=>!doc.provinces.some(p=>p.id===old.id)))throw new Error('Provinsi yang sudah tercatat tidak boleh dihapus.')
   const owners=new Map(previous.provinces.flatMap(p=>p.packages.map(pkg=>[pkg.id,p.id] as const)))

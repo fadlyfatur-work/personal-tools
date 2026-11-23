@@ -1,6 +1,6 @@
 import {jsPDF} from 'jspdf'
 import {
-  ROLES, STEPS, accountLabel, packageEvidenceComplete, packageEvidenceLink, timeLabel, provinceName, provinceSummary,
+  ROLES, STEPS, accountLabel, packageEvidenceLink, timeLabel, provinceName, provinceSummary,
   sortProvinces, stepSummary, summarize, workflowStatusOf, type ReportPackage, type ReportSnapshot,
 } from './model'
 
@@ -212,9 +212,9 @@ export function createReportPdf(snapshot: ReportSnapshot): jsPDF {
         const status = packageStatus(pkg)
         lines.push(index ? {...spacer, rule: true} : spacer, ...detailLine(pkg.name, 9, ink, true))
         lines.push(...detailLine(`Tanggal tercatat: ${timeLabel(pkg.createdAt)}`, 8, muted))
-        const evidenceUrl = packageEvidenceComplete(pkg)?packageEvidenceLink(pkg.evidenceUrl):null
+        const evidenceUrl = packageEvidenceLink(pkg.evidenceUrl)
         if(evidenceUrl)lines.push({value:'Bukti dukung: Buka tautan',size:8,color:'#1D4ED8',bold:false,url:evidenceUrl})
-        else lines.push(...detailLine('Bukti dukung: Belum lengkap',8,muted))
+        else if(pkg.evidenceChecked)lines.push(...detailLine('Bukti dukung: Ditandai tersedia',8,muted))
         if(pkg.picName&&pkg.picPhone)lines.push(...detailLine(`PIC Paket: ${pkg.picName} | ${pkg.picPhone}`,8,muted))
         if (status) lines.push(spacer, ...detailLine(`Status: ${status}`))
       })

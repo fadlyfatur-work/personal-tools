@@ -107,14 +107,13 @@
 .addProvinceButton:hover{background:#ffffff2b}
 .reportTable thead tr:first-child>th:nth-child(3){width:360px}
 .page .evidenceCheck{flex-direction:row;align-items:center;gap:.4rem;min-height:36px}
-.evidenceStatus{font-weight:600;color:var(--report-warn-ink);background:var(--report-warn-bg);border-radius:4px;padding:.12rem .35rem;justify-self:start}
-.evidenceStatus[data-complete=true]{color:var(--report-done-ink);background:var(--report-done-bg)}
+.evidenceStatus{font-weight:600;color:var(--suite-muted);background:var(--suite-inset);border-radius:4px;padding:.12rem .35rem;justify-self:start}
+.evidenceStatus[data-checked=true]{color:var(--report-done-ink);background:var(--report-done-bg)}
 .evidenceLink{color:var(--suite-link);overflow-wrap:anywhere;text-underline-offset:.14em}
 .page .evidenceUrlInput{min-width:0;width:100%;min-height:36px;padding:.35rem .45rem}
 .evidenceUrlInput[aria-invalid=true]{border-color:var(--suite-danger)}
 .packageEvidenceFields{display:grid;grid-template-columns:minmax(110px,auto) minmax(0,1fr);align-items:center;gap:.6rem .85rem;padding:.65rem;border:1px solid var(--suite-line);border-radius:6px;font-size:.8125rem}
 .packageEvidenceFields>div{display:grid;gap:.3rem}
-.evidenceHelp{grid-column:1/-1;color:var(--suite-muted)}
 .packagePic{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.65rem;text-align:left;overflow-wrap:anywhere}
 .page .packagePic input{min-width:0;width:100%;min-height:36px;padding:.35rem .45rem}
 @media(max-width:420px){.packageEvidenceFields{grid-template-columns:1fr}}
@@ -249,10 +248,14 @@
 .workflowTimeline li strong,.workflowTimeline li time{display:block}
 .workflowTimeline .quiet{margin:.4rem 0 0}
 .packageModalCard{display:flex;flex-direction:column;gap:.55rem;padding:.7rem;border:1px solid var(--suite-line);border-radius:8px;background:var(--suite-surface)}
+details.packageModalCard{display:block;padding:0}
 .packageInactive .packageReason{color:var(--report-inactive-ink)}
-.packageModalHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem}
-.packageModalHeading h4{min-width:0;margin:0;font-size:.875rem;line-height:1.3;font-weight:600;overflow-wrap:anywhere}
-.packageModalName,.packageNote{margin:0;font-size:.8125rem;line-height:1.4;overflow-wrap:anywhere}
+.modalDisclosureSummary{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:44px;padding:.5rem .7rem;font-size:.875rem;line-height:1.3;font-weight:600;overflow-wrap:anywhere;cursor:pointer;list-style:none}
+.modalDisclosureSummary::-webkit-details-marker{display:none}
+.modalDisclosureSummary svg{flex:none;color:var(--suite-muted)}
+details[open]>.modalDisclosureSummary svg{transform:rotate(180deg)}
+.modalDisclosureBody{display:grid;gap:.65rem;padding:.7rem;border-top:1px solid var(--suite-line)}
+.packageNote{margin:0;font-size:.8125rem;line-height:1.4;overflow-wrap:anywhere}
 .packageStageList{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.35rem}
 .packageStageRow{display:flex;flex-direction:column;gap:.15rem;min-width:0;padding:.35rem .45rem;border:1px solid var(--suite-line);border-radius:6px;background:var(--suite-inset)}
 .packageStageRow span{font-size:.6875rem;color:var(--suite-muted)}
@@ -267,8 +270,9 @@
 .sectionHeader h3{font-size:1rem;margin:0;font-weight:600}
 .detailBlock{display:flex;flex-direction:column;gap:.85rem;padding:1rem 0;border-top:1px solid var(--suite-line)}
 .detailBlock h4{font-size:.875rem;margin:0;font-weight:600}
-.noteComposer,.noteHistory{display:flex;flex-direction:column;gap:.75rem;padding:1rem 0;border-top:1px solid var(--suite-line)}
-.noteComposer h3,.noteHistory h3{font-size:.95rem;font-weight:600;margin:0}
+.noteComposer{border-top:1px solid var(--suite-line)}
+.noteHistory{display:flex;flex-direction:column;gap:.75rem;padding:1rem 0;border-top:1px solid var(--suite-line)}
+.noteHistory h3{font-size:.95rem;font-weight:600;margin:0}
 .noteHistory article{padding:.7rem .85rem;border:1px solid var(--suite-line);border-radius:8px;background:var(--suite-inset)}
 .noteHistory article time{display:block;margin-bottom:.45rem;font-size:.75rem;color:var(--suite-muted)}
 .noteHistory article p{margin:.45rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere}

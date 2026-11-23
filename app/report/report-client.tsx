@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 import {ArrowClockwise,CaretDown,ChartLineUp,Check,Clock,DownloadSimple,Eye,FileXls,Gear,Minus,NotePencil,PencilSimple,Plus,SignOut,Table,Trash,UploadSimple,Warning,X} from '@phosphor-icons/react'
 import {SuiteSurface,ThemePicker} from '@/app/tools/components/suite-theme'
 import {ROLES,ROLE_LABELS,STEPS,STEP_LABELS,WORKFLOW_STATUS,accountLabel,dateLabel,newPackage,newProvince,provinceName,provinceSummary,recordedAccountCount,recordedAccountsByRole,setPackageName,sortProvinces,stepSummary,summarize,timeLabel,today,validateDocument,workflowStatusOf,type AccountRole,type ProvinceReport,type ReportPackage,type ReportDocument,type ReportSnapshot,type ReportHistoryPoint,type ReportChange,type Step,type WorkflowStatus} from '@/lib/report/model'
-import {assertPackageEvidence} from '@/lib/report/model'
 import {ReportDialog,ConfirmDialog,AccountPanel,ProvincePanel,PackagePanel,AccessPanel} from './report-details'
 import {ReportImport,type ImportTarget} from './report-import'
 import {selectImportRows,type ImportMode,type ImportRow} from '@/lib/report/import'
@@ -245,7 +244,7 @@ export default function ReportClient(){
     setBusy('save');setError('');setNotice('')
     try{
       const before=data?.snapshot?.document||data?.initial
-      assertPackageEvidence(validateDocument(documentToSave),before??undefined)
+      validateDocument(documentToSave)
       const changed=documentToSave.provinces.filter(p=>JSON.stringify(p)!==JSON.stringify(before?.provinces.find(row=>row.id===p.id))).map(p=>p.id)
       const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({date,revision:data?.snapshot?.revision||0,document:documentToSave,source:'manual',reason})})
       applySavedSnapshot(saved,'manual',changed,reason);setNotice(`Perubahan ${dateLabel(saved.date)} berhasil disimpan · Revisi ${saved.revision}.`);return saved
@@ -339,7 +338,6 @@ export default function ReportClient(){
     const chosen=rows.filter(row=>row.changed&&selected.has(row.id))
     if(!chosen.length)throw new Error('Pilih setidaknya satu provinsi.')
     const document=selectImportRows(importTarget.document,chosen,selected)
-    assertPackageEvidence(document,importTarget.document)
     const reason=mode==='excel'?'Impor Excel':'Impor JSON SIPASTI Pemda'
     const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({
       date:importTarget.date,revision:importTarget.revision,document,source:'import',reason,

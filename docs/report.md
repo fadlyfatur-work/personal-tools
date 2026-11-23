@@ -54,9 +54,9 @@ Sumber awal membuktikan 20 akun provinsi pada 15 provinsi, dengan rekap keberada
 
 ## Excel, PDF dan grafik
 
-Template `.xlsx` versi 4 memuat Petunjuk, Provinsi, Akun dan Paket, termasuk checklist bukti dukung, URL, nama PIC dan nomor kontak. Pertahankan header/ID. Kosongkan ID untuk rincian akun/paket baru. Kolom total paket dan siap integrasi dihitung otomatis. Template versi 3 tetap bisa dibaca untuk perubahan data yang sudah ada. Paket baru memerlukan template versi 4.
+Template `.xlsx` versi 4 memuat Petunjuk, Provinsi, Akun dan Paket, termasuk checklist bukti dukung, URL, nama PIC dan nomor kontak. Pertahankan header/ID. Kosongkan ID untuk rincian akun/paket baru. Kolom total paket dan siap integrasi dihitung otomatis. Template versi 3 tetap bisa dibaca dan menggunakan kolom versi tersebut.
 
-Lengkapi checklist bukti dukung, URL, dan PIC di modal paket atau modal provinsi. Paket baru, paket yang diaktifkan kembali, dan perubahan nama paket memerlukan checklist bukti dukung serta URL HTTP/HTTPS. Jika bukti pada paket aktif sudah diisi, checklist dan URL harus tetap lengkap. Paket lama tanpa bukti ditandai **Belum lengkap** di modal. PIC opsional. Jika diisi, nama dan nomor kontak harus diisi bersama. Tautan bukti dan PIC yang tersedia tercantum di rincian PDF.
+Checklist bukti dukung dan URL dapat diisi secara terpisah di modal paket atau modal provinsi. Keduanya opsional. URL yang diisi harus berupa tautan HTTP/HTTPS yang valid. PIC opsional. Jika diisi, nama dan nomor kontak harus diisi bersama. Tautan bukti dan PIC yang tersedia tercantum di rincian PDF.
 
 Impor menerima Excel serta hierarki akun JSON SIPASTI Pemda melalui file `.json`/`.txt` atau teks yang ditempel. Admin SKPD Provinsi dipetakan ke Sekda, dan Kepala Dinas PU ke Kepala Dinas. Impor JSON hanya mengisi akun provinsi yang sesuai dengan enam peran laporan. Akun Stranas PK, Testing, wilayah latihan, dan kabupaten/kota dilewati. Akun dicocokkan melalui ID atau email dalam provinsi dan peran yang sama. Data yang tidak tercantum di file dipertahankan.
 

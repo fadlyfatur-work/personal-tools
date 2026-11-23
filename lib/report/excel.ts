@@ -19,7 +19,7 @@ function worksheet(rows:Cell[][],contactColumn=false){
 }
 export function createReportWorkbook(doc:ReportDocument,date:string):Uint8Array {
   const sheets:Record<string,Cell[][]>={
-    Petunjuk:[['REPORT_ASB_VERSION','4'],['TANGGAL_LAPORAN',date],['Cara mengisi','Edit data pada sheet Akun dan Paket. Jangan ubah header dan ID yang sudah terisi.'],['Jumlah paket','Total paket dan jumlah siap integrasi dihitung otomatis dari daftar paket aktif. Kolom pada sheet Provinsi hanya informasi.'],['Status akun','Ada / T/C / Tidak ada. Jumlah Tidak ada harus 0; T/C kosong.'],['Status paket','Selesai / Proses / -. Aktif: Ya / Tidak; nonaktif wajib alasan. Paket baru dengan alur kosong mulai di PU.'],['Bukti dukung dan PIC','Untuk paket baru isi Ya pada Bukti Dukung dan isi URL http/https. Jika mengisi PIC, isi nama dan nomor kontak.'],['Paket atau akun baru','Isi provinsi dan nama. Kosongkan ID untuk data baru. Email akun atau nama paket yang cocok dipakai kembali.'],['Tanggal dan waktu','Kolom timestamp hanya informasi. Waktu perubahan ditetapkan server saat disimpan.'],['Impor','Gunakan tanggal laporan yang sama. Pilih provinsi pada pratinjau, lalu pilih Simpan. Rumus tidak diterima.']],
+    Petunjuk:[['REPORT_ASB_VERSION','4'],['TANGGAL_LAPORAN',date],['Cara mengisi','Edit data pada sheet Akun dan Paket. Jangan ubah header dan ID yang sudah terisi.'],['Jumlah paket','Total paket dan jumlah siap integrasi dihitung otomatis dari daftar paket aktif. Kolom pada sheet Provinsi hanya informasi.'],['Status akun','Ada / T/C / Tidak ada. Jumlah Tidak ada harus 0; T/C kosong.'],['Status paket','Selesai / Proses / -. Aktif: Ya / Tidak; nonaktif wajib alasan. Paket baru dengan alur kosong mulai di PU.'],['Bukti dukung dan PIC','Bukti Dukung dan URL opsional. Jika mengisi URL, gunakan http/https. Isi nama dan nomor kontak jika menetapkan PIC.'],['Paket atau akun baru','Isi provinsi dan nama. Kosongkan ID untuk data baru. Email akun atau nama paket yang cocok dipakai kembali.'],['Tanggal dan waktu','Kolom timestamp hanya informasi. Waktu perubahan ditetapkan server saat disimpan.'],['Impor','Gunakan tanggal laporan yang sama. Pilih provinsi pada pratinjau, lalu pilih Simpan. Rumus tidak diterima.']],
     Provinsi:[HEADERS.Provinsi,...doc.provinces.map(p=>[p.id,provinceName(p.id,p.name),p.totalPackages,p.integratedPackages,p.notes,p.followUp,p.totalUpdatedAt,p.integrationUpdatedAt])],
     Akun:[HEADERS.Akun,...doc.provinces.flatMap(p=>ROLES.flatMap(role=>{
       const a=p.accounts[role],details:(AccountDetail|null)[]=a.details.length?a.details:[null]
@@ -187,8 +187,6 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
             pkg.evidenceUrl=r[17]??pkg.evidenceUrl
             pkg.picName=r[18]??pkg.picName
             pkg.picPhone=r[19]??pkg.picPhone
-          }else if(!existing&&pkg.active){
-            throw new Error('Paket baru wajib memuat bukti dukung. Unduh template Excel terbaru.')
           }
         }
       }catch(error){throw new Error(`Sheet ${name}, baris ${rowNumber}: ${error instanceof Error?error.message:'isian tidak valid'}`)}
