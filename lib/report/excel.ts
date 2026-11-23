@@ -7,31 +7,33 @@ const REL='http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 const escape=(value:string)=>value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')
 const column=(index:number):string=>index>=26?column(Math.floor(index/26)-1)+String.fromCharCode(65+index%26):String.fromCharCode(65+index)
 type Cell=string|number|null
+const PACKAGE_REPORT_HEADERS=['Bukti Dukung','URL Bukti Dukung','Nama PIC','Nomor Kontak PIC']
 const HEADERS={
   Provinsi:['ID Provinsi','Provinsi','Total Paket (otomatis)','Siap Integrasi (otomatis)','Catatan','Tindak Lanjut','Total Diubah Pada','Integrasi Diubah Pada'],
   Akun:['ID Provinsi','Provinsi','Peran','Status','Jumlah','ID Akun','Nama Akun','Instansi','Email','Keterangan Akun','Catatan Peran','Diubah Pada'],
-  Paket:['ID Provinsi','Provinsi','ID Paket','Nama Paket','PU','BPKAD','APIP','Perbaikan','Aktif','Alasan Nonaktif','Catatan','Dicatat Pada','Nama Diubah Pada','Status Diubah Pada','Status Alur Tahap 4','Tujuan Perbaikan'],
+  Paket:['ID Provinsi','Provinsi','ID Paket','Nama Paket','PU','BPKAD','APIP','Perbaikan','Aktif','Alasan Nonaktif','Catatan','Dicatat Pada','Nama Diubah Pada','Status Diubah Pada','Status Alur Tahap 4','Tujuan Perbaikan',...PACKAGE_REPORT_HEADERS],
 }
-function worksheet(rows:Cell[][]){
-  return `${XML}<worksheet xmlns="${NS}"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="16" width="24" customWidth="1"/></cols><sheetData>${rows.map((row,r)=>`<row r="${r+1}">${row.map((value,c)=>`<c r="${column(c)}${r+1}" t="inlineStr"${r===0?' s="1"':''}><is><t xml:space="preserve">${escape(String(value??''))}</t></is></c>`).join('')}</row>`).join('')}</sheetData></worksheet>`
+function worksheet(rows:Cell[][],contactColumn=false){
+  const cols=contactColumn?'<col min="1" max="19" width="24" customWidth="1"/><col min="20" max="20" width="24" customWidth="1" style="2"/>':`<col min="1" max="${rows[0].length}" width="24" customWidth="1"/>`
+  return `${XML}<worksheet xmlns="${NS}"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${cols}</cols><sheetData>${rows.map((row,r)=>`<row r="${r+1}">${row.map((value,c)=>`<c r="${column(c)}${r+1}" t="inlineStr"${r===0?' s="1"':''}><is><t xml:space="preserve">${escape(String(value??''))}</t></is></c>`).join('')}</row>`).join('')}</sheetData></worksheet>`
 }
 export function createReportWorkbook(doc:ReportDocument,date:string):Uint8Array {
   const sheets:Record<string,Cell[][]>={
-    Petunjuk:[['REPORT_ASB_VERSION','3'],['TANGGAL_LAPORAN',date],['Cara mengisi','Edit data pada sheet Akun dan Paket. Jangan ubah header dan ID yang sudah terisi.'],['Jumlah paket','Total paket dan jumlah siap integrasi dihitung otomatis dari daftar paket aktif. Kolom pada sheet Provinsi hanya informasi.'],['Status akun','Ada / T/C / Tidak ada. Jumlah Tidak ada harus 0; T/C kosong.'],['Status paket','Selesai / Proses / -. Aktif: Ya / Tidak; nonaktif wajib alasan. Paket baru dengan alur kosong mulai di PU.'],['Paket atau akun baru','Isi provinsi dan nama. Kosongkan ID untuk data baru. Email akun atau nama paket yang cocok dipakai kembali.'],['Tanggal dan waktu','Kolom timestamp hanya informasi. Waktu perubahan ditetapkan server saat disimpan.'],['Impor','Gunakan tanggal laporan yang sama. Pilih provinsi pada pratinjau, lalu pilih Simpan. Rumus tidak diterima.']],
+    Petunjuk:[['REPORT_ASB_VERSION','4'],['TANGGAL_LAPORAN',date],['Cara mengisi','Edit data pada sheet Akun dan Paket. Jangan ubah header dan ID yang sudah terisi.'],['Jumlah paket','Total paket dan jumlah siap integrasi dihitung otomatis dari daftar paket aktif. Kolom pada sheet Provinsi hanya informasi.'],['Status akun','Ada / T/C / Tidak ada. Jumlah Tidak ada harus 0; T/C kosong.'],['Status paket','Selesai / Proses / -. Aktif: Ya / Tidak; nonaktif wajib alasan. Paket baru dengan alur kosong mulai di PU.'],['Bukti dukung dan PIC','Untuk paket baru isi Ya pada Bukti Dukung dan isi URL http/https. Jika mengisi PIC, isi nama dan nomor kontak.'],['Paket atau akun baru','Isi provinsi dan nama. Kosongkan ID untuk data baru. Email akun atau nama paket yang cocok dipakai kembali.'],['Tanggal dan waktu','Kolom timestamp hanya informasi. Waktu perubahan ditetapkan server saat disimpan.'],['Impor','Gunakan tanggal laporan yang sama. Pilih provinsi pada pratinjau, lalu pilih Simpan. Rumus tidak diterima.']],
     Provinsi:[HEADERS.Provinsi,...doc.provinces.map(p=>[p.id,provinceName(p.id,p.name),p.totalPackages,p.integratedPackages,p.notes,p.followUp,p.totalUpdatedAt,p.integrationUpdatedAt])],
     Akun:[HEADERS.Akun,...doc.provinces.flatMap(p=>ROLES.flatMap(role=>{
       const a=p.accounts[role],details:(AccountDetail|null)[]=a.details.length?a.details:[null]
       return details.map(d=>[p.id,provinceName(p.id,p.name),ROLE_LABELS[role],{ada:'Ada',tc:'T/C',tidak_ada:'Tidak ada'}[a.status],a.count,d?.id||'',d?.label||'',d?.institution||'',d?.email||'',d?.note||'',a.note,a.updatedAt])
     }))],
-    Paket:[HEADERS.Paket,...doc.provinces.flatMap(p=>p.packages.map(pkg=>[p.id,provinceName(p.id,p.name),pkg.id,pkg.name,...STEPS.map(step=>STATUS_LABELS[pkg[step]]),pkg.active?'Ya':'Tidak',pkg.inactiveReason,pkg.note,pkg.createdAt,pkg.nameUpdatedAt,pkg.statusUpdatedAt,WORKFLOW_STATUS[pkg.workflowStatus||'pu'],pkg.workflowStatus?.startsWith('returned_')?pkg.returnTarget?.toUpperCase()??'':'']))],
+    Paket:[HEADERS.Paket,...doc.provinces.flatMap(p=>p.packages.map(pkg=>[p.id,provinceName(p.id,p.name),pkg.id,pkg.name,...STEPS.map(step=>STATUS_LABELS[pkg[step]]),pkg.active?'Ya':'Tidak',pkg.inactiveReason,pkg.note,pkg.createdAt,pkg.nameUpdatedAt,pkg.statusUpdatedAt,WORKFLOW_STATUS[pkg.workflowStatus||'pu'],pkg.workflowStatus?.startsWith('returned_')?pkg.returnTarget?.toUpperCase()??'':'',pkg.evidenceChecked?'Ya':'Tidak',pkg.evidenceUrl,pkg.picName,pkg.picPhone]))],
   }
   const zip=new PizZip(),names=Object.keys(sheets)
   zip.file('[Content_Types].xml',`${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${names.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`)
   zip.file('_rels/.rels',`${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="xl/workbook.xml"/></Relationships>`)
   zip.file('xl/workbook.xml',`${XML}<workbook xmlns="${NS}" xmlns:r="${REL}"><sheets>${names.map((name,i)=>`<sheet name="${name}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`)
   zip.file('xl/_rels/workbook.xml.rels',`${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${names.map((_,i)=>`<Relationship Id="rId${i+1}" Type="${REL}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="style" Type="${REL}/styles" Target="styles.xml"/></Relationships>`)
-  zip.file('xl/styles.xml',`${XML}<styleSheet xmlns="${NS}"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFF8FAFC"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF234F84"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf fontId="0" fillId="0" borderId="0" xfId="0"/><xf fontId="1" fillId="2" borderId="0" xfId="0" applyFill="1" applyFont="1"/></cellXfs></styleSheet>`)
-  names.forEach((name,i)=>zip.file(`xl/worksheets/sheet${i+1}.xml`,worksheet(sheets[name])))
+  zip.file('xl/styles.xml',`${XML}<styleSheet xmlns="${NS}"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFF8FAFC"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF234F84"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf fontId="0" fillId="0" borderId="0" xfId="0"/><xf fontId="1" fillId="2" borderId="0" xfId="0" applyFill="1" applyFont="1"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>`)
+  names.forEach((name,i)=>zip.file(`xl/worksheets/sheet${i+1}.xml`,worksheet(sheets[name],name==='Paket')))
   return zip.generate({type:'uint8array',compression:'DEFLATE'})
 }
 
@@ -105,7 +107,8 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
     }).filter(row=>row.cells.some(value=>value?.trim()))
   }
   const info=await rows('Petunjuk')
-  if(info.find(row=>row.cells[0]==='REPORT_ASB_VERSION')?.cells[1]!=='3')throw new Error('Versi template tidak cocok. Unduh template terbaru.')
+  const version=info.find(row=>row.cells[0]==='REPORT_ASB_VERSION')?.cells[1]
+  if(version!=='3'&&version!=='4')throw new Error('Versi template tidak cocok. Unduh template terbaru.')
   if(info.find(row=>row.cells[0]==='TANGGAL_LAPORAN')?.cells[1]!==date)throw new Error('Tanggal Excel berbeda dari tanggal laporan yang sedang dibuka.')
   const doc=validateDocument(base),owners=new Map(doc.provinces.flatMap(p=>p.packages.map(pkg=>[pkg.id,p.id])))
   const provinceIds=new Set<string>(),seenProvinces=new Set<string>(),seenPackages=new Set<string>(),seenAccounts=new Set<string>(),groups=new Map<string,{summary:string;hasEmpty:boolean}>()
@@ -119,7 +122,8 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
   function number(raw:string|undefined){if(!raw?.trim())return null;const n=Number(raw);if(!Number.isSafeInteger(n)||n<0||n>1_000_000)throw new Error('Jumlah harus angka bulat nonnegatif, maksimal 1.000.000.');return n}
   for(const name of ['Provinsi','Akun','Paket'] as const){
     const content=await rows(name),header=content.shift()?.cells
-    if(!header||HEADERS[name].some((label,i)=>header[i]!==label))throw new Error(`Header sheet ${name} berubah. Gunakan template terbaru.`)
+    const expected=name==='Paket'&&version==='3'?HEADERS.Paket.slice(0,-PACKAGE_REPORT_HEADERS.length):HEADERS[name]
+    if(!header||expected.some((label,i)=>header[i]!==label))throw new Error(`Header sheet ${name} berubah. Gunakan template terbaru.`)
     for(const {number:rowNumber,cells:r} of content){
       try{
         const p=province(r)
@@ -176,6 +180,16 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
           if(r[8]&&!['ya','tidak'].includes(r[8].trim().toLowerCase()))throw new Error('Aktif harus Ya atau Tidak.')
           if(r[8]?.trim())pkg.active=r[8].trim().toLowerCase()==='ya'
           pkg.inactiveReason=r[9]??pkg.inactiveReason;pkg.note=r[10]??pkg.note
+          if(version==='4'){
+            const evidence=r[16]?.trim().toLowerCase()
+            if(evidence&&evidence!=='ya'&&evidence!=='tidak')throw new Error('Bukti Dukung harus Ya atau Tidak.')
+            if(evidence)pkg.evidenceChecked=evidence==='ya'
+            pkg.evidenceUrl=r[17]??pkg.evidenceUrl
+            pkg.picName=r[18]??pkg.picName
+            pkg.picPhone=r[19]??pkg.picPhone
+          }else if(!existing&&pkg.active){
+            throw new Error('Paket baru wajib memuat bukti dukung. Unduh template Excel terbaru.')
+          }
         }
       }catch(error){throw new Error(`Sheet ${name}, baris ${rowNumber}: ${error instanceof Error?error.message:'isian tidak valid'}`)}
     }

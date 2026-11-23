@@ -1,6 +1,6 @@
 import {jsPDF} from 'jspdf'
 import {
-  ROLES, STEPS, accountLabel, timeLabel, provinceName, provinceSummary,
+  ROLES, STEPS, accountLabel, packageEvidenceComplete, packageEvidenceLink, timeLabel, provinceName, provinceSummary,
   sortProvinces, stepSummary, summarize, workflowStatusOf, type ReportPackage, type ReportSnapshot,
 } from './model'
 
@@ -166,7 +166,7 @@ export function createReportPdf(snapshot: ReportSnapshot): jsPDF {
     const gap = 10, cols = 3, cardWidth = (contentWidth - (cols - 1) * gap) / cols
     const pad = 10, leading = 12, appendixTop = 68
     const maxLines = Math.floor((bottom - appendixTop - 2 * pad) / leading)
-    type CardLine = {value: string; size: number; color: string; bold: boolean; rule?: boolean}
+    type CardLine = {value: string; size: number; color: string; bold: boolean; rule?: boolean; url?: string}
     type Card = {lines: CardLine[]; height: number}
     function detailLine(value: string, size = 8.5, color = ink, bold = false): CardLine[] {
       return wrap(value, size, cardWidth - 2 * pad, bold).map(part => ({value: part, size, color, bold}))
@@ -186,13 +186,14 @@ export function createReportPdf(snapshot: ReportSnapshot): jsPDF {
       gridRow.forEach((card, i) => {
         const x = margin + i * (cardWidth + gap)
         box(x, y, cardWidth, rowHeight, '#FFFFFF', 5)
-        card.lines.forEach(({value, size, color, bold, rule}, j) => {
+        card.lines.forEach(({value, size, color, bold, rule, url}, j) => {
           const lineTop = y + pad + j * leading
           if (rule) {
             pdf.setDrawColor(line)
             pdf.line(x + pad, lineTop + leading / 2, x + cardWidth - pad, lineTop + leading / 2)
           } else if (value) {
             text(value, x + pad, lineTop + 9, size, color, bold)
+            if(url)pdf.link(x + pad, lineTop, pdf.getTextWidth(value), leading, {url})
           }
         })
       })
@@ -211,6 +212,10 @@ export function createReportPdf(snapshot: ReportSnapshot): jsPDF {
         const status = packageStatus(pkg)
         lines.push(index ? {...spacer, rule: true} : spacer, ...detailLine(pkg.name, 9, ink, true))
         lines.push(...detailLine(`Tanggal tercatat: ${timeLabel(pkg.createdAt)}`, 8, muted))
+        const evidenceUrl = packageEvidenceComplete(pkg)?packageEvidenceLink(pkg.evidenceUrl):null
+        if(evidenceUrl)lines.push({value:'Bukti dukung: Buka tautan',size:8,color:'#1D4ED8',bold:false,url:evidenceUrl})
+        else lines.push(...detailLine('Bukti dukung: Belum lengkap',8,muted))
+        if(pkg.picName&&pkg.picPhone)lines.push(...detailLine(`PIC Paket: ${pkg.picName} | ${pkg.picPhone}`,8,muted))
         if (status) lines.push(spacer, ...detailLine(`Status: ${status}`))
       })
       blockStarts.push(lines.length)

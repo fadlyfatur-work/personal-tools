@@ -2,6 +2,7 @@
 
 import {useEffect,useId,useRef,useState,type ReactNode} from 'react'
 import {Plus,Trash,X} from '@phosphor-icons/react'
+import {PACKAGE_EVIDENCE_URL_LIMIT,PACKAGE_PIC_NAME_LIMIT,PACKAGE_PIC_PHONE_LIMIT,packageEvidenceComplete,packageEvidenceLink} from '@/lib/report/model'
 import {ROLES,ROLE_LABELS,STEPS,STEP_LABELS,WORKFLOW_STATUS,newPackage,setPackageName,provinceName,provinceSummary,recordedAccountCount,timeLabel,workflowStatusOf,type ProvinceReport,type ReportPackage,type AccountRole,type AccountDetail} from '@/lib/report/model'
 import s from './report.module.css'
 
@@ -48,15 +49,53 @@ export function AccountPanel({province,role,editable,canSave,onChange,onSave}:{p
     {editable&&confirmDelete&&<ConfirmDialog title="Hapus data akun?" onClose={()=>setConfirmDelete(false)} onConfirm={()=>{onChange(p=>{const account=p.accounts[role];account.status='tc';account.count=null;account.details=[];account.note='' });setConfirmDelete(false);setSaveMessage('Data dihapus dari draft. Pilih Simpan perubahan untuk menerapkan.')}} confirmLabel="Hapus data"><p>Data akun ini akan dihapus dari draft dan statusnya kembali menjadi T/C.</p></ConfirmDialog>}
   </>
 }
+type EvidenceProps={pkg:ReportPackage;onChange?:(update:(pkg:ReportPackage)=>void)=>void}
+function EvidenceCheck({pkg,onChange}:EvidenceProps){
+  return onChange?<label className={s.evidenceCheck}>
+    <input type="checkbox" checked={pkg.evidenceChecked} aria-label={`Bukti dukung ${pkg.name||'paket baru'} tersedia`}
+      onChange={event=>{const checked=event.target.checked;onChange(item=>{item.evidenceChecked=checked})}}/>
+    Tersedia
+  </label>:<span className={s.evidenceStatus} data-complete={packageEvidenceComplete(pkg)}>
+    {packageEvidenceComplete(pkg)?'Lengkap':'Belum lengkap'}
+  </span>
+}
+function EvidenceUrl({pkg,onChange}:EvidenceProps){
+  const href=packageEvidenceLink(pkg.evidenceUrl)
+  return onChange?<input className={s.evidenceUrlInput} type="url" inputMode="url" value={pkg.evidenceUrl} maxLength={PACKAGE_EVIDENCE_URL_LIMIT}
+    aria-label={`URL bukti dukung ${pkg.name||'paket baru'}`} aria-invalid={!!pkg.evidenceUrl.trim()&&!href} placeholder="https://"
+    onChange={event=>{const value=event.target.value;onChange(item=>{item.evidenceUrl=value})}}/>
+    :href?<a className={s.evidenceLink} href={href} target="_blank" rel="noopener noreferrer">Buka bukti dukung<span className={s.srOnly}>{` ${pkg.name} (tab baru)`}</span></a>:<span className={s.quiet}>—</span>
+}
+function PackageEvidenceFields(props:EvidenceProps){
+  return <div className={s.packageEvidenceFields}>
+    <div>Bukti dukung<EvidenceCheck {...props}/></div>
+    {props.onChange?<label>URL bukti dukung<EvidenceUrl {...props}/></label>:<EvidenceUrl {...props}/>}
+    {props.onChange&&!props.pkg.createdAt&&<small className={s.evidenceHelp}>Isi URL dan centang bukti dukung sebelum menyimpan paket baru.</small>}
+  </div>
+}
+function PackagePic({pkg,onChange}:EvidenceProps){
+  return <div className={s.packagePic}>
+    {onChange?<>
+      <label>Nama PIC<input value={pkg.picName} maxLength={PACKAGE_PIC_NAME_LIMIT} autoComplete="off"
+        onChange={event=>{const value=event.target.value;onChange(item=>{item.picName=value})}}/></label>
+      <label>Nomor kontak<input type="tel" value={pkg.picPhone} maxLength={PACKAGE_PIC_PHONE_LIMIT} autoComplete="off"
+        onChange={event=>{const value=event.target.value;onChange(item=>{item.picPhone=value})}}/></label>
+    </>:pkg.picName&&pkg.picPhone?<>
+      <strong>{pkg.picName}</strong><a className={s.evidenceLink} href={`tel:${pkg.picPhone.replace(/[^+\d]/g,'')}`}>{pkg.picPhone}</a>
+    </>:<span className={s.quiet}>—</span>}
+  </div>
+}
 export function PackagePanel({pkg,provinceName,editable,canSave,onChange,onSave}:{pkg:ReportPackage;provinceName:string;editable:boolean;canSave:boolean;onChange:(update:(pkg:ReportPackage)=>void)=>void;onSave:()=>Promise<void>}){
   const [saving,setSaving]=useState(false),[message,setMessage]=useState('')
   async function saveChanges(){setSaving(true);setMessage('');try{await onSave();setMessage('Perubahan tersimpan.')}catch(error){setMessage(error instanceof Error?error.message:'Perubahan belum dapat disimpan.')}finally{setSaving(false)}}
   return <>
     <p className={s.panelIntro}>{provinceName}. Perbarui status proses paket di Tahap 4.</p>
     {pkg.active&&<div className={s.packageDetailSummary}><span className={`${s.workflowStatus} ${s.incomplete}`}>{WORKFLOW_STATUS[workflowStatusOf(pkg)]}</span><small>Paket aktif</small></div>}
-    {!pkg.active&&<p className={s.packageReason}>Alasan penonaktifan: {pkg.inactiveReason||'Tidak dicatat'}</p>}
-    <fieldset className={s.formFields} disabled={!editable}>
+    <fieldset className={pkg.active?s.formFields:`${s.formFields} ${s.packageModalCard} ${s.packageInactive}`} disabled={!editable}>
+      {!pkg.active&&<p className={s.packageReason}><strong>Paket nonaktif</strong><br/>Alasan penonaktifan: {pkg.inactiveReason||'Tidak dicatat'}</p>}
       <label>Nama paket<input value={pkg.name} maxLength={240} onChange={event=>onChange(item=>{setPackageName(item,event.target.value)})}/></label>
+      {pkg.active&&<PackageEvidenceFields pkg={pkg} onChange={editable?onChange:undefined}/>}
+      {pkg.active&&<PackagePic pkg={pkg} onChange={editable?onChange:undefined}/>}
       {pkg.active&&<div className={s.packageStageList}>{STEPS.map(step=><div className={s.packageStageRow} key={step}><span>{STEP_LABELS[step]}</span><strong className={pkg[step]==='selesai'?s.complete:pkg[step]==='proses'?s.incomplete:s.packageStageNone}>{pkg[step]==='selesai'?'Selesai':pkg[step]==='proses'?'Proses':'-'}</strong></div>)}</div>}
       {pkg.active&&<label>Catatan paket (opsional)<textarea rows={3} maxLength={3000} value={pkg.note} onChange={event=>onChange(item=>{item.note=event.target.value})}/></label>}
     </fieldset>
@@ -86,6 +125,8 @@ export function ProvincePanel({province,editable,canSave,onChange,onSaveNotes,on
       {orderedPackages.map((pkg,index)=><section className={`${s.packageModalCard} ${!pkg.active?s.packageInactive:''}`} key={pkg.id}>
         <div className={s.packageModalHeading}><h4>{pkg.name||`Paket ${index+1}`}</h4>{pkg.active&&<span className={`${s.workflowStatus} ${s.incomplete}`}>{WORKFLOW_STATUS[workflowStatusOf(pkg)]}</span>}</div>
         {editable?<label>Nama paket<input value={pkg.name} maxLength={240} onChange={e=>onChange(p=>{setPackageName(p.packages.find(item=>item.id===pkg.id)!,e.target.value)})}/></label>:<p className={s.packageModalName}>{pkg.name||'Tambahkan nama paket'}</p>}
+        {pkg.active&&<PackageEvidenceFields pkg={pkg} onChange={editable?update=>onChange(p=>{const item=p.packages.find(item=>item.id===pkg.id);if(item)update(item)}):undefined}/>}
+        {pkg.active&&<PackagePic pkg={pkg} onChange={editable?update=>onChange(p=>{const item=p.packages.find(item=>item.id===pkg.id);if(item)update(item)}):undefined}/>}
         {pkg.active&&<div className={s.packageStageList}>{STEPS.map(step=><div className={s.packageStageRow} key={step}><span>{STEP_LABELS[step]}</span><strong className={pkg[step]==='selesai'?s.complete:pkg[step]==='proses'?s.incomplete:s.packageStageNone}>{pkg[step]==='selesai'?'Selesai':pkg[step]==='proses'?'Proses':'-'}</strong></div>)}</div>}
         {pkg.active&&(editable?<label>Catatan paket<textarea rows={2} maxLength={3000} value={pkg.note} onChange={e=>onChange(p=>{p.packages.find(item=>item.id===pkg.id)!.note=e.target.value})}/></label>:pkg.note&&<p className={s.packageNote}>{pkg.note}</p>)}
         {!pkg.active&&pkg.inactiveReason&&<small className={s.packageReason}>Alasan penonaktifan: {pkg.inactiveReason}</small>}

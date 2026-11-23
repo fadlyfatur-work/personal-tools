@@ -1,0 +1,208 @@
+NARASI MENGAJAR FITUR SIPASTI
+Jadwal kelas: 08.00-10.15
+Durasi: 3 JP x 45 menit = 135 menit
+
+CATATAN SEBELUM KELAS
+- Slide 2 pada PPT bertuliskan PRE-TEST. Karena tes diletakkan di awal sesi, narasi ini menyebutnya tes awal/pre-test selama 20 menit. Jika yang dimaksud benar-benar post-test, pindahkan tes ke akhir sesi.
+- Slide 4 memuat gambaran pelatihan 20 JP. Sesi ini hanya 3 JP, sehingga fokus diarahkan pada pengenalan SIPASTI dan praktik inti.
+- Siapkan materi contoh, akses ke aplikasi simulasi, dan akun peserta sebelum kelas dimulai.
+- Game/refleksi pada slide 22 dilakukan sebelum penutup agar alurnya sesuai dengan waktu kelas.
+
+RINGKASAN JADWAL
+08.00-08.05  Perkenalan diri dan pembukaan
+08.05-08.25  Tes awal (slide 2 bertuliskan PRE-TEST)
+08.25-08.31  Tujuan belajar, indikator, dan gambaran praktik
+08.31-08.45  Materi kebijakan (slide 5-8)
+08.45-08.56  Proses bisnis SIPASTI (slide 10-12)
+08.56-09.00  Output praktik yang diharapkan (slide 13)
+09.00-09.18  Simulasi/demo aplikasi (slide 14-15)
+09.18-09.23  Cobasipasti dan pembagian akun (slide 16-17)
+09.23-09.31  Proses mikro penyusunan HPP (slide 18-19)
+09.31-10.02  Materi contoh dan praktik HPP/HPS (slide 20-21)
+10.02-10.10  Game/refleksi singkat (slide 22)
+10.10-10.15  Penutup
+
+NARASI PER BAGIAN
+
+BAGIAN 1. PERKENALAN DIRI DAN PEMBUKAAN
+Waktu: 08.00-08.05 (5 menit)
+Slide: 1
+
+NARASI:
+“Selamat pagi, Bapak dan Ibu. Perkenalkan, saya [nama], yang akan mendampingi sesi praktik penggunaan SIPASTI hari ini.
+
+Dalam waktu tiga JP ini, kita akan mengenal latar belakang dan alur SIPASTI, lalu mencoba beberapa bagian melalui simulasi. Saya mengajak Bapak dan Ibu untuk mengikuti praktik secara aktif. Jika tampilan atau langkah yang muncul berbeda, silakan sampaikan agar kita bisa cek bersama.
+
+Mohon siapkan perangkat masing-masing. Setelah pembukaan, kita mulai dengan tes awal, kemudian masuk ke materi dan praktik.”
+
+BAGIAN 2. TES AWAL
+Waktu: 08.05-08.25 (20 menit)
+Slide: 2
+
+NARASI:
+“Sebelum masuk ke materi, silakan kerjakan tes awal selama 20 menit. Tes ini membantu kita melihat pemahaman awal mengenai SIPASTI dan penyusunan perkiraan biaya.
+
+Silakan buka tautan yang terlihat pada slide dan kerjakan secara mandiri. Jika ada kendala membuka tautan, silakan beri tahu saya. Waktu dimulai sekarang dan berakhir pukul 08.25.”
+
+CATATAN PENGAJAR:
+Tautan pada slide berlabel PRE-TEST. Jika tes ini dimaksudkan sebagai post-test, lakukan tes tersebut setelah praktik, sebelum refleksi dan penutup. Dalam jadwal 135 menit, hal itu memerlukan pengurangan waktu dari bagian praktik atau materi lainnya.
+
+BAGIAN 3. TUJUAN BELAJAR, INDIKATOR, DAN GAMBARAN PRAKTIK
+Waktu: 08.25-08.31 (6 menit)
+Slide: 3-4
+
+NARASI:
+“Terima kasih, Bapak dan Ibu. Tujuan pembelajaran kita adalah memahami penerapan SIPASTI dalam penyusunan perkiraan biaya pekerjaan konstruksi.
+
+Indikator keberhasilannya mencakup kemampuan menjelaskan fitur dan alur proses bisnis SIPASTI, serta menyusun dan menampilkan output praktik. Jadi, pada akhir sesi, kita ingin Bapak dan Ibu memahami alurnya sekaligus mencoba langsung bagian yang tersedia dalam akun simulasi.
+
+Slide berikut menggambarkan rangkaian pelatihan SIPASTI yang lebih luas, yaitu 20 JP. Pertemuan kita hari ini berlangsung 3 JP. Karena itu, kita mengambil bagian pengenalan umum dan praktik inti sesuai waktu yang tersedia.”
+
+PERTANYAAN PEMANTIK:
+“Siapa di antara Bapak dan Ibu yang pernah menyusun atau memeriksa HPP maupun HPS pekerjaan konstruksi?”
+
+BAGIAN 4. MATERI KEBIJAKAN
+Waktu: 08.31-08.45 (14 menit)
+Slide: 5-8
+
+SLIDE 5. LATAR BELAKANG
+NARASI:
+“Bagian ini menjelaskan alasan penyusunan biaya perlu dilakukan dengan cermat. Materi menyoroti risiko penyimpangan pengadaan barang dan jasa konstruksi, terutama pada tahap perencanaan dan persiapan, termasuk saat menyusun HPP dan HPS.
+
+SIPASTI diperkenalkan sebagai salah satu dukungan sistem untuk membuat proses penyusunan biaya lebih tertata dan dapat dipantau.”
+
+SLIDE 6. PERMASALAHAN BIAYA KONSTRUKSI
+NARASI:
+“Slide ini merangkum data evaluasi Kementerian PU untuk periode 2013 sampai 2023. Menurut data yang ditampilkan, 55 persen permasalahan biaya konstruksi berasal dari dua faktor utama: ketidaksesuaian rumusan AHSP dengan regulasi sebesar 41 persen dan harga satuan yang terlalu tinggi sebesar 14 persen. Sisanya terkait faktor lain, termasuk hal teknis dan kontraktual.
+
+Angka tersebut merujuk pada periode yang tertulis di slide. Kita gunakan sebagai konteks materi, bukan sebagai statistik terbaru.”
+
+SLIDE 7. MASALAH DAN ARAH SOLUSI
+NARASI:
+“Masalah yang hendak ditangani adalah ketidakakuratan penyusunan perkiraan biaya. Jika perhitungan dan harga satuan tidak didukung dasar yang memadai, dapat muncul potensi ketidakwajaran biaya dan risiko penyimpangan.
+
+Slide ini menghubungkan upaya perbaikan dengan regulasi yang adaptif serta dukungan teknologi SIPASTI. Dalam praktik nanti, kita akan melihat bagaimana sistem membantu menata data dan tahapan proses.”
+
+SLIDE 8. ROADMAP SIPASTI
+NARASI:
+“Slide ini memperlihatkan pengembangan SIPASTI secara bertahap, dari pembangunan prototipe dan proyek percontohan, hingga penerapan yang lebih luas dan integrasi dengan E-Katalog LKPP V.6. Materi juga mencantumkan perluasan implementasi ke Pemerintah Daerah dan dukungan penyusunan HPP.
+
+Pesan yang perlu diingat adalah bahwa cakupan serta fungsi sistem berkembang mengikuti tahap implementasinya.”
+
+BAGIAN 5. PROSES BISNIS SIPASTI
+Waktu: 08.45-08.56 (11 menit)
+Slide: 10-12
+
+SLIDE 10. PENGANTAR
+NARASI:
+“Setelah melihat latar belakang kebijakannya, sekarang kita masuk ke proses bisnis. Saat memperhatikan diagram, fokuskan pada urutan pekerjaan, siapa yang bertanggung jawab, dan di bagian mana SIPASTI mendukung proses.”
+
+SLIDE 11. GAMBARAN UMUM PROSES
+NARASI:
+“Secara garis besar, proses bergerak dari data dan harga satuan, ke penyusunan HPP dan HPS, lalu pembahasan, penetapan, dan reviu. SIPASTI juga menampilkan fungsi monitoring dan database.
+
+Artinya, penyusunan perkiraan biaya bukan satu langkah yang berdiri sendiri. Beberapa pihak menjalankan tahap yang berbeda, dan hasil dari satu tahap menjadi masukan untuk tahap berikutnya.”
+
+SLIDE 12. ALUR RINCI
+NARASI:
+“Diagram ini memperlihatkan rangkaian yang lebih lengkap. Proses penyusunan HPP dan HPS didukung data harga satuan, termasuk sumber seperti E-Katalog LKPP dan survei pasar. Setelah usulan HPS disusun, proses berlanjut ke pembahasan, penetapan, dan reviu.
+
+Diagram juga menunjukkan keterkaitan dengan SPSE LKPP, monitoring, database, dashboard, dan Early Warning System. Pada sesi ini kita fokus pada alur yang akan dipakai saat praktik. Bapak dan Ibu tidak perlu menghafal seluruh elemen sekaligus.”
+
+CATATAN PENGAJAR:
+Diagram mencantumkan beberapa rujukan, termasuk Permen PUPR 8/2023, SE Menteri PUPR 21/2023, SE Dirjen BK 47/2026, dan SOP Reviu HPS. Tunjukkan rujukan sesuai tampilan slide.
+
+BAGIAN 6. OUTPUT PRAKTIK YANG DIHARAPKAN
+Waktu: 08.56-09.00 (4 menit)
+Slide: 13
+
+NARASI:
+“Pada praktik ini ada target hasil individu dan kelompok. Target individu adalah menyelesaikan HPP. Target proses kelompok berlanjut dari pengajuan HPS ke pembahasan dan penetapan, kemudian reviu sampai HPS siap tender.
+
+Urutan status pada slide adalah HPP selesai, submit HPS, HPS ditetapkan, dan HPS siap tender. Karena waktu kita terbatas, kita akan mengutamakan pemahaman alur serta hasil yang bisa dicapai selama sesi.”
+
+BAGIAN 7. SIMULASI/DEMO APLIKASI
+Waktu: 09.00-09.18 (18 menit)
+Slide: 14-15
+
+NARASI:
+“Sekarang kita masuk ke SIPASTI. Saya akan memperagakan alur dasar terlebih dahulu. Silakan amati menu yang dibuka, informasi yang diminta, dan status yang muncul setelah langkah dilakukan.
+
+Setelah demo, Bapak dan Ibu akan mencoba sendiri. Jika ada perbedaan tampilan atau kendala akses, beri tahu saya sebelum melanjutkan ke langkah berikutnya.”
+
+PANDUAN DEMO:
+- Tunjukkan halaman aplikasi dan menu yang relevan dengan praktik.
+- Jelaskan tujuan setiap langkah sebelum mengisi data.
+- Beri jeda singkat agar peserta dapat mengikuti.
+- Tanyakan apakah peserta melihat tampilan yang sama.
+
+BAGIAN 8. COBASIPASTI DAN PEMBAGIAN AKUN
+Waktu: 09.18-09.23 (5 menit)
+Slide: 16-17
+
+NARASI:
+“Untuk latihan, kita menggunakan situs Cobasipasti dan akun simulasi yang disediakan. Silakan buka alamat serta tautan pembagian akun yang terlihat pada slide. Ikuti petunjuk yang diberikan dan pastikan Bapak dan Ibu dapat masuk sebelum praktik dimulai.
+
+Jika sudah berhasil masuk, silakan tunggu arahan berikutnya. Bila ada kendala akun, sampaikan kepada saya agar dapat dibantu.”
+
+CATATAN PENGAJAR:
+Bagikan akun melalui mekanisme pelatihan yang disiapkan. Hindari menampilkan kata sandi pribadi peserta di layar bersama.
+
+BAGIAN 9. PROSES MIKRO PENYUSUNAN HPP
+Waktu: 09.23-09.31 (8 menit)
+Slide: 18-19
+
+NARASI:
+“Pada bagian ini kita fokus pada proses HPP. Diagram menunjukkan peran PPK Perencana dan konsultan perancang. PPK Perencana dapat menugaskan konsultan perancang, kemudian konsultan mengisi informasi umum dan menyusun perhitungan HPP sesuai penugasan.
+
+Setelah HPP selesai, sistem menyediakan kode HPP. PPK memasukkan kode tersebut untuk mengambil atau menggunakan data HPP dalam proses selanjutnya. PPK kemudian meninjau hasilnya. Jika disetujui, HPP dapat digunakan sebagai salah satu acuan penyusunan HPS. Jika belum sesuai, PPK dapat memberikan catatan untuk perbaikan.
+
+Pada slide juga dijelaskan bahwa akun konsultan perancang dibuat oleh PPK Perencana dan masa penggunaannya mengikuti masa kontrak.”
+
+BAGIAN 10. MATERI CONTOH DAN PRAKTIK HPP/HPS
+Waktu: 09.31-10.02 (31 menit)
+Slide: 20-21
+
+NARASI PEMBUKA:
+“Kita akan menggunakan materi contoh HPP/HPS yang tercantum pada slide dan akun simulasi. Saya akan menunjukkan bagian contoh yang akan kita gunakan. Setelah itu, Bapak dan Ibu mencoba mengikuti langkahnya.
+
+Saat mengerjakan, periksa informasi umum, data teknis dan harga, hasil perhitungan, serta status proses. Jika bekerja dalam kelompok, silakan bagi tugas agar proses input dan pemeriksaan berjalan tertib.”
+
+PEMBAGIAN WAKTU:
+09.31-09.36 (5 menit): Membuka materi dan mengarahkan peserta ke bagian contoh.
+09.36-09.54 (18 menit): Praktik mandiri atau berkelompok pada akun simulasi.
+09.54-09.59 (5 menit): Memeriksa hasil dan status.
+09.59-10.02 (3 menit): Membahas kendala utama.
+
+PANDUAN SAAT PRAKTIK:
+“Pastikan data yang dimasukkan sesuai dengan contoh dan penugasan. Setelah selesai, cek kembali hasilnya sebelum melanjutkan. Jika belum menemukan menu atau status yang sesuai, berhenti sejenak dan panggil saya agar kita telusuri bersama.”
+
+PERTANYAAN PEMERIKSAAN:
+- “Tahap mana yang sudah berhasil diselesaikan?”
+- “Informasi apa yang masih perlu diperiksa?”
+- “Apa perbedaan peran perancang dalam HPP dan PPK dalam HPS?”
+
+BAGIAN 11. GAME/REFLEKSI SINGKAT
+Waktu: 10.02-10.10 (8 menit)
+Slide: 22
+
+CATATAN:
+Slide 22 berisi kegiatan menulis pemahaman melalui Padlet untuk mendapatkan poin tambahan. Bagian ini dapat dibawakan sebagai tantangan refleksi singkat.
+
+NARASI:
+“Sebelum kita tutup, ada tantangan singkat. Buka Padlet melalui tautan pada layar. Tuliskan nama lengkap dan nomor absen, lalu jawab dua hal: satu pemahaman baru yang paling membantu dari sesi ini, dan satu langkah SIPASTI yang ingin Anda coba kembali setelah pelatihan.
+
+Silakan menulis dengan singkat dan jelas. Kita beri waktu sampai pukul 10.10. Setelah itu saya akan memilih beberapa jawaban untuk kita baca bersama.”
+
+BAGIAN 12. PENUTUP
+Waktu: 10.10-10.15 (5 menit)
+
+NARASI:
+“Terima kasih atas partisipasi Bapak dan Ibu. Hari ini kita sudah membahas alasan penggunaan SIPASTI, gambaran proses HPP dan HPS, serta mencoba alur praktik melalui akun simulasi.
+
+Sebelum meninggalkan kelas, pastikan catatan atau hasil praktik yang diperlukan sudah disimpan. Jika masih ada pertanyaan singkat, silakan disampaikan sekarang.
+
+Semoga sesi ini membantu Bapak dan Ibu memahami proses penyusunan perkiraan biaya melalui SIPASTI. Selamat melanjutkan kegiatan dan sampai bertemu pada sesi berikutnya.”
+
+PENGINGAT AKHIR UNTUK PENGAJAR
+Jika tes 20 menit harus berfungsi sebagai post-test, pindahkan tes dari pukul 08.05 ke menjelang akhir sesi. Untuk menjaga kelas tetap selesai pukul 10.15, alokasikan ulang sebagian waktu materi atau praktik. Slide 2 sendiri menunjukkan PRE-TEST.

@@ -48,13 +48,15 @@ Tahap 4 adalah alur paket: Penyusunan ASB oleh PU → Diperiksa oleh BPKAD → D
 
 Persentase integrasi = terintegrasi / total paket x 100%. Total nol atau data belum diketahui menghasilkan `-`. Warna selesai menggunakan kesamaan jumlah yang tepat, sehingga pembulatan persen tidak membuat paket yang masih tersisa dianggap selesai. Belum ada formula resmi untuk progres keseluruhan; kolomnya tetap N/D.
 
-Provinsi diurutkan berdasarkan banyak langkah PU/BPKAD/APIP yang selesai, tahap akun tertinggi tercatat, awal progres yang terbukti, lalu urutan sumber. Perbaikan tidak menaikkan skor. Pengurutan ditahan selama mengedit supaya baris tidak berpindah saat diklik. Persentase integrasi bukan skor pengurutan.
+Provinsi dengan peran berstatus Ada terbanyak berada di atas. Jika sama, provinsi dengan paket aktif bernama didahulukan. Pembanding berikutnya adalah jumlah langkah PU/BPKAD/APIP yang selesai, tahap akun tertinggi, waktu mulai progres yang paling awal, lalu urutan sumber. Urutan tetap selama mengedit dan dihitung ulang setelah disimpan.
 
 Sumber awal membuktikan 20 akun provinsi pada 15 provinsi, dengan rekap keberadaan peran 15/1/2/0/2/0. PDF tidak memuat identitas dan jumlah rinci per peran, nama paket maupun integrasi; isian tersebut tetap belum diketahui. Jumlah akun hasil input dan angka sumber awal tidak dijumlahkan ulang.
 
 ## Excel, PDF dan grafik
 
-Template `.xlsx` versi 3 memuat Petunjuk, Provinsi, Akun dan Paket, termasuk data tanggal tersimpan. Pertahankan header/ID. Kosongkan ID untuk rincian akun/paket baru. Kolom total paket dan siap integrasi adalah hasil hitung otomatis dan diabaikan saat impor. Menghapus baris dari workbook tidak menghapus catatan lama; paket dinonaktifkan melalui kolom Aktif dan alasan.
+Template `.xlsx` versi 4 memuat Petunjuk, Provinsi, Akun dan Paket, termasuk checklist bukti dukung, URL, nama PIC dan nomor kontak. Pertahankan header/ID. Kosongkan ID untuk rincian akun/paket baru. Kolom total paket dan siap integrasi dihitung otomatis. Template versi 3 tetap bisa dibaca untuk perubahan data yang sudah ada. Paket baru memerlukan template versi 4.
+
+Lengkapi checklist bukti dukung, URL, dan PIC di modal paket atau modal provinsi. Paket baru, paket yang diaktifkan kembali, dan perubahan nama paket memerlukan checklist bukti dukung serta URL HTTP/HTTPS. Jika bukti pada paket aktif sudah diisi, checklist dan URL harus tetap lengkap. Paket lama tanpa bukti ditandai **Belum lengkap** di modal. PIC opsional. Jika diisi, nama dan nomor kontak harus diisi bersama. Tautan bukti dan PIC yang tersedia tercantum di rincian PDF.
 
 Impor menerima Excel serta hierarki akun JSON SIPASTI Pemda melalui file `.json`/`.txt` atau teks yang ditempel. Admin SKPD Provinsi dipetakan ke Sekda, dan Kepala Dinas PU ke Kepala Dinas. Impor JSON hanya mengisi akun provinsi yang sesuai dengan enam peran laporan. Akun Stranas PK, Testing, wilayah latihan, dan kabupaten/kota dilewati. Akun dicocokkan melalui ID atau email dalam provinsi dan peran yang sama. Data yang tidak tercantum di file dipertahankan.
 

@@ -31,7 +31,17 @@ const detailSchema = z.object({id,label:z.string().trim().min(1).max(160),instit
 const noteHistorySchema = z.object({id:z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/),analysis:note,followUp:note,createdAt:timestamp}).strict()
 const workflowEventSchema=z.object({id:z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/),from:workflowStatusSchema.nullable(),to:workflowStatusSchema,kind:z.enum(['created','advanced','repair']),note,createdAt:timestamp}).strict()
 const accountSchema = z.object({status:z.enum(['ada','tc','tidak_ada']),count,details:z.array(detailSchema).max(200),note,updatedAt:timestamp}).strict()
-const packageSchema = z.object({id,name:z.string().trim().min(1).max(240),pu:status,bpkad:status,apip:status,perbaikan:status,workflowStatus:workflowStatusSchema.optional(),repairStatus:status.optional(),returnTarget:z.enum(['pu','bpkad']).nullable().optional(),workflowHistory:z.array(workflowEventSchema).max(1000).default([]),active:z.boolean(),inactiveReason:note,note,createdAt:timestamp,updatedAt:timestamp,nameUpdatedAt:timestamp,statusUpdatedAt:timestamp}).strict()
+export const PACKAGE_EVIDENCE_URL_LIMIT = 2048
+export const PACKAGE_PIC_NAME_LIMIT = 160
+export const PACKAGE_PIC_PHONE_LIMIT = 40
+const packageSchema = z.object({
+  id,name:z.string().trim().min(1).max(240),
+  evidenceChecked:z.boolean().default(false),evidenceUrl:z.string().trim().max(PACKAGE_EVIDENCE_URL_LIMIT).default(''),
+  picName:z.string().trim().max(PACKAGE_PIC_NAME_LIMIT).default(''),picPhone:z.string().trim().max(PACKAGE_PIC_PHONE_LIMIT).default(''),
+  pu:status,bpkad:status,apip:status,perbaikan:status,workflowStatus:workflowStatusSchema.optional(),repairStatus:status.optional(),
+  returnTarget:z.enum(['pu','bpkad']).nullable().optional(),workflowHistory:z.array(workflowEventSchema).max(1000).default([]),
+  active:z.boolean(),inactiveReason:note,note,createdAt:timestamp,updatedAt:timestamp,nameUpdatedAt:timestamp,statusUpdatedAt:timestamp,
+}).strict()
 const provinceSchema = z.object({id,name:z.string().trim().min(1).max(120).optional(),accounts:z.object({sekda:accountSchema,kepalaDinas:accountSchema,kepalaBpkad:accountSchema,apip:accountSchema,penyusunHarga:accountSchema,penyusunAsb:accountSchema}).strict(),totalPackages:count,integratedPackages:count,packages:z.array(packageSchema).max(1000),notes:note,followUp:note,notesHistory:z.array(noteHistorySchema).max(200).default([]),totalUpdatedAt:timestamp,integrationUpdatedAt:timestamp,firstProgressDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),firstProgressAt:timestamp.default(null)}).strict()
 const documentSchema = z.object({schemaVersion:z.literal(1),source:z.object({label:z.string().max(300),date:z.string(),accountTotal:z.number().int().nonnegative()}).strict().nullable(),provinces:z.array(provinceSchema).min(38).max(200)}).strict()
 export type AccountDetail = z.infer<typeof detailSchema>
@@ -61,8 +71,29 @@ export function validReportDate(value:unknown):value is string {
 export function integration(total:number|null, integrated:number|null) {
   return total!==null && total>0 && integrated!==null ? Math.round(integrated/total*10000)/100 : null
 }
+export function packageEvidenceLink(value:string|undefined):string|null {
+  const text=value?.trim()||''
+  if(text.length>PACKAGE_EVIDENCE_URL_LIMIT||!/^https?:\/\//i.test(text))return null
+  try{
+    const url=new URL(text)
+    return url.username||url.password?null:url.href
+  }catch{return null}
+}
+export function packageEvidenceComplete(pkg:ReportPackage){
+  return pkg.evidenceChecked&&packageEvidenceLink(pkg.evidenceUrl)!==null
+}
+export function assertPackageEvidence(document:ReportDocument,previous:ReportDocument|undefined){
+  const prior=new Map(previous?.provinces.flatMap(p=>p.packages.map(pkg=>[pkg.id,pkg] as const)))
+  for(const province of document.provinces)for(const pkg of province.packages){
+    if(!pkg.active||packageEvidenceComplete(pkg))continue
+    const before=prior.get(pkg.id)
+    const changed=!before?.active||before.name!==pkg.name||Boolean(before.evidenceChecked)!==pkg.evidenceChecked
+      ||(before.evidenceUrl||'')!==pkg.evidenceUrl
+    if(changed)throw new Error(`${provinceName(province.id,province.name)}: centang bukti dukung dan isi URL http/https untuk paket “${pkg.name}”.`)
+  }
+}
 export function newPackage(name:string,id:string=crypto.randomUUID()):ReportPackage {
-  return {id,name,pu:name.trim()?'proses':'-',bpkad:'-',apip:'-',perbaikan:'-',workflowStatus:'pu',repairStatus:'-',returnTarget:null,workflowHistory:name.trim()?[{id:crypto.randomUUID(),from:null,to:'pu',kind:'created',note:'',createdAt:null}]:[],active:true,inactiveReason:'',note:'',createdAt:null,updatedAt:null,nameUpdatedAt:null,statusUpdatedAt:null}
+  return {id,name,evidenceChecked:false,evidenceUrl:'',picName:'',picPhone:'',pu:name.trim()?'proses':'-',bpkad:'-',apip:'-',perbaikan:'-',workflowStatus:'pu',repairStatus:'-',returnTarget:null,workflowHistory:name.trim()?[{id:crypto.randomUUID(),from:null,to:'pu',kind:'created',note:'',createdAt:null}]:[],active:true,inactiveReason:'',note:'',createdAt:null,updatedAt:null,nameUpdatedAt:null,statusUpdatedAt:null}
 }
 export function setPackageName(pkg:ReportPackage,name:string){
   const starting=!pkg.name.trim()&&!pkg.createdAt&&Boolean(name.trim())
@@ -102,6 +133,9 @@ export function validateDocument(value:unknown):ReportDocument {
       if(pkg.workflowStatus==='returned_pu'||pkg.workflowStatus==='returned_bpkad'){pkg.workflowStatus='pu';pkg.returnTarget='pu';pkg.pu='proses';pkg.bpkad='-';pkg.apip='-';pkg.repairStatus='proses';pkg.perbaikan='proses'}
       if(packages.has(pkg.id))throw new Error(`${name}: ID paket ganda.`)
       packages.add(pkg.id)
+      if(pkg.evidenceUrl&&!packageEvidenceLink(pkg.evidenceUrl))throw new Error(`${name}: URL bukti dukung paket “${pkg.name}” harus berupa tautan http/https yang valid.`)
+      if(Boolean(pkg.picName)!==Boolean(pkg.picPhone))throw new Error(`${name}: isi nama dan nomor kontak PIC untuk paket “${pkg.name}”.`)
+      if(pkg.picPhone&&!/^\+?[0-9(). -]*\d[0-9(). -]*$/.test(pkg.picPhone))throw new Error(`${name}: nomor kontak PIC paket “${pkg.name}” tidak valid.`)
       if(!pkg.active&&!pkg.inactiveReason.trim())throw new Error(`${name}: alasan penonaktifan paket wajib diisi.`)
       if(pkg.workflowStatus.startsWith('returned_')&&(pkg.repairStatus!=='proses'||!pkg.returnTarget))throw new Error(`${name}: paket yang dikembalikan harus memiliki tujuan dan perbaikan aktif.`)
       if(['ready','received'].includes(pkg.workflowStatus)&&pkg.repairStatus==='proses')throw new Error(`${name}: paket siap integrasi atau diterima SIPD tidak dapat dikembalikan.`)
@@ -121,9 +155,10 @@ export function validateDocument(value:unknown):ReportDocument {
   return doc
 }
 const accountValue = (a:AccountInfo) => JSON.stringify({status:a.status,count:a.count,details:a.details,note:a.note})
-const packageValue = (p:ReportPackage) => JSON.stringify({name:p.name,active:p.active,inactiveReason:p.inactiveReason,note:p.note,workflowStatus:p.workflowStatus,repairStatus:p.repairStatus,returnTarget:p.returnTarget,workflowHistory:p.workflowHistory,...Object.fromEntries(STEPS.map(step=>[step,p[step]]))})
+const packageValue = (p:ReportPackage) => JSON.stringify({name:p.name,evidenceChecked:p.evidenceChecked??false,evidenceUrl:p.evidenceUrl??'',picName:p.picName??'',picPhone:p.picPhone??'',active:p.active,inactiveReason:p.inactiveReason,note:p.note,workflowStatus:p.workflowStatus,repairStatus:p.repairStatus,returnTarget:p.returnTarget,workflowHistory:p.workflowHistory,...Object.fromEntries(STEPS.map(step=>[step,p[step]]))})
 export function prepareDocument(value:unknown, previous:ReportDocument, now:string, reportDate:string):ReportDocument {
   const doc=validateDocument(value)
+  assertPackageEvidence(doc,previous)
   doc.source=previous.source
   if(previous.provinces.some(old=>!doc.provinces.some(p=>p.id===old.id)))throw new Error('Provinsi yang sudah tercatat tidak boleh dihapus.')
   const owners=new Map(previous.provinces.flatMap(p=>p.packages.map(pkg=>[pkg.id,p.id] as const)))
@@ -167,7 +202,21 @@ export function stepSummary(p:ProvinceReport,step:Step) {
   return {done,processing,unknown:active.length-done-processing,complete:active.length>0&&done===active.length,hasData:active.length>0,label}
 }
 export function sortProvinces(rows:ProvinceReport[]):ProvinceReport[] {
-  return [...rows].sort((a,b)=>provinceSummary(b).completedSteps-provinceSummary(a).completedSteps || provinceSummary(b).accountStage-provinceSummary(a).accountStage || (a.firstProgressDate||'9999').localeCompare(b.firstProgressDate||'9999') || (a.firstProgressAt||'9999').localeCompare(b.firstProgressAt||'9999') || (PROVINCES.findIndex(([id])=>id===a.id)<0?PROVINCES.length:PROVINCES.findIndex(([id])=>id===a.id))-(PROVINCES.findIndex(([id])=>id===b.id)<0?PROVINCES.length:PROVINCES.findIndex(([id])=>id===b.id)))
+  const sourceOrder=new Map<string,number>(PROVINCES.map(([id],index)=>[id,index]))
+  return rows.map(province=>{
+    const {totalPackages,completedSteps,accountStage}=provinceSummary(province)
+    const roles=ROLES.filter(role=>province.accounts[role].status==='ada').length
+    const hasPackage=Number(totalPackages>0)
+    return {province,roles,hasPackage,completedSteps,accountStage}
+  }).sort((a,b)=>
+    b.roles-a.roles
+    ||b.hasPackage-a.hasPackage
+    ||b.completedSteps-a.completedSteps
+    ||b.accountStage-a.accountStage
+    ||(a.province.firstProgressDate||'9999').localeCompare(b.province.firstProgressDate||'9999')
+    ||(a.province.firstProgressAt||'9999').localeCompare(b.province.firstProgressAt||'9999')
+    ||(sourceOrder.get(a.province.id)??PROVINCES.length)-(sourceOrder.get(b.province.id)??PROVINCES.length)
+  ).map(({province})=>province)
 }
 export function summarize(doc:ReportDocument) {
   const roles=ROLES.map(role=>doc.provinces.filter(p=>p.accounts[role].status==='ada').length)

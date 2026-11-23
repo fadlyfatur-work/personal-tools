@@ -169,6 +169,8 @@ function PackageChanges({row}: {row: ImportRow}) {
     pkg.name,
     pkg.active ? WORKFLOW_STATUS[workflowStatusOf(pkg)] : `Nonaktif: ${pkg.inactiveReason}`,
     ...STEPS.filter(step=>pkg[step]!=='-').map(step=>`${STEP_LABELS[step]}: ${STATUS_LABELS[pkg[step]]}`),
+    pkg.evidenceUrl?`Bukti dukung ${pkg.evidenceChecked?'tersedia':'belum dicentang'}: ${pkg.evidenceUrl}`:'Bukti dukung: Belum lengkap',
+    pkg.picName?`PIC: ${pkg.picName} (${pkg.picPhone})`:'',
     pkg.note,
   ].filter(Boolean).join(' · ')
   return <td className={changed?s.importChanged:undefined}>
