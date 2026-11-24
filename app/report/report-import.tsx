@@ -1,7 +1,7 @@
 'use client'
 
 import {useState} from 'react'
-import {ROLE_LABELS, STEPS, STEP_LABELS, STATUS_LABELS, WORKFLOW_STATUS, dateLabel, provinceSummary, workflowStatusOf} from '@/lib/report/model'
+import {PACKAGE_ENVIRONMENT_LABELS, PACKAGE_CONFIRMATION_LABELS, packageConfirmationStatus, ROLE_LABELS, STEPS, STEP_LABELS, STATUS_LABELS, WORKFLOW_STATUS, dateLabel, provinceSummary, workflowStatusOf} from '@/lib/report/model'
 import {IMPORT_LIMIT, importDifferences, readSipastiHierarchy, type ImportMode, type ImportRow} from '@/lib/report/import'
 import type {ReportDocument} from '@/lib/report/model'
 import {ReportDialog} from './report-details'
@@ -167,14 +167,15 @@ function PackageChanges({row}: {row: ImportRow}) {
   const total = provinceSummary(row.after).totalPackages
   const describe = (pkg: ImportRow['after']['packages'][number]) => [
     pkg.name,
-    pkg.active ? WORKFLOW_STATUS[workflowStatusOf(pkg)] : `Nonaktif: ${pkg.inactiveReason}`,
+    pkg.active ? (pkg.confirmed?WORKFLOW_STATUS[workflowStatusOf(pkg)]:PACKAGE_CONFIRMATION_LABELS[packageConfirmationStatus(pkg)]) : `Nonaktif: ${pkg.inactiveReason}`,
+    pkg.active && pkg.environment ? PACKAGE_ENVIRONMENT_LABELS[pkg.environment] : '',
     ...STEPS.filter(step=>pkg[step]!=='-').map(step=>`${STEP_LABELS[step]}: ${STATUS_LABELS[pkg[step]]}`),
     `Bukti dukung: ${pkg.evidenceChecked?'Ditandai tersedia':'Belum ditandai'}${pkg.evidenceUrl?` · ${pkg.evidenceUrl}`:''}`,
     pkg.picName?`PIC: ${pkg.picName} (${pkg.picPhone})`:'',
     pkg.note,
   ].filter(Boolean).join(' · ')
   return <td className={changed?s.importChanged:undefined}>
-    <strong>{total} paket aktif</strong>
+    <strong>{total} paket terkonfirmasi</strong>
     {!!changed&&<details><summary>Rincian perubahan</summary>
       {row.packages.added.map(pkg=><p key={pkg.id}>Baru: {describe(pkg)}</p>)}
       {row.packages.updated.map(pkg=>{

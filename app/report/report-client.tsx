@@ -2,17 +2,18 @@
 
 import {useCallback,useEffect,useRef,useState} from 'react'
 import dynamic from 'next/dynamic'
-import {ArrowClockwise,CaretDown,ChartLineUp,Check,Clock,DownloadSimple,Eye,FileXls,Gear,Minus,NotePencil,PencilSimple,Plus,SignOut,Table,Trash,UploadSimple,Warning,X} from '@phosphor-icons/react'
+import {ArrowClockwise,CaretDown,ChartLineUp,Check,CheckCircle,Clock,DownloadSimple,Eye,FileXls,Gear,Minus,NotePencil,PencilSimple,Plus,Question,SignOut,Table,Trash,UploadSimple,Warning,X,XCircle} from '@phosphor-icons/react'
 import {SuiteSurface,ThemePicker} from '@/app/tools/components/suite-theme'
+import {STATUS_LABELS,countPackageEnvironments,PACKAGE_CONFIRMATION_LABELS,packageConfirmationStatus,type PackageConfirmationStatus} from '@/lib/report/model'
 import {ROLES,ROLE_LABELS,STEPS,STEP_LABELS,WORKFLOW_STATUS,accountLabel,dateLabel,newPackage,newProvince,provinceName,provinceSummary,recordedAccountCount,recordedAccountsByRole,setPackageName,sortProvinces,stepSummary,summarize,timeLabel,today,validateDocument,workflowStatusOf,type AccountRole,type ProvinceReport,type ReportPackage,type ReportDocument,type ReportSnapshot,type ReportHistoryPoint,type ReportChange,type Step,type WorkflowStatus} from '@/lib/report/model'
-import {ReportDialog,ConfirmDialog,AccountPanel,ProvincePanel,PackagePanel,AccessPanel} from './report-details'
+import {ReportDialog,ConfirmDialog,AccountPanel,ProvincePanel,PackagePanel,PackageEnvironmentBadge,AccessPanel} from './report-details'
 import {ReportImport,type ImportTarget} from './report-import'
 import {selectImportRows,type ImportMode,type ImportRow} from '@/lib/report/import'
 import s from './report.module.css'
 
 const ReportChart=dynamic(()=>import('./report-chart'),{loading:()=> <p role="status" className={s.notice}>Menyiapkan grafik perkembangan...</p>})
 type Payload={role:'admin'|'user';snapshot:ReportSnapshot|null;previous:ReportSnapshot|null;initial:ReportDocument|null;history:ReportHistoryPoint[];changes:ReportChange[];recapSavedForToday:boolean}
-type Modal={type:'account';id:string;role:AccountRole}|{type:'province';id:string}|{type:'package';id:string;packageId:string}|{type:'workflow';id:string;step:Step}|{type:'access'}|{type:'addProvince'}|null
+type Modal={type:'account';id:string;role:AccountRole}|{type:'province';id:string}|{type:'package';id:string;packageId:string}|{type:'workflow';id:string;step:Step;packageId?:string}|{type:'access'}|{type:'addProvince'}|{type:'export';snapshot:ReportSnapshot}|null
 class ReportRequestError extends Error{constructor(message:string,public status:number){super(message)}}
 function SummaryValue({value,previous}:{value:number|null;previous?:number}){
   const change=value!==null&&previous!==undefined?value-previous:0
@@ -30,27 +31,44 @@ function ReportLoader({checkingAccess}:{checkingAccess:boolean}){
     </div>
   </div>
 }
-function stageTone({done,processing,complete}:ReturnType<typeof stepSummary>,step:Step){
+function stageTone({done,processing,complete}:Pick<ReturnType<typeof stepSummary>,'done'|'processing'|'complete'>,step:Step){
   if(step==='perbaikan'&&processing)return 'stageRepair'
   if(complete)return 'stageDone'
   return processing||done?'stageProcess':'stageNone'
+}
+function PackageEvidenceBadge({count}:{count?:number}){
+  return <span className={s.evidenceBadge} title="Bukti dukung sudah ditandai terkumpul">Bukti Dukung{count===undefined?'':` · ${count}`}</span>
+}
+function PackageConfirmationBadge({status}:{status:PackageConfirmationStatus}){
+  const Icon=status==='confirmed'?CheckCircle:status==='checking'?Clock:status==='cancelled'?XCircle:Question
+  return <span className={s.packageStatusIcon} data-status={status} aria-label={`Status paket: ${PACKAGE_CONFIRMATION_LABELS[status]}`}>
+    <Icon size={15} weight="bold" aria-hidden="true"/><span className={s.srOnly}>{PACKAGE_CONFIRMATION_LABELS[status]}</span>
+    <span className={s.packageStatusTooltip} role="tooltip">{PACKAGE_CONFIRMATION_LABELS[status]}</span>
+  </span>
 }
 function recordWorkflow(pkg:ReportPackage,to:WorkflowStatus,kind:'advanced'|'repair',note=''){
   pkg.workflowHistory.push({id:crypto.randomUUID(),from:workflowStatusOf(pkg),to,kind,note,createdAt:null})
   pkg.workflowStatus=to
 }
-function WorkflowPanel({province,step,canTransition,canDelete,onAdvance,onReturn,onDelete}:{province:ProvinceReport;step:Step;canTransition:boolean;canDelete:boolean;onAdvance:(id:string)=>void;onReturn:(id:string,note:string)=>void;onDelete:(id:string)=>void}){
-  const packages=province.packages.filter(pkg=>pkg.active)
+function WorkflowPanel({province,savedProvince,step,packageId,canTransition,canDelete,onAdvance,onReturn,onDelete}:{province:ProvinceReport;savedProvince?:ProvinceReport;step:Step;packageId?:string;canTransition:boolean;canDelete:boolean;onAdvance:(id:string)=>void;onReturn:(id:string,note:string)=>void;onDelete:(id:string)=>void}){
+  const packages=province.packages.filter(pkg=>pkg.active&&(!packageId||pkg.id===packageId))
   const [returnId,setReturnId]=useState(''),[repairNote,setRepairNote]=useState(''),[deleteId,setDeleteId]=useState('')
   return <>
     <p className={s.panelIntro}>Rincian {STEP_LABELS[step]} untuk {provinceName(province.id,province.name)}. Alur paket: PU → BPKAD → APIP → siap integrasi → diterima SIPD.</p>
     {!packages.length?<p className={s.emptyDetail}>Belum ada paket aktif. Tambahkan nama paket melalui kolom Nama paket.</p>:<div className={s.workflowList}>{packages.map(pkg=>{
+      const packageHeading=<div className={s.packageMeta}><strong>{pkg.name||'Paket baru'}</strong>{pkg.environment&&<PackageEnvironmentBadge environment={pkg.environment}/>}</div>
+      if(!pkg.confirmed)return <article className={s.workflowItem} key={pkg.id}>
+        {packageHeading}<small>Belum dikonfirmasi. Centang Terkonfirmasi pada detail paket untuk memulai PU.</small>
+      </article>
+      if(!savedProvince?.packages.some(item=>item.id===pkg.id&&item.confirmed))return <article className={s.workflowItem} key={pkg.id}>
+        {packageHeading}<small>Simpan konfirmasi sebelum meneruskan proses.</small>
+      </article>
       const status=workflowStatusOf(pkg)
       const repairEvents=pkg.workflowHistory.filter(event=>event.kind==='repair')
       const canReturnToPu=pkg.apip!=='selesai'&&(pkg.bpkad==='proses'||pkg.bpkad==='selesai'||pkg.apip==='proses')
       const canReset=status!=='pu'||pkg.workflowHistory.length>0||pkg.repairStatus!=='-'
       return <article className={s.workflowItem} key={pkg.id}>
-        <strong>{pkg.name||'Tambahkan nama paket'}</strong>
+        {packageHeading}
         <small>{STEP_LABELS[step]}: {pkg[step]==='-'?'Belum dimulai':pkg[step]==='selesai'?'Selesai':'Proses'}</small>
         <span className={`${s.workflowStatus} ${status==='received'?s.complete:pkg.repairStatus==='proses'?s.warning:s.incomplete}`}>{WORKFLOW_STATUS[status]}</span>
         <small>Perbaikan: {pkg.repairStatus==='proses'?'Proses':pkg.repairStatus==='selesai'?'Selesai':'-'}</small>
@@ -61,7 +79,7 @@ function WorkflowPanel({province,step,canTransition,canDelete,onAdvance,onReturn
         </div>}
         {returnId===pkg.id&&<div className={s.repairComposer}><label>Catatan perbaikan (opsional)<textarea rows={2} maxLength={3000} value={repairNote} onChange={event=>setRepairNote(event.target.value)} placeholder="Catatan untuk proses perbaikan"/></label><div className={s.toolActions}><button type="button" className={s.button} onClick={()=>setReturnId('')}>Batal</button><button type="button" className={s.primaryButton} onClick={()=>{onReturn(pkg.id,repairNote);setReturnId('')}}>Kembalikan ke PU</button></div></div>}
         {step==='perbaikan'&&<section className={s.repairHistory}><h4>Riwayat perbaikan</h4>{repairEvents.length?repairEvents.slice().reverse().map(event=><article key={event.id}><strong>{event.from?WORKFLOW_STATUS[event.from]:'Status sebelumnya tidak tercatat'} → {WORKFLOW_STATUS[event.to]}</strong><time>{timeLabel(event.createdAt)}</time>{event.note&&<p>{event.note}</p>}</article>):<p className={s.quiet}>Belum ada riwayat perbaikan.</p>}</section>}
-        <details className={s.workflowTimeline}><summary>Riwayat perpindahan status ({pkg.workflowHistory.length})</summary>{pkg.workflowHistory.length?<ol>{pkg.workflowHistory.slice().reverse().map(event=><li key={event.id}><strong>{event.from?WORKFLOW_STATUS[event.from]:'Paket dibuat'} → {WORKFLOW_STATUS[event.to]}</strong><time>{timeLabel(event.createdAt)}</time>{event.kind==='repair'&&event.note&&<p>Catatan perbaikan: {event.note}</p>}</li>)}</ol>:<p className={s.quiet}>Belum ada riwayat perpindahan status.</p>}</details>
+        <details className={s.workflowTimeline}><summary>Riwayat perpindahan status ({pkg.workflowHistory.length})</summary>{pkg.workflowHistory.length?<ol>{pkg.workflowHistory.slice().reverse().map(event=><li key={event.id}><strong>{event.from?WORKFLOW_STATUS[event.from]:event.kind==='confirmed'?'Paket dikonfirmasi':'Paket dibuat'} → {WORKFLOW_STATUS[event.to]}</strong><time>{timeLabel(event.createdAt)}</time>{event.kind==='repair'&&event.note&&<p>Catatan perbaikan: {event.note}</p>}</li>)}</ol>:<p className={s.quiet}>Belum ada riwayat perpindahan status.</p>}</details>
         {canDelete&&deleteId===pkg.id&&<ConfirmDialog title="Hapus progres Tahap 4?" onClose={()=>setDeleteId('')} onConfirm={()=>{onDelete(pkg.id);setDeleteId('')}} confirmLabel="Hapus progres"><p>Status paket akan kembali ke penyusunan oleh PU. Riwayat perpindahan dan catatan perbaikan akan dihapus.</p></ConfirmDialog>}
       </article>
     })}</div>}
@@ -70,18 +88,18 @@ function WorkflowPanel({province,step,canTransition,canDelete,onAdvance,onReturn
 function PackageInputCard({pkg,index,editing,onUpdate,onRemove,onOpen}:{pkg:ReportPackage;index:number;editing:boolean;onUpdate:(update:(pkg:ReportPackage)=>void)=>void;onRemove:()=>void;onOpen:()=>void}){
   const [confirmDelete,setConfirmDelete]=useState(false),[reason,setReason]=useState('')
   const isUnsubmittedEmpty=!pkg.name.trim()&&!pkg.createdAt
-  return <section className={`${s.packageEditItem} ${!pkg.active?s.packageInactive:''}`}>
+  const confirmationStatus=packageConfirmationStatus(pkg)
+  return <section className={`${s.packageEditItem} ${!pkg.active?s.packageInactive:''}`} data-confirmation={pkg.active?confirmationStatus:undefined}>
     <div className={s.packageEditHeading}>
       <div className={s.packageHeadingLine}>
-        <strong>Paket {index+1}{!pkg.active?' · Nonaktif':''}</strong>
+        <div className={s.packageMeta}><strong>Paket {index+1}{!pkg.active?' · Nonaktif':''}</strong>{editing&&pkg.active&&pkg.environment&&<PackageEnvironmentBadge environment={pkg.environment}/>}{editing&&pkg.active&&pkg.evidenceChecked&&<PackageEvidenceBadge/>}{editing&&pkg.active&&<PackageConfirmationBadge status={confirmationStatus}/>}</div>
         {editing&&<div className={s.dialogActions}>
           <button type="button" className={`${s.iconButton} ${s.packageDetailButton}`} aria-label={`Buka detail paket ${pkg.name||index+1}`} title="Buka detail paket" onClick={onOpen}><PencilSimple size={16}/></button>
           {(pkg.active||isUnsubmittedEmpty)&&<button type="button" className={s.dangerIconButton} aria-label={`Hapus paket ${pkg.name||index+1}`} title="Hapus paket" onClick={()=>{setConfirmDelete(true);setReason('')}}><Trash size={16}/></button>}
         </div>}
       </div>
-      {pkg.nameUpdatedAt&&<small>Nama terakhir diubah {timeLabel(pkg.nameUpdatedAt)}</small>}
     </div>
-    {editing?<label>Nama paket<input value={pkg.name} maxLength={240} onChange={event=>onUpdate(item=>{setPackageName(item,event.target.value)})}/></label>:<button type="button" className={s.packageNameButton} onClick={onOpen}>{pkg.name||'Tambahkan nama paket'}</button>}
+    {editing?<label>Nama paket<input value={pkg.name} maxLength={240} onChange={event=>onUpdate(item=>{setPackageName(item,event.target.value)})}/></label>:<div className={s.packageSummaryContent}><button type="button" className={s.packageNameButton} onClick={onOpen}>{pkg.name||'Tambahkan nama paket'}</button><span className={s.packageMeta}>{pkg.environment&&<PackageEnvironmentBadge environment={pkg.environment}/>}{pkg.evidenceChecked&&<PackageEvidenceBadge/>}{pkg.active&&<PackageConfirmationBadge status={confirmationStatus}/>}</span></div>}
     {!pkg.active&&pkg.inactiveReason&&<small>Alasan penonaktifan: {pkg.inactiveReason}</small>}
     {editing&&<><label className={s.checkLabel}><input type="checkbox" checked={pkg.active} onChange={event=>event.target.checked?onUpdate(item=>{item.active=true;item.inactiveReason='' }):(setConfirmDelete(true),setReason(''))}/>Paket aktif</label>{!pkg.active&&<label>Alasan penonaktifan<input value={pkg.inactiveReason} maxLength={3000} onChange={event=>onUpdate(item=>{item.inactiveReason=event.target.value})}/></label>}</>}
     <small>Ditambahkan pada {timeLabel(pkg.createdAt)}</small>
@@ -90,17 +108,22 @@ function PackageInputCard({pkg,index,editing,onUpdate,onRemove,onOpen}:{pkg:Repo
     </ConfirmDialog>}
   </section>
 }
-function PackageCell({province,editing,onUpdate,onRemove,onAdd,onOpen}:{province:ProvinceReport;editing:boolean;onUpdate:(id:string,update:(pkg:ReportPackage)=>void)=>void;onRemove:(id:string)=>void;onAdd:()=>void;onOpen:(id:string)=>void}){
-  const state=provinceSummary(province)
-  const inactive=province.packages.map((pkg,index)=>({pkg,index})).filter(({pkg})=>!pkg.active)
-  const activeLabel=state.active.length===1?state.active[0].name||'Tambahkan nama paket':`${state.active.length} Paket`
-  const packageCard=({pkg,index}:{pkg:ReportPackage;index:number})=><PackageInputCard key={pkg.id} pkg={pkg} index={index} editing={editing} onUpdate={update=>onUpdate(pkg.id,update)} onRemove={()=>onRemove(pkg.id)} onOpen={()=>onOpen(pkg.id)}/>
-  return <td className={s.packageCell}>
-    <details className={s.packageDisclosure}>
-      <summary title={activeLabel}>{state.active.length===1?<><span className={s.packageName}>{activeLabel}</span><small>Ditambahkan pada {timeLabel(state.active[0].createdAt)}</small></>:<span className={s.packageCount}>{activeLabel}</span>}<CaretDown size={14}/></summary>
-      <div className={s.packageExpansion}>{province.packages.map((pkg,index)=>pkg.active&&(pkg.name.trim()||editing)?packageCard({pkg,index}):null)}{editing&&<button className={s.textButton} type="button" onClick={onAdd}><Plus size={16}/>Tambah paket</button>}{inactive.length>0&&<details className={`${s.packageDisclosure} ${s.inactiveDisclosure}`}><summary title="Lihat paket yang dihapus atau nonaktif"><span className={s.packageCount}>{inactive.length} Paket dihapus/nonaktif</span><CaretDown size={14}/></summary><div className={s.packageExpansion}>{inactive.map(packageCard)}</div></details>}</div>
-    </details>
-  </td>
+function PackageDisclosure({packages,expanded,onToggle}:{packages:ReportPackage[];expanded:boolean;onToggle:()=>void}){
+  if(packages.length===1)return null
+  const activeLabel=packages.length+' Paket'
+  const evidenceCount=packages.filter(pkg=>pkg.evidenceChecked).length
+  if(!packages.length)return <span className={s.packageCount}>0 Paket</span>
+  return <button type="button" className={s.packageToggle} title={activeLabel} aria-expanded={expanded} onClick={onToggle}>
+    <span className={s.packageSummaryContent}>
+      <span className={s.packageCount}>{activeLabel}</span>
+      {!expanded&&<span className={s.packageMeta}>
+        {countPackageEnvironments(packages).map(({environment,count})=><PackageEnvironmentBadge key={environment} environment={environment} count={count}/>)}
+        {evidenceCount>0&&<PackageEvidenceBadge count={evidenceCount}/>}
+        {packages.some(pkg=>packageConfirmationStatus(pkg)==='confirmed')&&<PackageConfirmationBadge status="confirmed"/>}
+      </span>}
+    </span>
+    <CaretDown aria-hidden="true" size={14}/>
+  </button>
 }
 async function request<T>(path:string,options:RequestInit={}):Promise<T>{
   const response=await fetch(`/api/report${path}`,{...options,cache:'no-store',headers:{'Content-Type':'application/json',...options.headers}})
@@ -118,7 +141,7 @@ function matchesQuickFilter(p:ProvinceReport,stage:FilterStage,status:FilterStat
   if(status==='all')return true
   const accountStages:Record<Exclude<FilterStage,'all'|'stage4'|'stage5'>,AccountRole[]>={stage1:['sekda'],stage2:['kepalaDinas','kepalaBpkad','apip'],stage3:['penyusunHarga','penyusunAsb']}
   const matchesAccount=(roles:AccountRole[])=>roles.some(role=>({ada:p.accounts[role].status==='ada',tc:p.accounts[role].status==='tc',none:p.accounts[role].status==='tidak_ada'}[status as 'ada'|'tc'|'none']||false))
-  const active=p.packages.filter(pkg=>pkg.active),workflow=active.map(workflowStatusOf)
+  const {confirmed:active}=provinceSummary(p),workflow=active.map(workflowStatusOf)
   const matchesPackage=()=>status==='nd'?!active.length:status==='selesai'?workflow.includes('received'):status==='proses'?workflow.some(value=>['pu','bpkad','apip','ready','returned_pu','returned_bpkad'].includes(value)):status==='not-started'?active.some(pkg=>pkg.pu==='-'&&pkg.bpkad==='-'&&pkg.apip==='-'):false
   const matchesIntegration=()=>{
     const {totalPackages,integratedPackages}=provinceSummary(p)
@@ -138,6 +161,7 @@ export default function ReportClient(){
   const [data,setData]=useState<Payload|null>(null),[role,setRole]=useState<'admin'|'user'|null>(null)
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[pin,setPin]=useState('')
   const [draft,setDraft]=useState<ReportDocument|null>(null),[editing,setEditing]=useState(false),[order,setOrder]=useState<string[]>([]),[reason,setReason]=useState('')
+  const [expandedProvinces,setExpandedProvinces]=useState<Record<string,boolean>>({})
   const [modal,setModal]=useState<Modal>(null),[query,setQuery]=useState(''),[tab,setTab]=useState<'table'|'chart'|'history'>('table'),[filterStage,setFilterStage]=useState<FilterStage>('all'),[filterStatus,setFilterStatus]=useState<FilterStatus>('all')
   const [range,setRange]=useState({from:'2026-11-10',to:today()}),[importTarget,setImportTarget]=useState<ImportTarget|null>(null)
   const [viewingRecap,setViewingRecap]=useState('')
@@ -151,6 +175,7 @@ export default function ReportClient(){
   const applyPayload=useCallback((result:Payload)=>{
     const snapshot=result.snapshot?{...result.snapshot,document:validateDocument(result.snapshot.document)}:null,initial=result.initial?validateDocument(result.initial):null
     setRole(result.role);setData({...result,snapshot,initial});setDraft(null);setEditing(false);setReason('')
+    setExpandedProvinces({})
     setOrder(snapshot?sortProvinces(snapshot.document.provinces).map(p=>p.id):initial?sortProvinces(initial.provinces).map(p=>p.id):[])
   },[])
   const applyError=useCallback((error:unknown)=>{
@@ -196,8 +221,8 @@ export default function ReportClient(){
     if(viewingRecap||busy)return
     const base=draft||data?.snapshot?.document||data?.initial
     if(!base)return
-    const next=validateDocument(base),province=next.provinces.find(item=>item.id===provinceId),pkg=province?.packages.find(item=>item.id===packageId)
-    if(!pkg)return
+    const next=structuredClone(base),province=next.provinces.find(item=>item.id===provinceId),pkg=province?.packages.find(item=>item.id===packageId)
+    if(!pkg?.active||!pkg.confirmed||!baseline?.provinces.some(p=>p.id===provinceId&&p.packages.some(item=>item.id===packageId&&item.confirmed)))return
     change(pkg)
     if(editing){setDraft(next);setNotice('Perubahan status menunggu Submit perubahan.');return}
     void save(false,next)
@@ -223,14 +248,14 @@ export default function ReportClient(){
     updateProvince(provinceId,province=>{province.totalPackages=null;province.integratedPackages=null;province.notes='';province.followUp='';province.notesHistory=[];for(const accountRole of ROLES){const account=province.accounts[accountRole];account.status='tc';account.count=null;account.details=[];account.note=''}for(const pkg of province.packages){if(pkg.active){pkg.active=false;pkg.inactiveReason='Data provinsi dihapus oleh pengguna'}}})
     setNotice(`${labelProvince(provinceId)} dikosongkan di draft. Paket dipindahkan ke arsip nonaktif agar riwayat tetap ada.`)
   }
-  function applySavedSnapshot(saved:ReportSnapshot,source:'manual'|'import'|'recap',changed:string[],reason:string,recapSaved=false){
+  function applySavedSnapshot(saved:ReportSnapshot,source:'manual'|'import'|'recap',changed:string[],reason:string,recapSaved=false,preserveEditMode=false){
     const document=validateDocument(saved.document),snapshot={...saved,document}
     const historyPoint:ReportHistoryPoint={date:saved.date,summary:{all:summarize(document),provinces:document.provinces.map(p=>{const summary=provinceSummary(p);return {id:p.id,total:summary.totalPackages,integrated:summary.integratedPackages,percent:summary.percent,accounts:ROLES.filter(accountRole=>p.accounts[accountRole].status==='ada').length}})}}
     const change:ReportChange={id:-saved.revision,report_date:saved.date,revision:saved.revision,created_at:saved.updated_at,actor_role:role||'user',source,reason,changed_provinces:changed}
     setData(current=>current?{...current,snapshot,previous:current.snapshot&&current.snapshot.date<saved.date?current.snapshot:current.previous,initial:null,history:[...current.history.filter(point=>point.date!==saved.date),historyPoint].sort((a,b)=>a.date.localeCompare(b.date)),changes:[change,...(current.snapshot?.date===saved.date?current.changes:[])].slice(0,50),recapSavedForToday:recapSaved||current.recapSavedForToday}:current)
-    setDraft(null);setEditing(false);setOrder(sortProvinces(document.provinces).map(p=>p.id))
+    setDraft(preserveEditMode?document:null);setEditing(preserveEditMode);setOrder(sortProvinces(document.provinces).map(p=>p.id))
   }
-  async function save(propagateError=false,documentOverride?:ReportDocument):Promise<ReportSnapshot|null>{
+  async function save(propagateError=false,documentOverride?:ReportDocument,preserveEditMode=false):Promise<ReportSnapshot|null>{
     const documentToSave=documentOverride||draft
     if(!documentToSave)return null
     if(data?.snapshot&&!dirty&&!documentOverride)return data.snapshot
@@ -244,10 +269,10 @@ export default function ReportClient(){
     setBusy('save');setError('');setNotice('')
     try{
       const before=data?.snapshot?.document||data?.initial
-      validateDocument(documentToSave)
+      validateDocument(documentToSave,before??undefined)
       const changed=documentToSave.provinces.filter(p=>JSON.stringify(p)!==JSON.stringify(before?.provinces.find(row=>row.id===p.id))).map(p=>p.id)
       const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({date,revision:data?.snapshot?.revision||0,document:documentToSave,source:'manual',reason})})
-      applySavedSnapshot(saved,'manual',changed,reason);setNotice(`Perubahan ${dateLabel(saved.date)} berhasil disimpan · Revisi ${saved.revision}.`);return saved
+      applySavedSnapshot(saved,'manual',changed,reason,false,preserveEditMode);setNotice(`Perubahan ${dateLabel(saved.date)} berhasil disimpan · Revisi ${saved.revision}.`);return saved
     }catch(error){const message=error instanceof Error?error.message:'Perubahan belum tersimpan. Draft tetap tersedia.';setError(message);if(propagateError)throw new Error(message);return null}finally{setBusy('')}
   }
   async function saveProvinceNotes(provinceId:string,analysis:string,followUp:string):Promise<void>{
@@ -261,7 +286,7 @@ export default function ReportClient(){
     setBusy('note');setError('');setNotice('')
     try{
       const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({date,revision:data?.snapshot?.revision||0,document:next,source:'manual',reason})})
-      applySavedSnapshot(saved,'manual',[provinceId],reason);setNotice(`Catatan ${labelProvince(provinceId)} tersimpan dalam riwayat. Revisi ${saved.revision}.`)
+      applySavedSnapshot(saved,'manual',[provinceId],reason,false,editing);setNotice(`Catatan ${labelProvince(provinceId)} tersimpan dalam riwayat. Revisi ${saved.revision}.`)
     }finally{setBusy('')}
   }
   function guard(label:string,action:(latest?:ReportSnapshot)=>void){if(dirty)setPending({label,action});else action()}
@@ -282,17 +307,31 @@ export default function ReportClient(){
     ensureDraft();setError('');setNotice('')
     setModal({type:'account',id,role:accountRole})
   }
-  function openWorkflow(id:string,step:Step){
+  function openWorkflow(id:string,step:Step,packageId?:string){
     ensureDraft();setError('');setNotice('')
-    setModal({type:'workflow',id,step})
+    setModal({type:'workflow',id,step,packageId})
   }
   function openPackage(id:string,packageId:string){
     ensureDraft();setError('');setNotice('')
     setModal({type:'package',id,packageId})
   }
-  async function saveModalChanges(){
+  function addDraftPackage(id:string){
+    const pkg=newPackage('')
+    updateProvince(id,province=>{province.packages.push(pkg)})
+    setError('')
+    setModal({type:'package',id,packageId:pkg.id})
+  }
+  async function saveModalChanges(packageNote?:string){
     if(!draft)throw new Error('Tidak ada perubahan untuk disimpan.')
-    await save(true)
+    if(packageNote?.trim()){
+      if(modal?.type!=='package')throw new Error('Catatan paket tidak dapat dikaitkan dengan modal ini.')
+      const next=structuredClone(draft),province=next.provinces.find(row=>row.id===modal.id),pkg=province?.packages.find(row=>row.id===modal.packageId)
+      if(!pkg)throw new Error('Paket tidak ditemukan pada draft.')
+      pkg.note=packageNote.trim()
+      await save(true,next,editing)
+      return
+    }
+    await save(true,undefined,editing)
   }
   function addProvince(name:string){
     const label=name.trim(),base=`tambahan-${label.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}`
@@ -311,11 +350,19 @@ export default function ReportClient(){
     setBusy('recap');setError('');setNotice('')
     try{const saved=await request<ReportSnapshot>('',{method:'POST',body:JSON.stringify({date:recapDate,revision:snapshot?.date===recapDate?snapshot.revision:0,document:documentToSave,source:'recap',reason:'Rekap harian'})});applySavedSnapshot(saved,'recap',[], 'Rekap harian',true);setNotice(`Rekap ${dateLabel(saved.date)} berhasil disimpan · Revisi ${saved.revision}.`)}catch(error){setError(error instanceof Error?error.message:'Rekap belum dapat disimpan.')}finally{setBusy('')}
   }
-  async function exportPdf(latest?:ReportSnapshot){
-    const snapshot=latest||data?.snapshot
-    if(!snapshot){setError('Simpan laporan sebelum mengunduh PDF.');return}
-    setBusy('pdf');setError('')
-    try{const {createReportPdf}=await import('@/lib/report/pdf');createReportPdf(snapshot).save(`Laporan-ASB-${snapshot.date}.pdf`)}catch(error){setError(error instanceof Error?error.message:'PDF belum dapat dibuat.')}finally{setBusy('')}
+  async function exportReport(snapshot:ReportSnapshot,format:'pdf'|'docx'){
+    setBusy(format);setError('')
+    try{
+      const filename='Laporan-ASB-'+snapshot.date+'.'+format
+      if(format==='pdf'){
+        const {createReportPdf}=await import('@/lib/report/pdf')
+        createReportPdf(snapshot).save(filename)
+      }else{
+        const {createReportDocx}=await import('@/lib/report/docx')
+        download(createReportDocx(snapshot),filename,'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+      }
+      setModal(null)
+    }catch(error){setError(error instanceof Error?error.message:'File laporan belum dapat dibuat.')}finally{setBusy('')}
   }
   async function downloadTemplate(document:ReportDocument,date:string){
     const {createReportWorkbook}=await import('@/lib/report/excel')
@@ -355,7 +402,8 @@ export default function ReportClient(){
   const selectedProvince=modal&&'id'in modal?document?.provinces.find(p=>p.id===modal.id):null
   const selectedPackage=modal?.type==='package'?selectedProvince?.packages.find(pkg=>pkg.id===modal.packageId):null
   const rows=document?order.map(id=>document.provinces.find(p=>p.id===id)!).filter(p=>p&&provinceName(p.id,p.name).toLowerCase().includes(query.toLowerCase())&&matchesQuickFilter(p,filterStage,filterStatus)):[]
-  const canEditModal=Boolean(modal&&modal.type!=='access'&&modal.type!=='addProvince')&&!busy&&!viewingRecap
+  const canEditModal=Boolean(modal&&'id' in modal)&&!busy&&!viewingRecap
+  const canDeleteData=editing&&canEditModal
   const filterStatusOptions: [FilterStatus,string][]=filterStage==='stage1'||filterStage==='stage2'||filterStage==='stage3'?[['all','Semua status'],['ada','Ada'],['tc','T/C'],['none','Tidak ada']]:filterStage==='stage4'?[['all','Semua status'],['selesai','Selesai'],['proses','Proses'],['not-started','- / Belum dimulai'],['nd','N/D']]:filterStage==='stage5'?[['all','Semua status'],['selesai','Selesai'],['proses','Proses'],['not-started','- / Belum dimulai'],['nd','N/D']]:[['all','Semua status'],['ada','Ada'],['tc','T/C'],['none','Tidak ada'],['selesai','Selesai'],['proses','Proses'],['not-started','- / Belum dimulai'],['nd','N/D']]
   return <SuiteSurface className={s.page}>
     <a className={s.skip} href="#report-content">Lewati ke laporan</a>
@@ -363,7 +411,7 @@ export default function ReportClient(){
       <main id="report-content">
         <h1 className={s.srOnly}>Laporan ASB Provinsi</h1>
         {loading?<ReportLoader checkingAccess={!role}/>:!role?<section className={s.login} aria-labelledby="report-login-title"><div className={s.loginMark}><Table size={28} weight="duotone"/></div><h2 id="report-login-title">Buka Laporan</h2><p>Masukkan PIN admin atau penginput untuk melihat laporan.</p><form onSubmit={async event=>{event.preventDefault();setBusy('login');setError('');try{const result=await request<{role:'admin'|'user'}>('/auth',{method:'POST',body:JSON.stringify({pin})});setRole(result.role);setPin('');await load(range.from,range.to)}catch(error){setError(error instanceof Error?error.message:'Akses belum dapat dibuka.')}finally{setBusy('')}}}><label htmlFor="report-pin">PIN</label><input id="report-pin" type="password" inputMode="numeric" pattern="[0-9]{6,12}" minLength={6} maxLength={12} autoComplete="current-password" value={pin} onChange={e=>setPin(e.target.value)} required aria-describedby="report-login-error"/>{error&&<p id="report-login-error" role="alert" className={s.error}>{error}</p>}<button className={s.primaryButton} disabled={Boolean(busy)} type="submit">{busy==='login'?'Memeriksa...':'Buka Laporan'}</button></form><p className={s.quiet}>Belum punya PIN? Hubungi admin laporan.</p></section>:<>
-          <div className={s.reportToolbar}><div className={s.latestLabel}><span>{viewingRecap?'Rekap tersimpan':'Laporan terbaru'}</span><strong>{data?.snapshot?dateLabel(data.snapshot.date):'Data sumber · belum ada rekapitulasi tersimpan'}</strong><small>Terakhir diperbarui {data?.snapshot?timeLabel(data.snapshot.updated_at):'Belum ada pembaruan'}</small></div><div className={s.toolActions} role="group" aria-label="Aksi laporan">{viewingRecap?<button type="button" className={s.button} onClick={()=>void load(range.from,range.to)} disabled={Boolean(busy)||loading}><ArrowClockwise size={17}/>Kembali ke terbaru</button>:!data?.recapSavedForToday&&<button type="button" className={s.primaryButton} onClick={()=>guard('simpan rekap',latest=>void saveRecap(latest))} disabled={Boolean(busy)||loading}><Check size={18}/>Simpan rekap</button>}<button type="button" className={s.iconButton} aria-label="Unduh template Excel" title="Unduh template Excel" disabled={!document||Boolean(busy)||loading} onClick={()=>guard('unduh template',latest=>void template(latest))}><FileXls size={19}/></button><button type="button" className={s.iconButton} aria-label="Impor data" title="Impor Excel atau JSON" disabled={!document||Boolean(busy)||loading||Boolean(viewingRecap)} onClick={()=>guard('impor data',openImport)}><UploadSimple size={19}/></button><button type="button" className={s.iconButton} aria-label={busy==='pdf'?'Membuat PDF':'Unduh PDF'} title={busy==='pdf'?'Membuat PDF':'Unduh PDF'} disabled={!data?.snapshot||Boolean(busy)||loading} onClick={()=>guard('unduh PDF',latest=>void exportPdf(latest))}><DownloadSimple size={19}/></button><ThemePicker/>{role==='admin'&&<button type="button" className={s.iconButton} aria-label="Pengaturan PIN laporan" title="Pengaturan PIN" onClick={()=>setModal({type:'access'})} disabled={Boolean(busy)}><Gear size={19}/></button>}{role&&<button type="button" className={s.iconButton} aria-label="Keluar dari laporan" title="Keluar" onClick={()=>guard('keluar',()=>void logout())} disabled={Boolean(busy)}><SignOut size={18}/></button>}</div></div>
+          <div className={s.reportToolbar}><div className={s.latestLabel}><span>{viewingRecap?'Rekap tersimpan':'Laporan terbaru'}</span><strong>{data?.snapshot?dateLabel(data.snapshot.date):'Data sumber · belum ada rekapitulasi tersimpan'}</strong><small>Terakhir diperbarui {data?.snapshot?timeLabel(data.snapshot.updated_at):'Belum ada pembaruan'}</small></div><div className={s.toolActions} role="group" aria-label="Aksi laporan">{viewingRecap?<button type="button" className={s.button} onClick={()=>void load(range.from,range.to)} disabled={Boolean(busy)||loading}><ArrowClockwise size={17}/>Kembali ke terbaru</button>:!data?.recapSavedForToday&&<button type="button" className={s.primaryButton} onClick={()=>guard('simpan rekap',latest=>void saveRecap(latest))} disabled={Boolean(busy)||loading}><Check size={18}/>Simpan rekap</button>}<button type="button" className={s.iconButton} aria-label="Unduh template Excel" title="Unduh template Excel" disabled={!document||Boolean(busy)||loading} onClick={()=>guard('unduh template',latest=>void template(latest))}><FileXls size={19}/></button><button type="button" className={s.iconButton} aria-label="Impor data" title="Impor Excel atau JSON" disabled={!document||Boolean(busy)||loading||Boolean(viewingRecap)} onClick={()=>guard('impor data',openImport)}><UploadSimple size={19}/></button><button type="button" className={s.iconButton} aria-label="Unduh laporan" title="Unduh PDF atau Word" disabled={!data?.snapshot||Boolean(busy)||loading} onClick={()=>guard('unduh laporan',latest=>{const snapshot=latest||data?.snapshot;if(snapshot){setError('');setModal({type:'export',snapshot})}})}><DownloadSimple size={19}/></button><ThemePicker/>{role==='admin'&&<button type="button" className={s.iconButton} aria-label="Pengaturan PIN laporan" title="Pengaturan PIN" onClick={()=>setModal({type:'access'})} disabled={Boolean(busy)}><Gear size={19}/></button>}{role&&<button type="button" className={s.iconButton} aria-label="Keluar dari laporan" title="Keluar" onClick={()=>guard('keluar',()=>void logout())} disabled={Boolean(busy)}><SignOut size={18}/></button>}</div></div>
           {!viewingRecap&&data?.recapSavedForToday&&<p className={s.notice} role="status">Rekap hari ini sudah tersimpan. Lihat perkembangannya di tab Perkembangan</p>}
           {viewingRecap&&<p className={s.notice} role="status">Sedang melihat rekap {dateLabel(viewingRecap)} dalam mode baca.</p>}
           {error&&<div className={s.error} role="alert">{error} <button type="button" className={s.iconButton} aria-label="Muat ulang laporan" title="Muat ulang" disabled={Boolean(busy)} onClick={()=>guard('muat ulang',()=>void load(range.from,range.to))}><ArrowClockwise size={17}/></button></div>}
@@ -385,7 +433,7 @@ export default function ReportClient(){
                 })}
                 <article className={s.reportSummaryCard}><span>Total ASB</span>
                   <SummaryValue value={summary.totalPackages} previous={previousSummary?.totalPackages}/>
-                  <small>Paket aktif bernama</small>
+                  <small>Paket aktif terkonfirmasi</small>
                 </article>
                 <article className={s.reportSummaryCard}><span>Paket integrasi SIPD</span>
                   <SummaryValue value={summary.integratedPackages} previous={previousSummary?.integratedPackages}/>
@@ -397,34 +445,57 @@ export default function ReportClient(){
               {!document?<section className={s.empty}><h2>Data rekap belum tersedia</h2><p>Muat ulang setelah rekap awal disiapkan.</p></section>:<>
                 <div className={s.tableBar}><h2 className={s.srOnly}>Progress provinsi</h2><div className={s.tableControls}><label className={s.searchLabel}>Cari provinsi<input type="search" placeholder="Ketik nama provinsi" value={query} onChange={e=>setQuery(e.target.value)}/></label><div className={s.quickFilters}><label>Tahap<select aria-label="Filter tahap" value={filterStage} onChange={e=>{setFilterStage(e.target.value as FilterStage);setFilterStatus('all')}}><option value="all">Semua Tahapan</option><option value="stage1">Tahap 1 · Sekda</option><option value="stage2">Tahap 2 · Pimpinan/APIP</option><option value="stage3">Tahap 3 · Penyusun</option><option value="stage4">Tahap 4 · Paket</option><option value="stage5">Tahap 5 · Integrasi</option></select></label><label>Status<select aria-label="Filter status" value={filterStatus} onChange={e=>setFilterStatus(e.target.value as FilterStatus)}>{filterStatusOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label></div><div className={s.editControl}><span>{viewingRecap?'Mode lihat':'Mode Edit'}</span><button type="button" className={editing?s.cancelButton:s.iconButton} aria-label={editing?'Submit perubahan':'Edit tabel'} title={viewingRecap?'Rekap tersimpan hanya untuk dilihat':editing?'Submit perubahan':'Edit tabel'} disabled={Boolean(busy)||Boolean(viewingRecap)||(editing&&!dirty)} onClick={()=>editing?void save():beginEdit()}>{editing?<><Check size={16}/>Submit</>:<PencilSimple size={19}/>}</button>{editing&&<button type="button" className={s.cancelButton} onClick={cancelEdit} disabled={Boolean(busy)}><X size={16}/>Batal</button>}</div></div></div>
                 <div className={s.statusLegend} aria-label="Legenda status"><span className={s.legendDone}><Check size={15}/>Ada / Selesai</span><span className={s.legendProcess}><Clock size={15}/>Proses akun</span><span className={s.legendStageProcess}><Clock size={15}/>Proses Tahap 4</span><span className={s.legendRepair}><Warning size={15}/>Perbaikan</span><span className={s.legendWarning}><Warning size={15}/>T/C · data perlu dilengkapi</span><span className={s.legendUnknown}><Minus size={15}/>N/D · belum ada data</span></div>
-                <div className={s.tableScroll} role="region" aria-label="Tabel progres ASB. Geser ke samping untuk melihat tahapan lainnya." tabIndex={0}><fieldset className={s.tableFieldset} disabled={Boolean(busy)}><table className={s.reportTable}><caption className={s.srOnly}>Tabel progres ASB. Geser ke samping untuk melihat tahapan lainnya. Urutan mengutamakan jumlah peran dengan akun, lalu keberadaan paket aktif bernama dan jumlah proses yang selesai.</caption>
+                <div className={s.tableScroll} role="region" aria-label="Tabel progres ASB. Geser ke samping untuk melihat tahapan lainnya." tabIndex={0}><fieldset className={s.tableFieldset} disabled={Boolean(busy)}><table className={s.reportTable}><caption className={s.srOnly}>Tabel progres ASB. Geser ke samping untuk melihat tahapan lainnya. Urutan mengutamakan provinsi dengan paket Aplikasi Utama, lalu jumlah peran dengan akun dan progres paket.</caption>
                   <thead>
                     <tr>
                       <th rowSpan={2} className={s.numberHead}>No</th>
                       <th rowSpan={2} className={s.provinceHead}><div className={s.provinceHeadContent}><span>Provinsi</span>{editing&&<button type="button" className={s.addProvinceButton} aria-label="Tambah provinsi" title="Tambah provinsi" disabled={Boolean(busy)} onClick={()=>{setNewProvinceLabel('');setAddProvinceError('');setModal({type:'addProvince'})}}><Plus size={17}/></button>}</div></th>
                       <th rowSpan={2}>Nama Paket</th>
-                      <th colSpan={1} className={s.stageOne}><span>Tahap 1</span>Akun Sekda</th><th colSpan={3} className={s.stageTwo}><span>Tahap 2</span>Pimpinan &amp; APIP</th><th colSpan={2} className={s.stageThree}><span>Tahap 3</span>Penyusun</th><th colSpan={4} className={s.stageFour}><span>Tahap 4</span>Proses ASB</th><th colSpan={2} className={s.stageFive}><span>Tahap 5</span>Integrasi SIPD</th><th colSpan={3}>Ringkasan</th></tr><tr><th>Status Akun</th><th>Kepala Dinas</th><th>Kepala BPKAD</th><th>APIP</th><th>Harga</th><th>ASB</th><th>PU</th><th>BPKAD</th><th>APIP</th><th>Perbaikan</th><th>Total paket</th><th>Siap integrasi</th><th>% integrasi</th><th>Progres keseluruhan</th><th>Posisi akun</th></tr></thead>
-                  <tbody>{rows.map((p,index)=>{
+                      <th colSpan={1} className={s.stageOne}><span>Tahap 1</span>Akun Sekda</th><th colSpan={3} className={s.stageTwo}><span>Tahap 2</span>Pimpinan &amp; APIP</th><th colSpan={2} className={s.stageThree}><span>Tahap 3</span>Penyusun</th><th colSpan={4} className={s.stageFour}><span>Tahap 4</span>Proses ASB</th><th colSpan={2} className={s.stageFive}><span>Tahap 5</span>Integrasi SIPD</th><th colSpan={3}>Ringkasan</th></tr><tr><th>Status Akun</th><th>Kepala Dinas</th><th>Kepala BPKAD</th><th>APIP</th><th>Harga</th><th>ASB</th><th>PU</th><th>BPKAD</th><th>APIP</th><th>Perbaikan</th><th>Total paket</th><th>Siap integrasi</th><th>% integrasi</th><th>Progres keseluruhan</th><th>Posisi tahapan</th></tr></thead>
+                  {rows.map((p,index)=>{
                     const state=provinceSummary(p),hasNotes=Boolean(p.notes||p.followUp||p.notesHistory?.length)
+                    const tablePackages=p.packages.filter(pkg=>pkg.active&&packageConfirmationStatus(pkg)!=='cancelled'&&(pkg.name.trim()||editing))
+                    const expanded=tablePackages.length===1||Boolean(expandedProvinces[p.id])&&tablePackages.length>0
+                    const packageRows=expanded?tablePackages:[null]
+                    const rowSpan=packageRows.length
+                    const positionClass=[s.positionWarning,s.positionStageOne,s.positionStageTwo,s.positionStageThree,s.positionStageFour][state.positionStage]
                     const updatePackage=(id:string,update:(pkg:ReportPackage)=>void)=>updateProvince(p.id,province=>{
                       const pkg=province.packages.find(item=>item.id===id)
                       if(pkg)update(pkg)
                     })
-                    return <tr key={p.id}><td className={s.numberCell}>{index+1}</td><th scope="row" className={s.provinceCell}><button type="button" title={hasNotes?"Ada catatan tersimpan":"Buka detail provinsi"} aria-label={`${provinceName(p.id)}${hasNotes?" memiliki catatan.":"."} Buka detail provinsi`} onClick={()=>openProvince(p.id)}>{provinceName(p.id,p.name)}{hasNotes&&<NotePencil size={14}/>}{editing&&<PencilSimple size={13}/>}</button></th><PackageCell province={p} editing={editing} onUpdate={updatePackage} onRemove={packageId=>removeDraftPackage(p.id,packageId)} onOpen={packageId=>openPackage(p.id,packageId)} onAdd={()=>updateProvince(p.id,province=>{province.packages.push(newPackage(''))})}/>
-                      {ROLES.map(accountRole=>{const a=p.accounts[accountRole],description=`${ROLE_LABELS[accountRole]}: ${accountLabel(a)}. Jumlah ${recordedAccountCount(a)??'belum diketahui'}. ${a.details.map(d=>d.label).slice(0,4).join(', ')}`;return <td key={accountRole} className={a.status==='ada'?s.complete:a.status==='tc'?s.warning:s.unknown}><div className={s.accountCell}>{editing?<button type="button" className={s.cellButton} title={a.status==='ada'?'Ubah menjadi T/C':'Ubah menjadi Ada'} aria-label={`Ubah status ${ROLE_LABELS[accountRole]} ${provinceName(p.id,p.name)} dari ${accountLabel(a)}`} onClick={()=>toggleAccount(p.id,accountRole)}><span className={s.statusText}>{a.status==='ada'?<Check size={14}/>:a.status==='tc'?<Warning size={14}/>:<Minus size={14}/>}{accountLabel(a)}</span></button>:<button type="button" className={s.cellButton} title={description} aria-label={`${description} Buka rincian`} onClick={()=>openAccount(p.id,accountRole)}><span className={s.statusText}>{a.status==='ada'?<Check size={14}/>:a.status==='tc'?<Warning size={14}/>:<Minus size={14}/>}{accountLabel(a)}</span></button>}<span className={s.hoverInfo} role="tooltip">{description}</span></div></td>})}
+                    return <tbody key={p.id}>{packageRows.map((pkg,packageIndex)=>{
+                      const first=packageIndex===0
+                      return <tr key={first?'group-head':'package-'+pkg?.id}>
+                        {first&&<><td rowSpan={rowSpan} className={s.numberCell}>{index+1}</td><th rowSpan={rowSpan} scope="rowgroup" className={s.provinceCell}><button type="button" title={hasNotes?"Ada catatan tersimpan":"Buka detail provinsi"} aria-label={`${provinceName(p.id)}${hasNotes?" memiliki catatan.":"."} Buka detail provinsi`} onClick={()=>openProvince(p.id)}>{provinceName(p.id,p.name)}{hasNotes&&<NotePencil size={14}/>}{editing&&<PencilSimple size={13}/>}</button></th></>}
+                      <td className={s.packageCell}>
+                        {first&&(tablePackages.length!==1||editing)&&<div className={s.packageRowActions}>
+                          <PackageDisclosure packages={tablePackages} expanded={expanded} onToggle={()=>setExpandedProvinces(current=>({...current,[p.id]:!expanded}))}/>
+                          {editing&&<button type="button" className={s.textButton} onClick={()=>addDraftPackage(p.id)}><Plus size={16}/>Tambah paket</button>}
+                        </div>}
+                        {pkg&&<PackageInputCard key={pkg.id} pkg={pkg} index={packageIndex} editing={editing}
+                          onUpdate={update=>updatePackage(pkg.id,update)} onRemove={()=>removeDraftPackage(p.id,pkg.id)} onOpen={()=>openPackage(p.id,pkg.id)}/>}
+                      </td>
+                      {first&&ROLES.map(accountRole=>{const a=p.accounts[accountRole],description=`${ROLE_LABELS[accountRole]}: ${accountLabel(a)}. Jumlah ${recordedAccountCount(a)??'belum diketahui'}. ${a.details.map(d=>d.label).slice(0,4).join(', ')}`;return <td key={accountRole} rowSpan={rowSpan} className={a.status==='ada'?s.complete:a.status==='tc'?s.warning:s.unknown}><div className={s.accountCell}>{editing?<button type="button" className={s.cellButton} title={a.status==='ada'?'Ubah menjadi T/C':'Ubah menjadi Ada'} aria-label={`Ubah status ${ROLE_LABELS[accountRole]} ${provinceName(p.id,p.name)} dari ${accountLabel(a)}`} onClick={()=>toggleAccount(p.id,accountRole)}><span className={s.statusText}>{a.status==='ada'?<Check size={14}/>:a.status==='tc'?<Warning size={14}/>:<Minus size={14}/>}{accountLabel(a)}</span></button>:<button type="button" className={s.cellButton} title={description} aria-label={`${description} Buka rincian`} onClick={()=>openAccount(p.id,accountRole)}><span className={s.statusText}>{a.status==='ada'?<Check size={14}/>:a.status==='tc'?<Warning size={14}/>:<Minus size={14}/>}{accountLabel(a)}</span></button>}<span className={s.hoverInfo} role="tooltip">{description}</span></div></td>})}
                       {STEPS.map(step=>{
-                        const stage=stepSummary(p,step)
-                        return <td key={step} className={`${s.stageCell} ${s[stageTone(stage,step)]}`}><button type="button" className={s.stageCellButton} aria-label={`Lihat progres ${STEP_LABELS[step]} ${provinceName(p.id,p.name)}: ${stage.label==='—'?'Belum ada status':stage.label}`} title={`Lihat progres ${STEP_LABELS[step]} per paket`} onClick={()=>openWorkflow(p.id,step)}><span>{stage.label}</span><Eye size={14}/></button></td>
+                        const status=pkg?.[step]
+                        const stage=status===undefined?stepSummary(p,step):{
+                          label:status==='-'?'—':STATUS_LABELS[status],
+                          done:Number(status==='selesai'),processing:Number(status==='proses'),complete:status==='selesai',
+                        }
+                        return <td key={step} className={`${s.stageCell} ${s[stageTone(stage,step)]}`}><button type="button" className={s.stageCellButton} aria-label={`Lihat progres ${STEP_LABELS[step]} ${pkg?.name??provinceName(p.id,p.name)}: ${stage.label==='—'?'Belum ada status':stage.label}`} title={`Lihat progres ${STEP_LABELS[step]} per paket`} onClick={()=>openWorkflow(p.id,step,pkg?.id)}><span>{stage.label}</span><Eye size={14}/></button></td>
                       })}
-                      <td><button className={s.cellButton} aria-label={`Lihat ${state.totalPackages} paket aktif ${provinceName(p.id,p.name)}`} onClick={()=>openProvince(p.id)}>{state.totalPackages}</button></td>
-                      <td><button className={s.cellButton} aria-label={`Lihat ${state.integratedPackages} paket siap integrasi ${provinceName(p.id,p.name)}`} onClick={()=>openProvince(p.id)}>{state.integratedPackages}</button></td>
-                      <td><div className={s.progressCell}>{state.percent===null?<span className={s.progressUnknown}><Minus size={14}/>N/D</span>:<><div className={s.progressTrack} role="progressbar" aria-label={`Integrasi ${provinceName(p.id,p.name)}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.percent}><span className={s.progressFill} style={{width:`${Math.min(state.percent,100)}%`}}/></div><span className={s.statusText}>{state.percent.toLocaleString('id-ID')}%</span></>}</div></td>
-                      <td className={s.unknown} title="Rumus progres keseluruhan belum ditetapkan"><div className={s.progressCell}><div className={s.progressTrack} aria-hidden="true"/><span className={s.progressUnknown}><Minus size={14}/>N/D</span></div></td>
-                      <td className={s.positionCell}>{state.accountStage?<span className={`${s.position} ${state.accountStage===1?s.positionStageOne:state.accountStage===2?s.positionStageTwo:s.positionStageThree}`}>Tahap {state.accountStage}</span>:<span className={`${s.position} ${s.positionWarning}`}><Warning size={13}/>T/C</span>}</td>
-                    </tr>
-                  })}</tbody><tfoot><tr><th colSpan={3}>Provinsi dengan akun tercatat</th>{summary?.roles.map((count,index)=><td key={index}>{count}</td>)}<td colSpan={4}>Status tahap 4</td><td>{summary?.totalPackages??'N/D'}</td><td>{summary?.integratedPackages??'N/D'}</td><td>{summary?.integrationPercent===null?'-':`${summary?.integrationPercent}%`}</td><td colSpan={2}>Data rekap tersimpan</td></tr></tfoot>
+                      {first&&<><td rowSpan={rowSpan}><button className={s.cellButton} aria-label={`Lihat ${state.totalPackages} paket terkonfirmasi ${provinceName(p.id,p.name)}`} onClick={()=>openProvince(p.id)}>{state.totalPackages}</button></td>
+                      <td rowSpan={rowSpan}><button className={s.cellButton} aria-label={`Lihat ${state.integratedPackages} paket siap integrasi ${provinceName(p.id,p.name)}`} onClick={()=>openProvince(p.id)}>{state.integratedPackages}</button></td>
+                      <td rowSpan={rowSpan}><div className={s.progressCell}>{state.percent===null?<span className={s.progressUnknown}><Minus size={14}/>N/D</span>:<><div className={s.progressTrack} role="progressbar" aria-label={`Integrasi ${provinceName(p.id,p.name)}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.percent}><span className={s.progressFill} style={{width:`${Math.min(state.percent,100)}%`}}/></div><span className={s.statusText}>{state.percent.toLocaleString('id-ID')}%</span></>}</div></td>
+                      <td rowSpan={rowSpan} title="Bobot: Tahap 1-3 30%, Tahap 4 60%, integrasi diterima SIPD 5%, dan status aplikasi, checklist, serta URL bukti dukung valid 5%. Bobot tahap paket bernilai 0% jika belum ada paket terkonfirmasi."><div className={s.progressCell}><div className={s.progressTrack} role="progressbar" aria-label={`Progres keseluruhan ${provinceName(p.id,p.name)}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.overallPercent}><span className={s.progressFill} style={{width:`${Math.min(state.overallPercent,100)}%`}}/></div><span className={s.statusText}>{state.overallPercent.toLocaleString('id-ID')}%</span></div></td>
+                      <td rowSpan={rowSpan} className={s.positionCell}><span className={s.position+' '+positionClass}>
+                        {state.positionStage?('Tahap '+state.positionStage):<><Warning size={13}/>T/C</>}
+                      </span></td></>}
+                      </tr>
+                    })}</tbody>
+                  })}<tfoot><tr><th colSpan={3}>Provinsi dengan akun tercatat</th>{summary?.roles.map((count,index)=><td key={index}>{count}</td>)}<td colSpan={4}>Status tahap 4</td><td>{summary?.totalPackages??'N/D'}</td><td>{summary?.integratedPackages??'N/D'}</td><td>{summary?.integrationPercent==null?'-':`${summary.integrationPercent}%`}</td><td>{summary?.overallProgressPercent==null?'-':`${summary.overallProgressPercent.toLocaleString('id-ID')}%`}</td><td>—</td></tr></tfoot>
                 </table></fieldset>{rows.length===0&&<p className={s.emptyDetail}>Provinsi tidak ditemukan. Periksa kata kunci atau filter.</p>}</div>
-                <p className={s.quiet}>Jumlah paket dihitung dari paket aktif. Posisi akun menunjukkan tahap tertinggi yang memiliki akun.</p>
+                <p className={s.quiet}>Jumlah paket dihitung dari paket aktif terkonfirmasi. Provinsi dengan paket terkonfirmasi di Aplikasi Utama berada di Tahap 4. Provinsi lainnya mengikuti tahap akun tertinggi.</p>
                 {document.source&&<p className={s.source}>Sumber awal: {document.source.label}</p>}
               </>}
             </>}
@@ -436,8 +507,24 @@ export default function ReportClient(){
       {!loading&&<footer className={s.footer}>{data?.snapshot&&<span>Terakhir disimpan {timeLabel(data.snapshot.updated_at)}</span>}<button type="button" className={s.iconButton} aria-label="Muat ulang laporan" title="Muat ulang" onClick={()=>guard('muat ulang',()=>void load(range.from,range.to))} disabled={Boolean(busy)||loading}><ArrowClockwise size={17}/></button></footer>}
     </div>
             {(['save','note','recap'].includes(busy)&&!modal)&&<div className={s.savingOverlay} role="status" aria-live="polite"><span className={s.savingIndicator}>Menyimpan perubahan...</span></div>}
-            {modal&&<ReportDialog title={modal.type==='access'?'Pengaturan PIN':modal.type==='addProvince'?'Tambah provinsi':modal.type==='account'?`${ROLE_LABELS[modal.role]} · ${provinceName(modal.id,selectedProvince?.name)}`:modal.type==='package'?`Detail paket · ${selectedPackage?.name||provinceName(modal.id,selectedProvince?.name)}`:modal.type==='workflow'?`Progres ${STEP_LABELS[modal.step]} · ${provinceName(modal.id,selectedProvince?.name)}`:provinceName(modal.id,selectedProvince?.name)} onClose={()=>setModal(null)} busy={Boolean(busy)} onDelete={modal.type==='province'&&selectedProvince&&!viewingRecap?()=>clearProvinceData(selectedProvince.id):undefined} deletePrompt="Data akun dan catatan provinsi akan dikosongkan. Semua paket aktif dipindahkan ke arsip nonaktif; nama dan riwayatnya tetap tersimpan.">{modal.type==='access'?<AccessPanel onSave={body=>request('/access',{method:'PUT',body:JSON.stringify(body)})}/>:modal.type==='addProvince'?<form className={s.formFields} onSubmit={event=>{event.preventDefault();try{addProvince(newProvinceLabel)}catch(error){setAddProvinceError(error instanceof Error?error.message:'Provinsi belum dapat ditambahkan.')}}}><p className={s.panelIntro}>Provinsi tambahan masuk ke laporan ini dan akan dihitung dalam rekap.</p><label>Nama provinsi<input autoFocus value={newProvinceLabel} maxLength={120} onChange={event=>{setNewProvinceLabel(event.target.value);setAddProvinceError('')}} placeholder="Masukkan nama provinsi" required/></label>{addProvinceError&&<p role="alert" className={s.error}>{addProvinceError}</p>}<button className={s.primaryButton} type="submit">Tambah provinsi</button></form>:selectedProvince&&selectedPackage&&modal.type==='package'?<PackagePanel pkg={selectedPackage} provinceName={provinceName(selectedProvince.id,selectedProvince.name)} editable={canEditModal} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,province=>{const pkg=province.packages.find(item=>item.id===selectedPackage.id);if(pkg)update(pkg)})} onSave={saveModalChanges}/>:selectedProvince&&modal.type==='workflow'?<WorkflowPanel province={selectedProvince} step={modal.step} canTransition={!busy&&!viewingRecap} canDelete={!busy&&!viewingRecap} onAdvance={packageId=>advancePackage(selectedProvince.id,packageId)} onReturn={(packageId,note)=>returnPackage(selectedProvince.id,packageId,note)} onDelete={packageId=>resetWorkflow(selectedProvince.id,packageId)}/>:selectedProvince&&modal.type==='account'?<AccountPanel province={selectedProvince} role={modal.role} editable={canEditModal} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,update)} onSave={saveModalChanges}/>:selectedProvince&&<ProvincePanel province={selectedProvince} editable={canEditModal} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,update)} onSaveNotes={saveProvinceNotes} onSaveChanges={saveModalChanges}/>}</ReportDialog>}
     {importTarget&&<ReportImport target={importTarget} onClose={()=>setImportTarget(null)} onTemplate={()=>downloadTemplate(importTarget.document,importTarget.date)} onSave={saveImport}/>}
+    {modal&&<ReportDialog
+      title={modal.type==='access'?'Pengaturan PIN':modal.type==='addProvince'?'Tambah provinsi':modal.type==='account'?`${ROLE_LABELS[modal.role]} · ${provinceName(modal.id,selectedProvince?.name)}`:modal.type==='package'?'Detail Paket':modal.type==='workflow'?`Progres ${STEP_LABELS[modal.step]} · ${provinceName(modal.id,selectedProvince?.name)}`:modal.type==='export'?'Unduh laporan':provinceName(modal.id,selectedProvince?.name)}
+      packageDialog={modal.type==='package'}
+      onClose={()=>setModal(null)}
+      busy={Boolean(busy)}
+      onDelete={modal.type==='province'&&selectedProvince&&canDeleteData?()=>clearProvinceData(selectedProvince.id):undefined}
+      deletePrompt="Data akun dan catatan provinsi akan dikosongkan. Semua paket aktif dipindahkan ke arsip nonaktif; nama dan riwayatnya tetap tersimpan."
+    >
+      {modal.type==='access'?<AccessPanel onSave={body=>request('/access',{method:'PUT',body:JSON.stringify(body)})}/>
+      :modal.type==='addProvince'?<form className={s.formFields} onSubmit={event=>{event.preventDefault();try{addProvince(newProvinceLabel)}catch(error){setAddProvinceError(error instanceof Error?error.message:'Provinsi belum dapat ditambahkan.')}}}><label>Nama provinsi<input autoFocus value={newProvinceLabel} maxLength={120} onChange={event=>{setNewProvinceLabel(event.target.value);setAddProvinceError('')}} placeholder="Masukkan nama provinsi" required/></label>{addProvinceError&&<p role="alert" className={s.error}>{addProvinceError}</p>}<button className={s.primaryButton} type="submit">Tambah provinsi</button></form>
+      :modal.type==='export'?<div className={s.toolActions}><button className={s.button} type="button" disabled={Boolean(busy)} onClick={()=>void exportReport(modal.snapshot,'pdf')}>Unduh PDF</button><button className={s.primaryButton} type="button" disabled={Boolean(busy)} onClick={()=>void exportReport(modal.snapshot,'docx')}>Unduh Word</button></div>
+      :selectedProvince&&selectedPackage&&modal.type==='package'?<PackagePanel pkg={selectedPackage} editable={canEditModal} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,province=>{const pkg=province.packages.find(item=>item.id===selectedPackage.id);if(pkg)update(pkg)})} onSave={saveModalChanges}/>
+      :selectedProvince&&modal.type==='workflow'?<WorkflowPanel province={selectedProvince} savedProvince={baseline?.provinces.find(province=>province.id===selectedProvince.id)} step={modal.step} packageId={modal.packageId} canTransition={!busy&&!viewingRecap} canDelete={canDeleteData} onAdvance={packageId=>advancePackage(selectedProvince.id,packageId)} onReturn={(packageId,note)=>returnPackage(selectedProvince.id,packageId,note)} onDelete={packageId=>resetWorkflow(selectedProvince.id,packageId)}/>
+      :selectedProvince&&modal.type==='account'?<AccountPanel province={selectedProvince} role={modal.role} editable={canEditModal} canDelete={canDeleteData} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,update)} onSave={saveModalChanges}/>
+      :selectedProvince&&modal.type==='province'?<ProvincePanel province={selectedProvince} editable={canEditModal} canDelete={canDeleteData} canSave={dirty} onChange={update=>updateProvince(selectedProvince.id,update)} onSaveNotes={saveProvinceNotes} onSaveChanges={saveModalChanges}/>
+      :<p className={s.emptyDetail}>Data yang diminta tidak tersedia.</p>}
+    </ReportDialog>}
     {pending&&<ReportDialog title="Perubahan belum disimpan" onClose={()=>setPending(null)} busy={Boolean(busy)}><p>Simpan atau buang perubahan sebelum {pending.label} dilanjutkan.</p>{error&&<p className={s.error} role="alert">{error}</p>}<div className={s.guardActions}><button className={s.button} disabled={Boolean(busy)} onClick={()=>setPending(null)}>Kembali</button><button className={s.button} disabled={Boolean(busy)} onClick={()=>void resolvePending(false)}>Buang draft</button><button className={s.primaryButton} disabled={Boolean(busy)} onClick={()=>void resolvePending(true)}>{busy?'Menyimpan...':'Simpan & lanjut'}</button></div></ReportDialog>}
   </SuiteSurface>
 }

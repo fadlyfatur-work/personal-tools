@@ -1,5 +1,6 @@
 import PizZip from 'pizzip'
-import {PROVINCES,ROLES,ROLE_LABELS,STEPS,STATUSES,STATUS_LABELS,WORKFLOW_STATUS,provinceName,newPackage,validateDocument,workflowStatusOf,type ReportDocument,type AccountRole,type AccountDetail,type WorkflowStatus} from './model'
+import {PACKAGE_ENVIRONMENTS,PACKAGE_ENVIRONMENT_LABELS} from './model'
+import {PROVINCES,ROLES,ROLE_LABELS,STEPS,STATUSES,STATUS_LABELS,WORKFLOW_STATUS,PACKAGE_CONFIRMATION_STATUSES,PACKAGE_CONFIRMATION_LABELS,packageConfirmationStatus,setPackageConfirmationStatus,provinceName,newPackage,validateDocument,workflowStatusOf,type ReportDocument,type AccountRole,type AccountDetail,type WorkflowStatus,type PackageConfirmationStatus} from './model'
 
 const XML='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
 const NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main'
@@ -7,25 +8,27 @@ const REL='http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 const escape=(value:string)=>value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')
 const column=(index:number):string=>index>=26?column(Math.floor(index/26)-1)+String.fromCharCode(65+index%26):String.fromCharCode(65+index)
 type Cell=string|number|null
-const PACKAGE_REPORT_HEADERS=['Bukti Dukung','URL Bukti Dukung','Nama PIC','Nomor Kontak PIC']
+const PACKAGE_REPORT_HEADERS=['Bukti Dukung','URL Bukti Dukung','Nama PIC','Nomor Kontak PIC','Status konfirmasi','Lingkungan Paket']
+const packageConfirmationOptions=PACKAGE_CONFIRMATION_STATUSES.map(status=>PACKAGE_CONFIRMATION_LABELS[status]).join(' / ')
+const packageEnvironmentOptions=PACKAGE_ENVIRONMENTS.map(environment=>PACKAGE_ENVIRONMENT_LABELS[environment]).join(' atau ')
 const HEADERS={
   Provinsi:['ID Provinsi','Provinsi','Total Paket (otomatis)','Siap Integrasi (otomatis)','Catatan','Tindak Lanjut','Total Diubah Pada','Integrasi Diubah Pada'],
   Akun:['ID Provinsi','Provinsi','Peran','Status','Jumlah','ID Akun','Nama Akun','Instansi','Email','Keterangan Akun','Catatan Peran','Diubah Pada'],
   Paket:['ID Provinsi','Provinsi','ID Paket','Nama Paket','PU','BPKAD','APIP','Perbaikan','Aktif','Alasan Nonaktif','Catatan','Dicatat Pada','Nama Diubah Pada','Status Diubah Pada','Status Alur Tahap 4','Tujuan Perbaikan',...PACKAGE_REPORT_HEADERS],
 }
 function worksheet(rows:Cell[][],contactColumn=false){
-  const cols=contactColumn?'<col min="1" max="19" width="24" customWidth="1"/><col min="20" max="20" width="24" customWidth="1" style="2"/>':`<col min="1" max="${rows[0].length}" width="24" customWidth="1"/>`
+  const cols=contactColumn?`<col min="1" max="19" width="24" customWidth="1"/><col min="20" max="20" width="24" customWidth="1" style="2"/><col min="21" max="${rows[0].length}" width="24" customWidth="1"/>`:`<col min="1" max="${rows[0].length}" width="24" customWidth="1"/>`
   return `${XML}<worksheet xmlns="${NS}"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${cols}</cols><sheetData>${rows.map((row,r)=>`<row r="${r+1}">${row.map((value,c)=>`<c r="${column(c)}${r+1}" t="inlineStr"${r===0?' s="1"':''}><is><t xml:space="preserve">${escape(String(value??''))}</t></is></c>`).join('')}</row>`).join('')}</sheetData></worksheet>`
 }
 export function createReportWorkbook(doc:ReportDocument,date:string):Uint8Array {
   const sheets:Record<string,Cell[][]>={
-    Petunjuk:[['REPORT_ASB_VERSION','4'],['TANGGAL_LAPORAN',date],['Cara mengisi','Edit data pada sheet Akun dan Paket. Jangan ubah header dan ID yang sudah terisi.'],['Jumlah paket','Total paket dan jumlah siap integrasi dihitung otomatis dari daftar paket aktif. Kolom pada sheet Provinsi hanya informasi.'],['Status akun','Ada / T/C / Tidak ada. Jumlah Tidak ada harus 0; T/C kosong.'],['Status paket','Selesai / Proses / -. Aktif: Ya / Tidak; nonaktif wajib alasan. Paket baru dengan alur kosong mulai di PU.'],['Bukti dukung dan PIC','Bukti Dukung dan URL opsional. Jika mengisi URL, gunakan http/https. Isi nama dan nomor kontak jika menetapkan PIC.'],['Paket atau akun baru','Isi provinsi dan nama. Kosongkan ID untuk data baru. Email akun atau nama paket yang cocok dipakai kembali.'],['Tanggal dan waktu','Kolom timestamp hanya informasi. Waktu perubahan ditetapkan server saat disimpan.'],['Impor','Gunakan tanggal laporan yang sama. Pilih provinsi pada pratinjau, lalu pilih Simpan. Rumus tidak diterima.']],
+    Petunjuk:[['REPORT_ASB_VERSION','6'],['TANGGAL_LAPORAN',date],['Cara mengisi','Edit data pada sheet Akun dan Paket. Jangan ubah header dan ID yang sudah terisi.'],['Jumlah paket','Total paket dan jumlah siap integrasi dihitung otomatis dari paket aktif terkonfirmasi. Kolom pada sheet Provinsi hanya informasi.'],['Status akun','Ada / T/C / Tidak ada. Jumlah Tidak ada harus 0; T/C kosong.'],['Status paket','Selesai / Proses / -. Aktif: Ya / Tidak; nonaktif wajib alasan. Status konfirmasi: '+packageConfirmationOptions+'. Paket terkonfirmasi mulai di PU. Paket aktif non-terkonfirmasi wajib mengisi Catatan.'],['Lingkungan Paket',`Opsional. Pilih ${packageEnvironmentOptions}.`],['Bukti dukung dan PIC','Bukti Dukung dan URL opsional. Jika mengisi URL, gunakan http/https. Isi nama dan nomor kontak jika menetapkan PIC.'],['Paket atau akun baru','Isi provinsi dan nama. Kosongkan ID untuk data baru. Email akun atau nama paket yang cocok dipakai kembali.'],['Tanggal dan waktu','Kolom timestamp hanya informasi. Waktu perubahan ditetapkan server saat disimpan.'],['Impor','Gunakan tanggal laporan yang sama. Pilih provinsi pada pratinjau, lalu pilih Simpan. Rumus tidak diterima.']],
     Provinsi:[HEADERS.Provinsi,...doc.provinces.map(p=>[p.id,provinceName(p.id,p.name),p.totalPackages,p.integratedPackages,p.notes,p.followUp,p.totalUpdatedAt,p.integrationUpdatedAt])],
     Akun:[HEADERS.Akun,...doc.provinces.flatMap(p=>ROLES.flatMap(role=>{
       const a=p.accounts[role],details:(AccountDetail|null)[]=a.details.length?a.details:[null]
       return details.map(d=>[p.id,provinceName(p.id,p.name),ROLE_LABELS[role],{ada:'Ada',tc:'T/C',tidak_ada:'Tidak ada'}[a.status],a.count,d?.id||'',d?.label||'',d?.institution||'',d?.email||'',d?.note||'',a.note,a.updatedAt])
     }))],
-    Paket:[HEADERS.Paket,...doc.provinces.flatMap(p=>p.packages.map(pkg=>[p.id,provinceName(p.id,p.name),pkg.id,pkg.name,...STEPS.map(step=>STATUS_LABELS[pkg[step]]),pkg.active?'Ya':'Tidak',pkg.inactiveReason,pkg.note,pkg.createdAt,pkg.nameUpdatedAt,pkg.statusUpdatedAt,WORKFLOW_STATUS[pkg.workflowStatus||'pu'],pkg.workflowStatus?.startsWith('returned_')?pkg.returnTarget?.toUpperCase()??'':'',pkg.evidenceChecked?'Ya':'Tidak',pkg.evidenceUrl,pkg.picName,pkg.picPhone]))],
+    Paket:[HEADERS.Paket,...doc.provinces.flatMap(p=>p.packages.map(pkg=>[p.id,provinceName(p.id,p.name),pkg.id,pkg.name,...STEPS.map(step=>STATUS_LABELS[pkg[step]]),pkg.active?'Ya':'Tidak',pkg.inactiveReason,pkg.note,pkg.createdAt,pkg.nameUpdatedAt,pkg.statusUpdatedAt,pkg.confirmed?WORKFLOW_STATUS[pkg.workflowStatus||'pu']:'',pkg.workflowStatus?.startsWith('returned_')?pkg.returnTarget?.toUpperCase()??'':'',pkg.evidenceChecked?'Ya':'Tidak',pkg.evidenceUrl,pkg.picName,pkg.picPhone,PACKAGE_CONFIRMATION_LABELS[packageConfirmationStatus(pkg)],pkg.environment?PACKAGE_ENVIRONMENT_LABELS[pkg.environment]:'']))],
   }
   const zip=new PizZip(),names=Object.keys(sheets)
   zip.file('[Content_Types].xml',`${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${names.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`)
@@ -108,7 +111,7 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
   }
   const info=await rows('Petunjuk')
   const version=info.find(row=>row.cells[0]==='REPORT_ASB_VERSION')?.cells[1]
-  if(version!=='3'&&version!=='4')throw new Error('Versi template tidak cocok. Unduh template terbaru.')
+  if(version!=='3'&&version!=='4'&&version!=='5'&&version!=='6')throw new Error('Versi template tidak cocok. Unduh template terbaru.')
   if(info.find(row=>row.cells[0]==='TANGGAL_LAPORAN')?.cells[1]!==date)throw new Error('Tanggal Excel berbeda dari tanggal laporan yang sedang dibuka.')
   const doc=validateDocument(base),owners=new Map(doc.provinces.flatMap(p=>p.packages.map(pkg=>[pkg.id,p.id])))
   const provinceIds=new Set<string>(),seenProvinces=new Set<string>(),seenPackages=new Set<string>(),seenAccounts=new Set<string>(),groups=new Map<string,{summary:string;hasEmpty:boolean}>()
@@ -122,7 +125,8 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
   function number(raw:string|undefined){if(!raw?.trim())return null;const n=Number(raw);if(!Number.isSafeInteger(n)||n<0||n>1_000_000)throw new Error('Jumlah harus angka bulat nonnegatif, maksimal 1.000.000.');return n}
   for(const name of ['Provinsi','Akun','Paket'] as const){
     const content=await rows(name),header=content.shift()?.cells
-    const expected=name==='Paket'&&version==='3'?HEADERS.Paket.slice(0,-PACKAGE_REPORT_HEADERS.length):HEADERS[name]
+    const extraColumns=version==='3'?PACKAGE_REPORT_HEADERS.length:6-Number(version)
+    const expected=name==='Paket'&&extraColumns?HEADERS.Paket.slice(0,-extraColumns):HEADERS[name]
     if(!header||expected.some((label,i)=>header[i]!==label))throw new Error(`Header sheet ${name} berubah. Gunakan template terbaru.`)
     for(const {number:rowNumber,cells:r} of content){
       try{
@@ -180,19 +184,31 @@ export async function readReportWorkbook(bytes:Uint8Array,base:ReportDocument,da
           if(r[8]&&!['ya','tidak'].includes(r[8].trim().toLowerCase()))throw new Error('Aktif harus Ya atau Tidak.')
           if(r[8]?.trim())pkg.active=r[8].trim().toLowerCase()==='ya'
           pkg.inactiveReason=r[9]??pkg.inactiveReason;pkg.note=r[10]??pkg.note
-          if(version==='4'){
+          if(version!=='3'){
             const evidence=r[16]?.trim().toLowerCase()
             if(evidence&&evidence!=='ya'&&evidence!=='tidak')throw new Error('Bukti Dukung harus Ya atau Tidak.')
             if(evidence)pkg.evidenceChecked=evidence==='ya'
             pkg.evidenceUrl=r[17]??pkg.evidenceUrl
             pkg.picName=r[18]??pkg.picName
             pkg.picPhone=r[19]??pkg.picPhone
+            if(version==='5'||version==='6'){
+              const confirmation=r[20]?.trim().toLowerCase()
+              const selectedStatus=PACKAGE_CONFIRMATION_STATUSES.find(status=>PACKAGE_CONFIRMATION_LABELS[status].toLowerCase()===confirmation)
+              if(confirmation&&confirmation!=='ya'&&confirmation!=='tidak'&&!selectedStatus)throw new Error(`Status konfirmasi harus ${packageConfirmationOptions}.`)
+              if(confirmation)setPackageConfirmationStatus(pkg,(selectedStatus??(confirmation==='ya'?'confirmed':'unconfirmed')) as PackageConfirmationStatus)
+            }
+            if(version==='6'){
+              const value=r[21]?.trim().toLowerCase()
+              const environment=PACKAGE_ENVIRONMENTS.find(option=>option===value||PACKAGE_ENVIRONMENT_LABELS[option].toLowerCase()===value)
+              if(value&&!environment)throw new Error(`Lingkungan Paket harus ${packageEnvironmentOptions}.`)
+              pkg.environment=environment??null
+            }
           }
         }
       }catch(error){throw new Error(`Sheet ${name}, baris ${rowNumber}: ${error instanceof Error?error.message:'isian tidak valid'}`)}
     }
   }
-  const document=validateDocument(doc)
+  const document=validateDocument(doc,base)
   const changes=document.provinces.filter(p=>JSON.stringify(p)!==JSON.stringify(base.provinces.find(item=>item.id===p.id))).map(p=>provinceName(p.id,p.name))
   return {document,changes,provinceIds:[...provinceIds]}
 }
